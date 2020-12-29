@@ -17,9 +17,11 @@ I hope (but  also don't think) that I'm hurting any copyrights or trademarks her
 
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/paypalme/mplutka/5)
 
+**Please don't by a Thrustmaster BT LED for this only to use at with your PC!** This method works now but could easily break because of future updates etc. 
+
 ## Prerequisites
   0. You should be familiar with installing and using NodeJS application on Windows command line. 
-  1. Thrustmaster BT LED ;-)
+  1. Thrustmaster BT LED ;-) (I won't guarantee that it works on your PC, so keep this in mind when buying one extra for this!)
   2. Compatible game (F1 2019 or Assetto Corsa). F1 2018/20 might work too. Others might follow.
   3. Windows 10 19042 or higher (might work on other but not tested)
   4. NodeJS [Link](https://nodejs.org/de/download/) (I'm using 14.15.3 LTS)
