@@ -1,0 +1,40 @@
+{
+  "author": "Markus Plutka",
+  "maintainers": [],
+  "license": "MIT",
+  "name": "tm-bt-led",
+  "description": "A Node.js BLE (Bluetooth Low Energy) central library.",
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mplutka/tm-bt-led.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mplutka/tm-bt-led.git/issues"
+  },
+  "keywords": [
+    "Thrustmaster BT Led Windows"
+  ],
+  "main": "./index.js",
+  "engines": {
+    "node": ">=6"
+  },
+  "os": [
+    "win32"
+  ],
+  "dependencies": {
+    "@abandonware/bluetooth-hci-socket": "^0.5.3-6",
+    "ac-remote-telemetry-client": "^0.1.1",
+    "f1-telemetry-client": "^0.1.18",
+    "lodash": "^4.17.20",
+    "noble": "https://github.com/mplutka/noble.git",
+    "node-bitarray": "^0.1.0",
+    "readline-promise": "^1.0.5",
+    "usb": "https://github.com/mplutka/node-usb.git"
+  },
+  "optionalDependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "f12019": "node f12019.mjs"
+  }
+}
