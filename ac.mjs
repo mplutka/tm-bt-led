@@ -1,8 +1,17 @@
+/*
+ * Filename: ac.mjs
+ * Created Date: Tuesday, December 29th 2020, 4:15:19 am
+ * Author: Markus Plutka
+ * 
+ * Copyright (c) 2020 Markus Plutka
+ */
+
+
 import ACRemoteTelemetryClient from 'ac-remote-telemetry-client';
 import TmBTLed from './tm_bt_led.mjs';
 
 class AC {
-    static ip = "192.168.2.200"
+    static ip = "localhost"
 
     client;
 
