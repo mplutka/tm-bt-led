@@ -1,36 +1,38 @@
-import ACSP from 'acsp';
+import ACRemoteTelemetryClient from 'ac-remote-telemetry-client';
 import TmBTLed from './tm_bt_led.mjs';
 
 class AC {
-    static port = 11000
+    static ip = "192.168.2.200"
 
     client;
 
+    maxRpm = 0;
+    idleRpm = 0;
     static leftModes = {
-      'curFuel': {
+      /*'curFuel': {
         label: "FUEL"
-      },
+      },*/
       'speed': {
         label: "VEL"
       },
       'rpm': {
         label: "RPM"
       },
-      'eng': {
+      /*'eng': {
         label: "ENG"
-      }           
+      }  */  
     }
 
     static rightModes = {
-      'pos': {
+      /*'pos': {
         label: "POS"
-      },      
+      },*/      
       'lapCount': {
         label: "LAP"
       },
-      'lapsLeft': {
+      /*'lapsLeft': {
         label: "LEFT"
-      },
+      },*/
       'curLapTime': {
         label: "TIME"
       },
@@ -49,10 +51,8 @@ class AC {
           onRightPreviousMode: this.rightPreviousMode,
           onRightNextMode: this.rightNextMode,
         });
-        this.client = ACSP({
-          host: '192.168.2.200',
-          port: AC.port
-        });
+        this.client = new ACRemoteTelemetryClient(this.ip);
+
         this.currentLeftMode = Object.keys(AC.leftModes)[0];
         this.currentRightMode = Object.keys(AC.leftModes)[0];
     }
@@ -118,17 +118,67 @@ class AC {
     initCLient = () => {
         
         let totalLaps = 0;
+        this.client.on('RT_CAR_INFO', (carTelemetry) => {
 
-        console.log("AC")
+          this.tmBtLed.setGear(carTelemetry.gear);
 
-        this.client.enableRealtimeReport(20);
-        this.client.on('car_update', function(data){
-          console.log(data);
+          if (carTelemetry.engineRPM == 0) {
+            this.maxRpm = 0;
+          }
+
+          if (this.maxRpm == 0 && carTelemetry.engineRPM > 0) {
+            this.maxRpm = carTelemetry.engineRPM + 1000;
+          }
+          if (carTelemetry.engineRPM > this.maxRpm) {
+            this.maxRpm = carTelemetry.engineRPM;
+          }
+          let rpmPercent = carTelemetry.engineRPM / this.maxRpm * 100;
+          if (rpmPercent < 30) {
+            rpmPercent = 0;
+          } else if (rpmPercent > 90) {
+            rpmPercent = 100;
+          }
+
+          this.tmBtLed.setRevLights(rpmPercent);
+          
+          switch (this.currentLeftMode) {
+            case "speed":
+              this.tmBtLed.setInt(carTelemetry.speedKmh, false);
+              break;
+            case "rpm":
+              this.tmBtLed.setRpm(carTelemetry.engineRPM, false);
+              break;  
+            /*case "eng":
+              this.tmBtLed.setTemperature(carTelemetry.m_engineTemperature, false);
+              break; */
+          }
+
+          switch (this.currentRightMode) {
+            /*case "pos":
+              this.tmBtLed.setInt(lapData.m_carPosition, true);
+              break;        */       
+            case "lapCount":
+              this.tmBtLed.setInt(carTelemetry.lapCount, true);
+              break;
+            default:
+            /*case "lapsLeft":
+              this.tmBtLed.setInt(totalLaps - lapData.m_currentLapNum, true);
+              break;                */
+            case "curLapTime":
+              this.tmBtLed.setTime(carTelemetry.lapTime / 1000, true);
+              break;                    
+          }       
         });
+        // this.client.on('RT_LAP', (data) => console.log(data));
 
-        this.client.on('car_info', function(carinfo){
-          console.log(carinfo);
-        });
+        this.client.start();
+
+        this.client.handshake();
+  
+        this.client.subscribeUpdate();
+        this.client.subscribeSpot();
+
+
 
         // https://github.com/flamescape/acsp
         /*this.client.on(PACKETS.session, d => {
@@ -243,7 +293,6 @@ class AC {
                 break;                                                                              
           }
       });*/
-      //this.client.start();
     }
 }
 
