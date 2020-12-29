@@ -1,3 +1,3 @@
 ## Version 1.0.0
 
- * Initial upload
+ * Initial version with basic support for F1 2019 and Assetto Corsa
