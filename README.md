@@ -79,7 +79,7 @@ I hope (but also don't think) that I'm hurting any copyrights or trademarks here
 
 3. Watch the code output, the device should display "F1 2019" or "ASSE CORS" if all went well.
 
-4. Start the game itself and enjoy (hopefully). You need to activate and configure telemetry broadcast in the settings (change IP and leave frequency at 60Hz).
+4. Start the game itself and enjoy (hopefully). For F1 2019 you need to activate and configure telemetry broadcast in the settings (change IP and leave frequency at 60Hz).
 
   
 
