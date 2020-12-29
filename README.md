@@ -33,7 +33,10 @@ I hope (but  also don't think) that I'm hurting any copyrights or trademarks her
 
 1. Checkout this repo or download the code on your PC on which you intend to run 
 2. Open a Windows and `cd` inside the code directory
-3. `npm install` (This should install everything needed. If something fails especially on compilation, check Prerequisites#5)
+3. Determine your Thrustmaster BT's Bluetooth address
+   a.) Inside file 0008d3aabbcc.dump, change "uuid" and "address" at the bottom of the file to match your TM BL address (e.g. 0008d3112233 and 00:08:d3:11:22:33)
+   b.) Rename file 0008d3aabbcc.dump to match your TM BL address (e.g. 0008d3112233.dump)
+4. `npm install` (This should install everything needed. If something fails especially on compilation, check Prerequisites#5)
 
 ## Launch
 1. Inside the code dir in the CLI, type `node f12019.mjs` or `node ac.mjs` and hit enter
