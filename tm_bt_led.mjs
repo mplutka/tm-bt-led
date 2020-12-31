@@ -210,50 +210,51 @@ class TmBTLed {
             console.log("Initialized event channel");
             report1.subscribe();
             report1.on("data", this.handleEvent);
-            report1.discoverDescriptors();
+            //report1.discoverDescriptors();
           }
           
           if (!report3) { // Report 3
             console.log('Warning - no update characteristic found.');
           } else {
             console.log("Initialized update channel");
-            report3.discoverDescriptors();
+            report3.discoverDescriptors((err, desc) => {
+              // await new Promise(resolve => setTimeout(resolve, 1000));
+
+          console.log('Connected at interval', this.updateInterval);
+          let currentBuffer = new Buffer.alloc(20);
+          myself.updateLoop = perfectTimer.set(() => {
+            if (Buffer.compare(currentBuffer, myself.buffer) !== 0) {
+                if (report3) {
+                  report3.write(myself.buffer, true);
+                } else {
+                  peripheral.writeHandle("58", myself.buffer, true);                  
+                }
+                myself.buffer.copy(currentBuffer);
+            }
+
+          }, this.updateInterval);
+
+          if (myself.callbacks.onConnect) {
+            myself.callbacks.onConnect();
           }
 
-          if (report4) { // Report 4
-            report4.unsubscribe();
-            report4.discoverDescriptors((err, ds) => {
-              // await new Promise(resolve => setTimeout(resolve, 5000));
 
-                console.log('Connected at interval', this.updateInterval);
-                let currentBuffer = new Buffer.alloc(20);
-                myself.updateLoop = perfectTimer.set(() => {
-                  if (Buffer.compare(currentBuffer, myself.buffer) !== 0) {
-                      if (report3) {
-                        report3.write(myself.buffer, true);
-                      } else {
-                        peripheral.writeHandle("58", myself.buffer, true);                  
-                      }
-                      myself.buffer.copy(currentBuffer);
-                  }
-
-                }, this.updateInterval);
-
-                if (myself.callbacks.onConnect) {
-                  myself.callbacks.onConnect();
-                }
-
-
-                const test = () => {
-                  setInterval(() => {
-                    this.setRpm(Math.floor(Math.random() * 101));
-                  }, 10);
-                };
-                // test(); 
+          const test = () => {
+            setInterval(() => {
+              this.setRpm(Math.floor(Math.random() * 101));
+            }, 10);
+          };
+          // test(); 
 
             });
           }
 
+          if (report4) { // Report 4
+            report4.unsubscribe();
+            //report4.discoverDescriptors();
+          }
+
+         
         });
     }
 
