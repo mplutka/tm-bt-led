@@ -3,8 +3,8 @@
   "maintainers": [],
   "license": "MIT",
   "name": "tm-bt-led",
-  "description": "A Node.js BLE (Bluetooth Low Energy) central library.",
-  "version": "1.0.0",
+  "description": "A library for accessing the Thrustmaster BT LED peripheral on Windows",
+  "version": "1.1.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/mplutka/tm-bt-led.git"
@@ -13,7 +13,7 @@
     "url": "https://github.com/mplutka/tm-bt-led.git/issues"
   },
   "keywords": [
-    "Thrustmaster BT Led Windows"
+    "Thrustmaster BT LED Windows"
   ],
   "main": "./index.js",
   "engines": {

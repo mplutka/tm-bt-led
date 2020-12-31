@@ -11,7 +11,7 @@
 
 I bought the device as part of a set and didn't notice before that it was for PS4 only. :-( So I played around with it a bit and discovered that it was basically working as a Bluetooth LE HID over GATT device, spent many many hours figuring out how it works internally and can be communicated with and wrote some horrible code to be able to address all the leds and led segments and to make it display whatever I like.
 
-Combined it with telemetry plugins for F1 2019 and Assetto Corsa and it is in a state now that I'm happy to share with you. Yes, this is WIP and very yes, this is quite hacky and might crash on your side or don't work at all. **IT MIGHT EVEN DAMAGE YOUR DEVICE** (It shouldn't but don't blame me.)
+Combined it with telemetry plugins for F1 2019 and Assetto Corsa/Comp and it is in a state now that I'm happy to share with you. Yes, this is WIP and very yes, this is quite hacky and might crash on your side or don't work at all. **IT MIGHT EVEN DAMAGE YOUR DEVICE** (It shouldn't but don't blame me.)
 
   
 
@@ -41,7 +41,7 @@ I hope (but also don't think) that I'm hurting any copyrights or trademarks here
 
 1. Thrustmaster BT LED ;-) (I won't guarantee that it works on your PC, so keep this in mind when buying one extra for this!)
 
-2. Compatible game (F1 2019 or Assetto Corsa). F1 2018/20 might work too. Others might follow.
+2. Compatible game (F1 2019 or Assetto Corsa/Comp). F1 2018/20 might work too. Others might follow.
 
 3. Windows 10 19042 or higher (might work on other but not tested)
 
@@ -51,7 +51,7 @@ I hope (but also don't think) that I'm hurting any copyrights or trademarks here
 
 6. Everything that is listed in the windows section [here](https://github.com/mplutka/noble#windows). (You don't need to install noble as it is part of this installation.)
 
-7. Windows firewall shouldn't block UPD traffic to 20777 (F1) and 9996 (AC)
+7. Windows firewall shouldn't block UPD traffic to 20777 (F1)
 
   
 
@@ -73,7 +73,7 @@ I hope (but also don't think) that I'm hurting any copyrights or trademarks here
 
 ## Launch
 
-1. Inside the code dir in the CLI, type `node f12019.mjs` or `node ac.mjs` and hit enter
+1. Inside the code dir in the CLI, type `npm run f12019` or `npm run assetto` and hit enter
 
 2. Press both upper buttons on the TM BT and let it connect. It shouldn't be paired to your PC or other device before doing this!
 
