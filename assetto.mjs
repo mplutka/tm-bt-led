@@ -194,7 +194,7 @@ class ACC {
           break;
         default:
         case "lapsLeft":
-          this.tmBtLed.setInt(graphics.numberOfLaps - graphics.completedLaps, true);
+          this.tmBtLed.setInt(graphics.numberOfLaps < 1000 ? (graphics.numberOfLaps - graphics.completedLaps) : 0, true);
           break;               
         case "curLapTime":
           this.tmBtLed.setTime(graphics.iCurrentTime / 1000, true);
