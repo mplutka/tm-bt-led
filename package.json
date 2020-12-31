@@ -22,19 +22,25 @@
   "os": [
     "win32"
   ],
+  "gypfile": true,
   "dependencies": {
     "@abandonware/bluetooth-hci-socket": "^0.5.3-6",
-    "ac-remote-telemetry-client": "^0.1.1",
     "f1-telemetry-client": "^0.1.18",
     "lodash": "^4.17.20",
     "noble": "https://github.com/mplutka/noble.git",
+    "node-addon-api": "^3.1.0",
     "node-bitarray": "^0.1.0",
     "readline-promise": "^1.0.5",
+    "socket.io": "^2.2.0",
     "usb": "https://github.com/mplutka/node-usb.git"
   },
   "optionalDependencies": {},
-  "devDependencies": {},
+  "devDependencies": {
+    "node-gyp": "^7.1.2"
+  },
   "scripts": {
-    "f12019": "node f12019.mjs"
+    "f12019": "node f12019.mjs",
+    "assetto": "node assetto.mjs",
+    "build": "node-gyp rebuild"
   }
 }
