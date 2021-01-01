@@ -217,9 +217,15 @@ class TmBTLed {
             console.log('Warning - no update characteristic found.');
           } else {
             console.log("Initialized update channel");
-            report3.discoverDescriptors((err, desc) => {
-              // await new Promise(resolve => setTimeout(resolve, 1000));
+            report3.discoverDescriptors();
+          }
 
+          if (report4) { // Report 4
+            report4.unsubscribe();
+            //report4.discoverDescriptors();
+          }
+
+          
           console.log('Connected at interval', this.updateInterval);
           let currentBuffer = new Buffer.alloc(20);
           myself.updateLoop = perfectTimer.set(() => {
@@ -238,7 +244,6 @@ class TmBTLed {
             myself.callbacks.onConnect();
           }
 
-
           const test = () => {
             setInterval(() => {
               this.setRpm(Math.floor(Math.random() * 101));
@@ -246,13 +251,6 @@ class TmBTLed {
           };
           // test(); 
 
-            });
-          }
-
-          if (report4) { // Report 4
-            report4.unsubscribe();
-            //report4.discoverDescriptors();
-          }
 
          
         });

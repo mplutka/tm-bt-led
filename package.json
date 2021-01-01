@@ -4,7 +4,7 @@
   "license": "MIT",
   "name": "tm-bt-led",
   "description": "A library for accessing the Thrustmaster BT LED peripheral on Windows",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/mplutka/tm-bt-led.git"
