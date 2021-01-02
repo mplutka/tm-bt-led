@@ -63,9 +63,10 @@ I hope (but also don't think) that I'm hurting any copyrights or trademarks here
 
 2. Open a Windows and `cd` inside the code directory
 
-3. Determine your Thrustmaster BT's Bluetooth address
-	a. Inside file 0008d3aabbcc.dump, change "uuid" and "address" at the bottom of the file to match your TM BL address (e.g. 0008d3112233 and 00:08:d3:11:22:33)
-	b. Rename file 0008d3aabbcc.dump to match your TM BL address (e.g. 0008d3112233.dump)
+3. Attach your own Thrustmaster BT LED
+	a. Determine your TM BT's bluetooth address. Use discover.bat for this and start pairing by pressing both upper buttons an the peripheral while scanning. It should find it and show you the device's address.
+	b. Inside file 0008d3aabbcc.dump, change "uuid" and "address" at the bottom of the file to match your TM BL address (e.g. 0008d3112233 and 00:08:d3:11:22:33)
+	c. Rename file 0008d3aabbcc.dump to match your TM BL address (e.g. 0008d3112233.dump)
 
 4.  `npm install` (This should install everything needed. If something fails especially on compilation, check Prerequisites#5)
 
@@ -73,13 +74,15 @@ I hope (but also don't think) that I'm hurting any copyrights or trademarks here
 
 ## Launch
 
-1. Inside the code dir in the CLI, type `npm run f12019` or `npm run assetto` and hit enter
+1. Inside the code dir in the CLI, type `f12019.bat` or `assetto.bat` and hit enter
 
 2. Press both upper buttons on the TM BT and let it connect. It shouldn't be paired to your PC or other device before doing this!
 
-3. Watch the code output, the device should display "F1 2019" or "ASSE CORS" if all went well.
+3. If it is not picking up any devices ("2. Discovering devices" or "1. Starting scan..." never shows up), try restarting the script.
 
-4. Start the game itself and enjoy (hopefully). For F1 2019 you need to activate and configure telemetry broadcast in the settings (change IP and leave frequency at 60Hz).
+4. It should say "5. Listening for game data..." if all went well. If not also try to unplug and replug the USB stick and start over.
+
+5. Start the game itself and enjoy. For F1 2019 you need to activate and configure telemetry broadcast in the settings (change IP and leave frequency at 60Hz).
 
   
 

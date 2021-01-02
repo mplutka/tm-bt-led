@@ -197,7 +197,7 @@ class TmBTLed {
 
 
           noble.on('connectionParameterUpdateRequest', (minInterval, maxInterval) => {
-            console.log("Update interval changed", minInterval);
+            console.log("Update interval has changed", minInterval);
             this.updateInterval = minInterval;
           });
 
@@ -207,17 +207,17 @@ class TmBTLed {
           if (!report1) { // Report 1
             console.log('Warning - no event characteristic found.');
           } else {
-            console.log("Initialized event channel");
+            // console.log("Initialized event channel");
             report1.subscribe();
             report1.on("data", this.handleEvent);
             //report1.discoverDescriptors();
           }
           
           if (!report3) { // Report 3
-            console.log('Warning - no update characteristic found.');
+            console.log('Warning - no update characteristic found. Using fallback...');
           } else {
-            console.log("Initialized update channel");
-            report3.discoverDescriptors();
+            // console.log("Initialized update channel");
+            //report3.discoverDescriptors();
           }
 
           if (report4) { // Report 4
@@ -226,7 +226,7 @@ class TmBTLed {
           }
 
           
-          console.log('Connected at interval', this.updateInterval);
+          console.log('4. Initialized successfully with refresh interval: ', this.updateInterval, ' ms');
           let currentBuffer = new Buffer.alloc(20);
           myself.updateLoop = perfectTimer.set(() => {
             if (Buffer.compare(currentBuffer, myself.buffer) !== 0) {
@@ -303,16 +303,9 @@ class TmBTLed {
       // addServices returns an array of initialized service objects
       const services = noble.addServices(peripheral.uuid, meta.services);
     
-      console.log('initialized services: ');
-      for (const i in services) {
-        const service = services[i];
-        //console.log(`\tservice ${i} ${service}`);
-      }
-      //console.log();
-    
+      console.log('3. Initializing services...');   
       let foundCharacteristics = [null, null, null, null];
     
-      console.log('Initializing characteristics... ');
       for (const i in services) {
         const service = services[i];
         if (service.uuid !== "1812") {
@@ -338,7 +331,7 @@ class TmBTLed {
 
         noble.on('stateChange', function (state) {
           if (state === 'poweredOn') {
-            console.log("Start scan");
+            console.log("1. Starting scan...");
             noble.startScanning();
           } else {
 
@@ -349,15 +342,15 @@ class TmBTLed {
 
         let discovered = false;
         noble.on('discover', function (peripheral) {
-          
+
           if (!discovered) {
-            console.log("Discovering devices...");
+            console.log("2. Discovering devices...");
             discovered = true;
           }
           // Check if a dump  exists in the current directory.
           fs.access(peripheral.uuid + TmBTLed.EXT, fs.constants.F_OK, (err) => {
             if (!err) {
-              console.log(`Found device config ${peripheral.uuid}`);
+              console.log(` -- Found device config ${peripheral.uuid}`);
 
               myself.quickConnect(peripheral);
             }

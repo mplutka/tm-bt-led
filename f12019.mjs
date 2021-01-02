@@ -116,6 +116,8 @@ class F12019 {
 
     initCLient = () => {
         
+        console.log("5. Listening for game data... GO!");
+
         let totalLaps = 60;
       // https://f1-2019-telemetry.readthedocs.io/en/latest/telemetry-specification.html
         /*client.on(PACKETS.event, console.log);

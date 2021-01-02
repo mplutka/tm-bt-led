@@ -146,7 +146,7 @@ class ACC {
     } 
 
     initSession = () => {    
-        console.log("init client");
+        console.log("5. Listening for game data... GO!");
         setInterval(() => {
             this.updateValues();
         }, 40);
