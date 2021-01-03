@@ -1,7 +1,11 @@
 
   
 
+  
+
 # PC Support for Thrustmaster BT LED
+
+  
 
   
 
@@ -9,9 +13,15 @@
 
 ## Disclaimer
 
+  
+
 I bought the device as part of a set and didn't notice before that it was for PS4 only. :-( So I played around with it a bit and discovered that it was basically working as a Bluetooth LE HID over GATT device, spent many many hours figuring out how it works internally and can be communicated with and wrote some horrible code to be able to address all the leds and led segments and to make it display whatever I like.
 
+  
+
 Combined it with telemetry plugins for F1 2019 and Assetto Corsa/Comp and it is in a state now that I'm happy to share with you. Yes, this is WIP and very yes, this is quite hacky and might crash on your side or don't work at all. **IT MIGHT EVEN DAMAGE YOUR DEVICE** (It shouldn't but don't blame me.)
+
+  
 
   
 
@@ -19,7 +29,11 @@ Feedback is very welcome. Maybe someone can figure out how to make it more stabl
 
   
 
+  
+
 Please note that **I can't provide any specific support** for your environment or setup. I will do my best to document anything special you need to know to make it work.
+
+  
 
   
 
@@ -27,7 +41,11 @@ I hope (but also don't think) that I'm hurting any copyrights or trademarks here
 
   
 
+  
+
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/paypalme/mplutka/5)
+
+  
 
   
 
@@ -35,23 +53,42 @@ I hope (but also don't think) that I'm hurting any copyrights or trademarks here
 
   
 
+  
+
 ## Prerequisites
 
-0. You should be familiar with installing and using NodeJS application on Windows command line.
+  
 
-1. Thrustmaster BT LED ;-) (I won't guarantee that it works on your PC, so keep this in mind when buying one extra for this!)
+1. You should be familiar with installing and using NodeJS application on Windows command line.
 
-2. Compatible game (F1 2019 or Assetto Corsa/Comp). F1 2018/20 might work too. Others might follow.
+  
 
-3. Windows 10 19042 or higher (might work on other but not tested)
+2. Thrustmaster BT LED ;-) (I won't guarantee that it works on your PC, so keep this in mind when buying one extra for this!)
 
-4. NodeJS [Link](https://nodejs.org/de/download/) (I'm using 14.15.3 LTS)
+  
 
-5. Bluetooth support via USB stick (I'm using a Asus BT400) or built in. [List of supported devices](https://github.com/abandonware/node-bluetooth-hci-socket#windows)
+3. Compatible game (F1 2019 or Assetto Corsa/Comp). F1 2018/20 might work too. Others might follow.
 
-6. Everything that is listed in the windows section [here](https://github.com/mplutka/noble#windows). (You don't need to install noble as it is part of this installation.)
+  
+
+4. Windows 10 19042 or higher (might work on other but not tested) and the following software:
+	a. Git (if you choose to clone the Github repo)
+	b. NodeJS [Link](https://nodejs.org/de/download/) (I'm using 14.15.3 LTS)
+	c. Python3 (get it from Windows Store)
+	d. Visual Studio 2019 Community with C++ Desktop Development feature set enabled
+
+
+5. Zadig [Link](https://zadig.akeo.ie/)
+
+  
+
+6. USB stick (I'm using a Asus BT400) or chipset that provides Bluetooth LE with supported chipset! [List of supported devices](https://github.com/abandonware/node-bluetooth-hci-socket#windows)
+
+  
 
 7. Windows firewall shouldn't block UPD traffic to 20777 (F1)
+
+  
 
   
 
@@ -59,9 +96,15 @@ I hope (but also don't think) that I'm hurting any copyrights or trademarks here
 
   
 
+  
+
 1. Checkout this repo or download the code on your PC on which you intend to run
 
+  
+
 2. Open a Windows and `cd` inside the code directory
+
+  
 
 3. Attach your own Thrustmaster BT LED
 	a. Determine your TM BT's bluetooth address. Use discover.bat for this and start pairing by pressing both upper buttons an the peripheral while scanning. It should find it and show you the device's address.
@@ -72,17 +115,31 @@ I hope (but also don't think) that I'm hurting any copyrights or trademarks here
 
   
 
+  
+
 ## Launch
+
+  
 
 1. Inside the code dir in the CLI, type `f12019.bat` or `assetto.bat` and hit enter
 
+  
+
 2. Press both upper buttons on the TM BT and let it connect. It shouldn't be paired to your PC or other device before doing this!
+
+  
 
 3. If it is not picking up any devices ("2. Discovering devices" or "1. Starting scan..." never shows up), try restarting the script.
 
+  
+
 4. It should say "5. Listening for game data..." if all went well. If not also try to unplug and replug the USB stick and start over.
 
+  
+
 5. Start the game itself and enjoy. For F1 2019 you need to activate and configure telemetry broadcast in the settings (change IP and leave frequency at 60Hz).
+
+  
 
   
 
@@ -90,14 +147,27 @@ I hope (but also don't think) that I'm hurting any copyrights or trademarks here
 
   
 
+  
+
 ### Bluetooth USB driver
+
+  
 
 As you should have read in the Prerequisites#5, the Windows Bluetooth driver can't be used (for now?) because it blocks access to the 0x1812 input service on the device. Therefore an alternate USB driver for your bluetooth device is needed. WinUSB or libusbk didn't work for me (didn't start scan, couldn't connect), only libusb-win32 from Zadig worked for me. This might be different in your case. If scanning or device discovery doesn't start, kill the script with Ctrl+C and start it again. :-)
 
+  
+
 **Please note that you loose general bluetooth support in Windows by changing the driver!**
+
+  
 
 If you wish to go back to the stock drivers, simply do an automatic driver update in the device manager.
 
+  
+
 ### Instability
 
+  
+
 The script tries to update the device every 60 ms. If the device requests a longer interval on connection (usually 125 ms) this is taken into account. There is still the possibity that it freezes or something gets stuck. Then just kill the script, restart the TM BT LED and unplug/plug the usb stick.
+If none of this helps you might consider enabling debug mode in the console by executing `set DEBUG=hci` before starting the actual game script.
