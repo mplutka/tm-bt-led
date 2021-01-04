@@ -139,6 +139,10 @@ I hope (but also don't think) that I'm hurting any copyrights or trademarks here
 
 5. Start the game itself and enjoy. For F1 2019 you need to activate and configure telemetry broadcast in the settings (change IP and leave frequency at 60Hz).
 
+
+## Video
+
+Here is a little video showing the device in action: [Youtube](https://www.youtube.com/watch?v=Bq8g9qwUAUw)
   
 
   
