@@ -417,7 +417,7 @@ setLedSegments = (type, bitString, withDot) => {
       }
       this.bitArray[bitStart + i] = parseInt(bits[i]);
     }
-    if (bitStart + 9 <= TmBTLed.BitRanges[type][1]) {
+    if (type !== "gear") {
       this.bitArray[bitStart + 9] = withDot ? 1 : 0;
     }
     this.updateBuffer();
