@@ -149,7 +149,7 @@ class ACC {
         console.log("5. Listening for game data... GO!");
         setInterval(() => {
             this.updateValues();
-        }, 40);
+        }, 20);
     }
 
     updateValues = () => {
