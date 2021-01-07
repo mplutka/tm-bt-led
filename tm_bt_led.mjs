@@ -1,104 +1,22 @@
 import noble from 'noble';
 import fs from "fs";
 import BitArray from "node-bitarray";
-import readline from 'readline-promise';
-
-const perfectTimer = {                                                              // Set of functions designed to create nearly perfect timers that do not drift
-  timers: {},                                                                     // An object of timers by ID
-nextID: 0,                                                                      // Next available timer reference ID
-set: (callback, interval) => {                                                  // Set a timer
-  var expected = Date.now() + interval;                                         // Expected currect time when timeout fires
-  var ID = perfectTimer.nextID++;                                               // Create reference to timer
-  function step() {                                                             // Adjusts the timeout to account for any drift since last timeout
-    callback();                                                                 // Call the callback
-    var dt = Date.now() - expected;                                             // The drift (ms) (positive for overshooting) comparing the expected time to the current time
-    expected += interval;                                                       // Set the next expected currect time when timeout fires
-    perfectTimer.timers[ID] = setTimeout(step, Math.max(0, interval - dt));     // Take into account drift
-  }
-  perfectTimer.timers[ID] = setTimeout(step, interval);                         // Return reference to timer
-  return ID;
-},
-clear: (ID) => {                                                                // Clear & delete a timer by ID reference
-  if (perfectTimer.timers[ID] != undefined) {                                   // Preventing errors when trying to clear a timer that no longer exists
-    clearTimeout(perfectTimer.timers[ID]);                                      // Clear timer
-    delete perfectTimer.timers[ID];                                             // Delete timer reference
-  }
-  }       
-}
-
-
-const rlp = readline.default.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: true
-});
 
 class TmBTLed {
-  updateInterval = 60;
+    updateInterval = 60;
+ 
+    constructor(callbacks) {
+        this.buffer = new Buffer.alloc(20);
+        this.updateBuffer();
+        this.initNoble();
+        this.callbacks = callbacks;
 
-  getNum = () => {
-    rlp.questionAsync('Num?').then(num => {
-      if (num.length === 1) {
-  
-        if (num === "y") {
-          this.callbacks.onLeftPreviousMode();    
-          return;
-        }
-        if (num === "x") {
-          this.callbacks.onLeftNextMode();   
-          return;
-        }      
-        if (num === "c") {
-          this.callbacks.onRightPreviousMode();    
-          return;
-        }            
-        if (num === "v") {
-          this.callbacks.onRightNextMode();   
-          return;
-        }        
-        
-        if (num === "b") {
-          this.toggleGearDot(true);
-          this.getNum();
-          return;
-        }        
-  
-        this.setLeftChar1(num);
-        this.setLeftChar2(num);
-        this.setLeftChar3(num);
-        this.setLeftChar4(num);
-        this.setRightChar1(num);
-        this.setRightChar2(num);
-        this.setRightChar3(num);
-        this.setRightChar4(num);
-  
-        this.setRevLights(num * 10);
-  
-        this.getNum();
-        return;
-      }
-  
-  
-      if (num > 255 || num.length > 3) {
-        num = BitArray.toNumber(BitArray.fromBinary(num).toJSON());
-      }
+        // this.getNum();
+    }
+
+    static EXT = '.dump';
       
-      this.getNum();
-    });
-  };
-  
-      constructor(callbacks) {
-          this.buffer = new Buffer.alloc(20);
-          this.updateBuffer();
-          this.initNoble();
-          this.callbacks = callbacks;
-
-          // this.getNum();
-      }
-
-      static EXT = '.dump';
-      
-      static BitRanges = {
+    static BitRanges = {
         "revLights1":       [8, 15],
         "revLights2":       [17, 23],
         "leftBlue":         [16, 16],
@@ -188,13 +106,11 @@ class TmBTLed {
       // BLE cannot scan and connect in parallel, so we stop scanning here:
       noble.stopScanning();
       peripheral.connect(async (error) => {
-        if (error) {
-          console.log(`Connect error: ${error}`);
-          noble.startScanning([], true);
-          return;
-        }
-
-
+          if (error) {
+            console.log(`Connect error: ${error}`);
+            noble.startScanning([], true);
+            return;
+          }
 
           noble.on('connectionParameterUpdateRequest', (minInterval, maxInterval) => {
             console.log("Update interval has changed", minInterval);
@@ -208,7 +124,7 @@ class TmBTLed {
             console.log('Warning - no event characteristic found.');
           } else {
             // console.log("Initialized event channel");
-            report1.subscribe();
+            // report1.subscribe();
             report1.on("data", this.handleEvent);
             //report1.discoverDescriptors();
           }
@@ -221,26 +137,25 @@ class TmBTLed {
           }
 
           if (report4) { // Report 4
-            report4.unsubscribe();
+            // report4.unsubscribe();
             //report4.discoverDescriptors();
           }
 
           
           console.log('4. Initialized successfully with refresh interval: ', this.updateInterval, ' ms');
-          let currentBuffer = new Buffer.alloc(20);
-          myself.updateLoop = perfectTimer.set(() => {
-            if (Buffer.compare(currentBuffer, myself.buffer) !== 0) {
+          //let currentBuffer = new Buffer.alloc(20);
+          setInterval(() => {
+              //if (Buffer.compare(currentBuffer, myself.buffer) !== 0) {
                 if (report3) {
                   report3.write(myself.buffer, true);
                 } else {
                   peripheral.writeHandle("58", myself.buffer, true);                  
                 }
-                myself.buffer.copy(currentBuffer);
-            }
-
+              //  myself.buffer.copy(currentBuffer);
+              //}
           }, this.updateInterval);
 
-          if (myself.callbacks.onConnect) {
+          if (myself.callbacks && myself.callbacks.onConnect) {
             myself.callbacks.onConnect();
           }
 
@@ -257,7 +172,7 @@ class TmBTLed {
     }
 
     handleEvent = (data) => {
-        if (!this.callbacks.onLeftPreviousMode || !this.callbacks.onLeftNextMode || !this.callbacks.onRightNextMode || !this.callbacks.onRightPreviousMode) {
+        if (!this.callbacks || !this.callbacks.onLeftPreviousMode || !this.callbacks.onLeftNextMode || !this.callbacks.onRightNextMode || !this.callbacks.onRightPreviousMode) {
             return;
         }
         const leftButton = data[1];
@@ -941,9 +856,6 @@ setTime = (time, right) => {
   }
 }
 
-
 }
 
 export default TmBTLed;
-
-
