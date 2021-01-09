@@ -175,3 +175,7 @@ If you wish to go back to the stock drivers, simply do an automatic driver updat
   
 
 The script tries to update the device every 60 ms. If the device requests a longer interval on connection (usually 125 ms) this is taken into account. There is still the possibity that it freezes or something gets stuck. Then just kill the script, restart the TM BT LED and unplug/plug the usb stick. You could add "--interval xxx" after the batch files to try out other refresh intervals. If none of this helps you might consider enabling debug mode in the console by executing `set DEBUG=hci` before starting the actual game script.
+
+### SPECIAL THANKS
+
+Thank you, Dave Cook aka cookn for your great support, testing and precious feedback!
