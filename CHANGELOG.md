@@ -15,3 +15,8 @@
  * New indications for AC/ACC: PitLimiter, EngineRunning, Flags, Delta, CurrentLap, BestLap, LastLap, Watertemp
  * Command line parameters for refresh interval (--interval 125) and conversion to MPH (--mph)
  * Thank you, Dave Cook (cooknn) for your testing, support and input!
+
+  ## Version 1.1.6
+
+  * Measurement units autodetect by os locale
+  * Tyre temperatures for F1
