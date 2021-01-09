@@ -2,10 +2,6 @@ import { F1TelemetryClient, constants } from 'f1-telemetry-client';
 import TmBTLed from './tm_bt_led.mjs';
 const { PACKETS } = constants;
 
-import yargs from "yargs";
-import { hideBin } from 'yargs/helpers'
-const argv = yargs(hideBin(process.argv)).usage('Usage: $0 --mph --interval [num]').argv;
-
 class F12019 {
     static port = 20777
 
@@ -16,13 +12,16 @@ class F12019 {
         label: "FUEL"
       },
       'speed': {
-        label: "VEL"
+        label: "SPD"
       },
       'rpm': {
         label: "RPM"
       },
-      'eng': {
-        label: "ENG"
+      'engTemp': {
+        label: "ENGT"
+      },
+      'tyrTemp': {
+        label: "TYRT"
       }           
     }
 
@@ -213,7 +212,7 @@ class F12019 {
 
           switch (this.currentLeftMode) {
             case "curFuel":
-              this.tmBtLed.setFloat(carStatus.m_fuelInTank, false);
+              this.tmBtLed.setWeight(carStatus.m_fuelInTank, false);
               break;                                          
           }
       });
@@ -235,32 +234,24 @@ class F12019 {
           }
           
 
-          if (this.tmBtLed.revLightsFlashing !== 1) { // No override because of pit or rev limiter
-      
-            /*if (revLimitIntervalId === null && d.m_carTelemetryData[myIndex].m_revLightsPercent === 100) {
-              // revLimitIntervalId = setInterval(() => setRevLights(0), 20);
-              revLimitIntervalId = perfectTimer.set(() => {
-                setRevLights(0);
-              }, 20);
-      
-            } else if (d.m_carTelemetryData[myIndex].m_revLightsPercent < 90 && revLimitIntervalId !== null) {
-                // clearInterval(revLimitIntervalId);
-                perfectTimer.clear(revLimitIntervalId);
-                revLimitIntervalId = null;
-            } */
+          if (this.tmBtLed.revLightsFlashing !== 1) { // No override because of pit limiter
             this.tmBtLed.setRevLights(carTelemetry.m_revLightsPercent);
           }
-  
           switch (this.currentLeftMode) {
               case "speed":
-                this.tmBtLed.setInt(carTelemetry.m_speed * (argv.mph ? 0.62 : 1), false);
+                this.tmBtLed.setSpeed(carTelemetry.m_speed, false);
                 break;
               case "rpm":
                 this.tmBtLed.setRpm(carTelemetry.m_engineRPM, false);
                 break;  
-              case "eng":
+              case "engTemp":
                 this.tmBtLed.setTemperature(carTelemetry.m_engineTemperature, false);
-                break;                                                                              
+                break; 
+              case "tyrTemp":
+                const tempSum = carTelemetry.m_tyresSurfaceTemperature.reduce((a, b) => a + b, 0);
+                const tempAvg = (tempSum / carTelemetry.m_tyresSurfaceTemperature.length) || 0;
+                this.tmBtLed.setTemperature(tempAvg, false);
+                break;                                                                                                
           }
       });
       this.client.start();
