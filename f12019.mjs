@@ -2,6 +2,10 @@ import { F1TelemetryClient, constants } from 'f1-telemetry-client';
 import TmBTLed from './tm_bt_led.mjs';
 const { PACKETS } = constants;
 
+import yargs from "yargs";
+import { hideBin } from 'yargs/helpers'
+const argv = yargs(hideBin(process.argv)).usage('Usage: $0 --mph --interval [num]').argv;
+
 class F12019 {
     static port = 20777
 
@@ -23,6 +27,15 @@ class F12019 {
     }
 
     static rightModes = {
+      'curLapTime': {
+        label: "CLAP"
+      },
+      'lastLapTime': {
+        label: "LLAP"
+      },      
+      'bestLapTime': {
+        label: "BLAP"
+      },            
       'pos': {
         label: "POS"
       },      
@@ -31,9 +44,6 @@ class F12019 {
       },
       'lapsLeft': {
         label: "LEFT"
-      },
-      'curLapTime': {
-        label: "TIME"
       },
 
     }
@@ -53,7 +63,7 @@ class F12019 {
         this.client = new F1TelemetryClient({ port: F12019.port, bigintEnabled: true });
 
         this.currentLeftMode = Object.keys(F12019.leftModes)[0];
-        this.currentRightMode = Object.keys(F12019.leftModes)[0];
+        this.currentRightMode = Object.keys(F12019.rightModes)[0];
     }
 
     onDeviceConnected = () =>  {
@@ -140,13 +150,19 @@ class F12019 {
             case "lapCount":
               this.tmBtLed.setInt(lapData.m_currentLapNum, true);
               break;
-            default:
             case "lapsLeft":
               this.tmBtLed.setInt(totalLaps - lapData.m_currentLapNum, true);
-              break;                
+              break; 
+            case "lastLapTime":
+              this.tmBtLed.setTime(lapData.m_lastLapTime * 1000 , true);
+              break;   
+            case "bestLapTime":
+              this.tmBtLed.setTime(lapData.m_bestLapTime * 1000, true);
+              break;                               
+            default:                             
             case "curLapTime":
-              this.tmBtLed.setTime(lapData.m_currentLapTime, true);
-              break;                    
+              this.tmBtLed.setTime(lapData.m_currentLapTime * 1000, true);
+              break;
           }
         });
         let drsOn = false;
@@ -237,7 +253,7 @@ class F12019 {
   
           switch (this.currentLeftMode) {
               case "speed":
-                this.tmBtLed.setInt(carTelemetry.m_speed, false);
+                this.tmBtLed.setInt(carTelemetry.m_speed * (argv.mph ? 0.62 : 1), false);
                 break;
               case "rpm":
                 this.tmBtLed.setRpm(carTelemetry.m_engineRPM, false);

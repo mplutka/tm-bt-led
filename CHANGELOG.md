@@ -9,3 +9,9 @@
  ## Version 1.1.5
 
  * Bugfixes and performance optimizations. Play around with connection interval setting in tm_bt_led.mjs (line 6) to balance between refresh rate and prevention of freezes.
+
+ ## Version 1.1.6
+
+ * New indications for AC/ACC: PitLimiter, EngineRunning, Flags, Delta, CurrentLap, BestLap, LastLap, Watertemp
+ * Command line parameters for refresh interval (--interval 125) and conversion to MPH (--mph)
+ * Thank you, Dave Cook (cooknn) for your testing, support and input!

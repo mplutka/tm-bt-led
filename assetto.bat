@@ -1,2 +1,2 @@
 @echo off
-node assetto.mjs
+node assetto.mjs  %*

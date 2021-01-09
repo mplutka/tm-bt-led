@@ -1,2 +1,2 @@
 @echo off
-node discover.mjs
+node discover.mjs  %*
