@@ -26,7 +26,7 @@
   "dependencies": {
     "f1-telemetry-client": "^0.1.18",
     "lodash": "^4.17.20",
-    "noble": "https://github.com/mplutka/noble.git",
+    "noble": "https://github.com/mplutka/noble.git#libusb_1.0.24",
     "node-addon-api": "^3.1.0",
     "node-bitarray": "^0.1.0",
     "readline-promise": "^1.0.5",
