@@ -1,15 +1,30 @@
 import noble from 'noble';
 import fs from "fs";
 import BitArray from "node-bitarray";
+import convert from 'convert-units';
+import osLocale from 'os-locale';
 
 import yargs from "yargs";
 import { hideBin } from 'yargs/helpers'
-const argv = yargs(hideBin(process.argv)).usage('Usage: $0 --mph --interval [num]').argv;
+const argv = yargs(hideBin(process.argv)).usage('Usage: $0 <--metric> <--imperial> <--interval [num]>').argv;
 
 class TmBTLed {
     updateInterval = argv?.interval || 60;
+    metric = true;
  
     constructor(callbacks) {
+        if (argv.metric) {
+          this.metric = true;
+        } else if (argv.imperial) {
+          this.metric = false;
+        } else {
+          osLocale().then(loc => {
+            if(loc.toLowerCase() === "en-us") {
+              this.metric = false;
+            }
+          });
+        }
+
         this.buffer = new Buffer.alloc(20);
         this.updateBuffer();
         this.initNoble();
@@ -361,7 +376,7 @@ updateLeftDisplay = (str, isNumber) => {
   if (this.indicationOnLeftDisplay !== null) {
     return;
   }
-  if(str.match(/^[\-\+]?\d+(\.\d+)*$/)) {
+  if(str.match(/[\.\d]/)) {
     this.setNumber(str, false);
   } else {
     this.setLeftDisplay(str);
@@ -404,7 +419,7 @@ updateRightDisplay = (str) => {
     return;
   }
 
-  if(str.match(/^[\-\+]?\d+(\.\d+)*$/) !== null) {
+  if(str.match(/[\.\d]+/) !== null) {
     this.setNumber(str, true);
   } else {
     this.setRightDisplay(str);
@@ -805,11 +820,30 @@ toggleRevLights = () => {
 
 // Set data specific
 
-setTemperature = (value, right) => {
+setTemperature = (value, right) => { // expects C
   if (value < 0) {
     value = 0;
   }
-  value = value.toFixed(0);
+
+  if (!this.metric) {
+    value = convert(value).from("C").to("F").toFixed(1);    
+  } else {
+    value = value.toFixed(1);
+  }
+  this.updateDisplay(value, right);
+}
+
+setWeight = (value, right) => { // expects kg
+  if (value < 0) {
+    value = 0;
+  }
+
+  if (!this.metric) {
+    value = convert(value).from("kg").to("lb").toFixed(1);
+  } else {
+    value = value.toFixed(1);
+  }
+
   this.updateDisplay(value, right);
 }
 
@@ -827,6 +861,19 @@ setInt = (value, right) => {
     value = 0;
   }
   value = value.toFixed(0);
+  this.updateDisplay(value, right);
+}
+
+setSpeed = (value, right) => { // expects Kmh
+  value = parseInt(value);
+  if (value < 0) {
+    value = 0;
+  }
+  if (!this.metric) {
+    value = convert(value).from("km/h").to("m/h").toFixed(0);
+  } else {
+    value = value.toFixed(0);
+  }
   this.updateDisplay(value, right);
 }
 
@@ -892,10 +939,18 @@ setTime = (time, right) => { // time in Milliseconds
     milliseconds += "0";
   }
 
+  if (timeInSeconds === 0) {
+    timeString = "0.000";
+  }
   if (parseInt(minutes) > 99) {
     timeString = "9999";
     if (right && this.indicationOnRightDisplay === null || this.indicationOnLeftDisplay === null) {
       this.setTimeSpacer(true, right);
+    }
+  } else if (timeInSeconds < 10) {
+    timeString = "" + timeInSeconds;
+    while (timeString.length < 5) {
+      timeString = timeString + "0";
     }
   } else if (parseInt(minutes) < 1) {
     timeString = seconds + "." + milliseconds.substring(0,2);
