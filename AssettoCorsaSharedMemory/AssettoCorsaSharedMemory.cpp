@@ -126,6 +126,7 @@ Napi::Object AssettoCorsaSharedMemory::GetPhysics(const Napi::CallbackInfo& info
 	ret.Set("gas", Napi::Number::New(env, physics->gas));
 	ret.Set("gear", Napi::Number::New(env, physics->gear));
 	ret.Set("numberOfTyresOut", Napi::Number::New(env, physics->numberOfTyresOut));
+	ret.Set("pitLimiterOn", Napi::Number::New(env, physics->pitLimiterOn));
 	ret.Set("packetId", Napi::Number::New(env, physics->packetId));
 	ret.Set("heading", Napi::Number::New(env, physics->heading));
 	ret.Set("pitch", Napi::Number::New(env, physics->pitch));
@@ -146,6 +147,8 @@ Napi::Object AssettoCorsaSharedMemory::GetPhysics(const Napi::CallbackInfo& info
 	ret.Set("wheelSlip", Napi::Number::New(env, *physics->wheelSlip));
 	ret.Set("wheelsPressure", Napi::Number::New(env, *physics->wheelsPressure));
 	ret.Set("waterTemp", Napi::Number::New(env, physics->waterTemp));
+	ret.Set("isEngineRunning", Napi::Number::New(env, physics->isEngineRunning));
+	
 
 	return ret;
 }
@@ -163,10 +166,13 @@ Napi::Object AssettoCorsaSharedMemory::GetGraphics(const Napi::CallbackInfo& inf
 	ret.Set("currentTime", Napi::Number::New(env, *graphics->currentTime));
 	ret.Set("iCurrentTime", Napi::Number::New(env, graphics->iCurrentTime));
 	ret.Set("iDeltaLapTime", Napi::Number::New(env, graphics->iDeltaLapTime));
+	ret.Set("isDeltaPositive", Napi::Number::New(env, graphics->isDeltaPositive));
+	ret.Set("flag", Napi::Number::New(env, graphics->flag));
 	ret.Set("lastTime", Napi::Number::New(env, *graphics->lastTime));
 	ret.Set("iLastTime", Napi::Number::New(env, graphics->iLastTime));
 	ret.Set("bestTime", Napi::Number::New(env, *graphics->bestTime));
 	ret.Set("iBestTime", Napi::Number::New(env, graphics->iBestTime));
+	ret.Set("iEstimatedLapTime", Napi::Number::New(env, graphics->iEstimatedLapTime));	
 	ret.Set("sessionTimeLeft", Napi::Number::New(env, graphics->sessionTimeLeft));
 	ret.Set("distanceTraveled", Napi::Number::New(env, graphics->distanceTraveled));
 	ret.Set("isInPit", Napi::Number::New(env, graphics->isInPit));
