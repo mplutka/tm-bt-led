@@ -150,32 +150,24 @@ class TmBTLed {
           if (!report3) { // Report 3
             console.log('Warning - no update characteristic found. Using fallback...');
           } else {
-            // console.log("Initialized update channel");
-            //report3.discoverDescriptors();
-          }
-
-          if (report4) { // Report 4
-            // report4.unsubscribe();
-            //report4.discoverDescriptors();
-          }
-
-          
-          console.log('4. Initialized successfully with refresh interval: ', this.updateInterval, ' ms');
-          //let currentBuffer = new Buffer.alloc(20);
-          setInterval(() => {
-              //if (Buffer.compare(currentBuffer, myself.buffer) !== 0) {
-                if (report3) {
-                  report3.write(myself.buffer, true);
-                } else {
-                  peripheral.writeHandle("58", myself.buffer, true);                  
-                }
-              //  myself.buffer.copy(currentBuffer);
-              //}
-          }, this.updateInterval);
-
-          if (myself.callbacks && myself.callbacks.onConnect) {
-            myself.callbacks.onConnect();
-          }         
+              report3.discoverDescriptors((err,descr) => {
+                  if(err) {
+                    console.error(err);
+                  }
+                  console.log('4. Initialized successfully with refresh interval: ', this.updateInterval, ' ms');
+                  setInterval(() => {
+                      if (report3) {
+                        report3.write(myself.buffer, true);
+                      } else {
+                        peripheral.writeHandle("58", myself.buffer, true);                  
+                      }
+                  }, this.updateInterval);
+        
+                  if (myself.callbacks && myself.callbacks.onConnect) {
+                      myself.callbacks.onConnect();
+                  }
+              });
+          }       
         });
     }
 
