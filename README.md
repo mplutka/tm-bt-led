@@ -82,7 +82,7 @@ I hope (but also don't think) that I'm hurting any copyrights or trademarks here
 
   
 
-6. USB stick (I'm using a Asus BT400) or chipset that provides Bluetooth LE with supported chipset! [List of supported devices](https://github.com/abandonware/node-bluetooth-hci-socket#windows)
+6. USB stick (I'm using a CSR8510 A10 based one, ASUS BT400 didn't work very well) or chipset that provides Bluetooth LE with supported chipset! [List of supported devices](https://github.com/abandonware/node-bluetooth-hci-socket#windows)
 
   
 
@@ -157,7 +157,8 @@ Here is a little video showing the device in action: [Youtube](https://www.youtu
 
   
 
-As you should have read in the Prerequisites#5, the Windows Bluetooth driver can't be used (for now?) because it blocks access to the 0x1812 input service on the device. Therefore an alternate USB driver for your bluetooth device is needed. WinUSB or libusbk didn't work for me (didn't start scan, couldn't connect), only libusb-win32 from Zadig worked for me. This might be different in your case. If scanning or device discovery doesn't start, kill the script with Ctrl+C and start it again. :-)
+As you should have read in the Prerequisites#5, the Windows Bluetooth driver can't be used because it blocks access to the 0x1812 input service on the device. Therefore an alternate USB driver for your bluetooth device is needed which can be installed with Zadig. WinUSB should be the one to use but you could also try the other ones if you have no success. If scanning or device discovery doesn't start, kill the script with Ctrl+C and start it again. :-)
+
 
   
 
@@ -173,5 +174,4 @@ If you wish to go back to the stock drivers, simply do an automatic driver updat
 
   
 
-The script tries to update the device every 60 ms. If the device requests a longer interval on connection (usually 125 ms) this is taken into account. There is still the possibity that it freezes or something gets stuck. Then just kill the script, restart the TM BT LED and unplug/plug the usb stick.
-If none of this helps you might consider enabling debug mode in the console by executing `set DEBUG=hci` before starting the actual game script.
+The script tries to update the device every 60 ms. If the device requests a longer interval on connection (usually 125 ms) this is taken into account. There is still the possibity that it freezes or something gets stuck. Then just kill the script, restart the TM BT LED and unplug/plug the usb stick. You could add "--interval xxx" after the batch files to try out other refresh intervals. If none of this helps you might consider enabling debug mode in the console by executing `set DEBUG=hci` before starting the actual game script.
