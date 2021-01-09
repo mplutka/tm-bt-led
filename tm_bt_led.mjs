@@ -139,43 +139,34 @@ class TmBTLed {
           const [report1, report2, report3, report4 ] = this.setData(peripheral, meta);
 
           if (!report1) { // Report 1
-            console.log('Warning - no event characteristic found.');
+              console.log('Warning - no event characteristic found.');
           } else {
-            // console.log("Initialized event channel");
-            // report1.subscribe();
-            report1.on("data", this.handleEvent);
-            //report1.discoverDescriptors();
+              report1.on("data", this.handleEvent);
           }
           
           if (!report3) { // Report 3
-            console.log('Warning - no update characteristic found. Using fallback...');
+              console.log('Warning - no update characteristic found. Using fallback...');
           } else {
-            // console.log("Initialized update channel");
-            //report3.discoverDescriptors();
+              report3.discoverDescriptors((err,descr) => {
+                  if(err) {
+                    console.error(err);
+                  }
+                  console.log('4. Initialized successfully with refresh interval: ', this.updateInterval, ' ms');
+                  setInterval(() => {
+                      if (report3) {
+                        report3.write(myself.buffer, true);
+                      } else {
+                        peripheral.writeHandle("58", myself.buffer, true);                  
+                      }
+                  }, this.updateInterval);
+        
+                  if (myself.callbacks && myself.callbacks.onConnect) {
+                      myself.callbacks.onConnect();
+                  }
+              });
           }
 
-          if (report4) { // Report 4
-            // report4.unsubscribe();
-            //report4.discoverDescriptors();
-          }
-
-          
-          console.log('4. Initialized successfully with refresh interval: ', this.updateInterval, ' ms');
-          //let currentBuffer = new Buffer.alloc(20);
-          setInterval(() => {
-              //if (Buffer.compare(currentBuffer, myself.buffer) !== 0) {
-                if (report3) {
-                  report3.write(myself.buffer, true);
-                } else {
-                  peripheral.writeHandle("58", myself.buffer, true);                  
-                }
-              //  myself.buffer.copy(currentBuffer);
-              //}
-          }, this.updateInterval);
-
-          if (myself.callbacks && myself.callbacks.onConnect) {
-            myself.callbacks.onConnect();
-          }         
+            
         });
     }
 
