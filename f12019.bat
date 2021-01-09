@@ -1,2 +1,2 @@
 @echo off
-node f12019.mjs
+node f12019.mjs %*
