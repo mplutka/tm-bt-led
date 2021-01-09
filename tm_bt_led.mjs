@@ -2,41 +2,43 @@ import noble from 'noble';
 import fs from "fs";
 import BitArray from "node-bitarray";
 
+import yargs from "yargs";
+import { hideBin } from 'yargs/helpers'
+const argv = yargs(hideBin(process.argv)).usage('Usage: $0 --mph --interval [num]').argv;
+
 class TmBTLed {
-    updateInterval = 60;
+    updateInterval = argv?.interval || 60;
  
     constructor(callbacks) {
         this.buffer = new Buffer.alloc(20);
         this.updateBuffer();
         this.initNoble();
         this.callbacks = callbacks;
-
-        // this.getNum();
     }
 
     static EXT = '.dump';
       
     static BitRanges = {
         "revLights1":       [8, 15],
-        "revLights2":       [17, 23],
         "leftBlue":         [16, 16],
-        "leftTimeSpacer":   [48, 48],
-        "leftRed":          [64, 64],
-        "leftYellow":       [80, 80],  
-        "leftChar1":        [24, 31],
+        "revLights2":       [17, 23],
+        "leftChar1":        [24, 39],
         "leftChar2":        [40, 55],
-        "leftChar3":        [56, 63],
+        "leftTimeSpacer":   [48, 48],
+        "leftChar3":        [56, 71],
+        "leftRed":          [64, 64],
         "leftChar4":        [72, 87],
-        "gear":             [89, 94],
+        "leftYellow":       [80, 80],  
         "gearDot":          [88, 88],
-        "rightBlue":        [152, 152],  
-        "rightYellow":      [104, 104],
-        "rightRed":         [136, 136],
-        "rightTimeSpacer":  [120, 120],
+        "gear":             [89, 95],
         "rightChar1":       [96, 111],
+        "rightYellow":      [104, 104],
         "rightChar2":       [112, 127],
+        "rightTimeSpacer":  [120, 120],
         "rightChar3":       [128, 143],
-        "rightChar4":       [144, 151]
+        "rightRed":         [136, 136],
+        "rightChar4":       [144, 159],
+        "rightBlue":        [152, 152]  
     };
 
     // mh mv lo lu u ru ro o   special dot slashlu slashu slashru slashro slasho  slashlo
@@ -81,7 +83,8 @@ class TmBTLed {
         "X": "00000000 0101101",        
         "Y": "00000000 0010101",
         "Z": "00001001 0100100",        
-        "-": "11000000 0000000"
+        "-": "11000000 0000000",
+        "+": "11000000 0010010",        
     };
 
     indicationOnLeftDisplay = null; // Timer
@@ -157,17 +160,7 @@ class TmBTLed {
 
           if (myself.callbacks && myself.callbacks.onConnect) {
             myself.callbacks.onConnect();
-          }
-
-          const test = () => {
-            setInterval(() => {
-              this.setRpm(Math.floor(Math.random() * 101));
-            }, 10);
-          };
-          // test(); 
-
-
-         
+          }         
         });
     }
 
@@ -321,9 +314,12 @@ setBit = (bit, on, inverted) => {
 }
 
 setLedSegments = (type, bitString, withDot) => {
-    const bits = (bitString || "").split("");
+    let bits = (bitString || "").split("");
     const bitStart = TmBTLed.BitRanges[type][0];
+    const bitEnd = TmBTLed.BitRanges[type][1] + 1;
 
+    // Prevent overflow
+    bits = bits.slice(0, bitEnd - bitStart);
     for(let i = 0; i < bits.length; i++) {
       // TODO: Daten nicht als String erhalten
       if (bits[i] === " ") {
@@ -332,7 +328,7 @@ setLedSegments = (type, bitString, withDot) => {
       }
       this.bitArray[bitStart + i] = parseInt(bits[i]);
     }
-    if (type !== "gear") {
+    if (bits.length > 9) {
       this.bitArray[bitStart + 9] = withDot ? 1 : 0;
     }
     this.updateBuffer();
@@ -365,7 +361,7 @@ updateLeftDisplay = (str, isNumber) => {
   if (this.indicationOnLeftDisplay !== null) {
     return;
   }
-  if(str.match(/[\d]+/)) {
+  if(str.match(/^[\-\+]?\d+(\.\d+)*$/)) {
     this.setNumber(str, false);
   } else {
     this.setLeftDisplay(str);
@@ -380,6 +376,14 @@ setRightDisplay = str => {
   str.split("").slice(0,4).forEach((c, i) => {
     this.setLedSegments("rightChar" + (i + 1), TmBTLed.CharMap[c], false);
   })
+}
+
+updateDisplay = (str, right) => {
+  if (right) {
+    this.updateRightDisplay(str);
+  } else {
+    this.updateLeftDisplay(str);
+  }
 }
 
 flashRightDisplay = str => {
@@ -400,12 +404,20 @@ updateRightDisplay = (str) => {
     return;
   }
 
-  if(!isNaN(str)) {
+  if(str.match(/^[\-\+]?\d+(\.\d+)*$/) !== null) {
     this.setNumber(str, true);
   } else {
     this.setRightDisplay(str);
   }
 }
+
+updateDisplay = (str, right) => {
+  if (right) {
+    this.updateRightDisplay(str);
+  } else {
+    this.updateLeftDisplay(str);
+  }
+};
 
 setLeftChar1 = char => {
   this.setLedSegments("leftChar1", TmBTLed.CharMap[char]);
@@ -487,7 +499,7 @@ setRightChar4 = char => {
 
 
   setGearDot = (on) => {
-    this.setBit(TmBTLed.BitRanges["gearDot"][0], on, inverted);
+    this.setBit(TmBTLed.BitRanges["gearDot"][0], on, true);
   };
   toggleGearDot = () => {
     this.flipBit(TmBTLed.BitRanges["gearDot"][0]);
@@ -504,6 +516,14 @@ setRightChar4 = char => {
 
     setRightTimeSpacer = (on) => {
       this.setBit(TmBTLed.BitRanges["rightTimeSpacer"][0], on);
+    }
+
+    setTimeSpacer = (on, right) => {
+      if (right) {
+        this.setRightTimeSpacer(on);
+      } else {
+        this.setLeftTimeSpacer(on);
+      }
     }
 
     toggleRightTimeSpacer = () => {
@@ -742,7 +762,7 @@ setRevLightsFlashing = (flashStatus) => {
 
 setRevLights = (percent) => {
     if (percent > 100) {
-        return;
+        percent = 100;
     }
     
     let firstByte = (1 << Math.floor((8/50) * percent)) - 1;
@@ -752,15 +772,21 @@ setRevLights = (percent) => {
         secondByte = (1 << Math.floor((7/50) * (percent - 50))) - 1;
     }
     const firstBitStart = TmBTLed.BitRanges["revLights1"][0];
-    const firstBitArray = BitArray.fromNumber(firstByte).toJSON();
+    const firstBitEnd = TmBTLed.BitRanges["revLights1"][1] + 1;
+    let firstBitArray = BitArray.fromNumber(firstByte).toJSON();
     while (firstBitArray.length < 8) {
       firstBitArray.unshift(0);
     }
+    // Prevent overflow
+    firstBitArray = firstBitArray.slice(0, firstBitEnd - firstBitStart );
     const secondBitStart = TmBTLed.BitRanges["revLights2"][0];
-    const secondBitArray = BitArray.fromNumber(secondByte).toJSON();
+    const secondBitEnd = TmBTLed.BitRanges["revLights2"][1] + 1;
+    let secondBitArray = BitArray.fromNumber(secondByte).toJSON();
     while (secondBitArray.length < 7) {
       secondBitArray.unshift(0);
     }
+    // Prevent overflow
+    secondBitArray = secondBitArray.slice(0, secondBitEnd - secondBitStart);
     for (let i = 0; i < firstBitArray.length; i++) {
       this.bitArray[firstBitStart + i] = parseInt(firstBitArray[i]);
       if (i < secondBitArray.length) {
@@ -784,11 +810,7 @@ setTemperature = (value, right) => {
     value = 0;
   }
   value = value.toFixed(0);
-  if (right) {
-    this.updateRightDisplay(value);
-  } else {
-    this.updateLeftDisplay(value);
-  }
+  this.updateDisplay(value, right);
 }
 
 setFloat = (value, right) => {
@@ -796,11 +818,7 @@ setFloat = (value, right) => {
       value = 0;
     }
     value = value.toFixed(1);
-    if (right) {
-      this.updateRightDisplay(value);
-    } else {
-      this.updateLeftDisplay(value);
-    }
+    this.updateDisplay(value, right);
 }
 
 setInt = (value, right) => {
@@ -809,11 +827,7 @@ setInt = (value, right) => {
     value = 0;
   }
   value = value.toFixed(0);
-  if (right) {
-    this.updateRightDisplay(value);
-  } else {
-    this.updateLeftDisplay(value);
-  }
+  this.updateDisplay(value, right);
 }
 
 setRpm = (rpm, right) => {
@@ -822,38 +836,79 @@ setRpm = (rpm, right) => {
     } else {
       rpm = rpm.toFixed(0);
     }
-    if (right) {
-      this.updateRightDisplay(rpm);
-    } else {
-      this.updateLeftDisplay(rpm);
-    }
+    this.updateDisplay(rpm, right);
 }
 
-setTime = (time, right) => {
+setDiffTime = (time, right) => {
+  const isNegative = time < 0;
+  time = Math.abs(time) / 1000;
 
-  if (isNaN(time)) {
+  let timeString = "----";
+
+  if (time === null || isNaN(time) || time >= 2147483647) {
+    this.updateDisplay(timeString, right);
+    if ((right && this.indicationOnRightDisplay === null) || (!right && this.indicationOnLeftDisplay === null)) {
+      this.setTimeSpacer(true, right);
+    }
     return;
   }
 
-  if (right && this.indicationOnRightDisplay === null) {
-    this.setRightTimeSpacer(true);
-  } else if (!right && this.indicationOnLeftDisplay === null) {
-    this.setLeftTimeSpacer(true);
+
+  if (time > 99.99) {
+    timeString = "99.9";
+  } else if (time < 10) {
+    timeString = time.toFixed(2);
+  } else {
+    timeString = time.toFixed(1);
   }
-  let minutes = Math.floor(time / 60).toFixed(0);
-  while (minutes.length < 2) {
-    minutes = "0" + minutes;
+
+  if (isNegative) {
+    timeString = "-" + timeString;
+  } else {
+    timeString = "+" + timeString;
   }
-  let seconds = Math.floor(time % 60).toFixed(0);
+  this.updateDisplay(timeString, right);
+};
+
+setTime = (time, right) => { // time in Milliseconds
+  let timeString = "----";
+  if (time === null || isNaN(time) || time >= 2147483647) {
+    this.updateDisplay(timeString, right);
+    if (right && this.indicationOnRightDisplay === null || (!right && this.indicationOnLeftDisplay === null)) {
+      this.setTimeSpacer(true, right);
+    }
+    return;
+  }
+
+  let timeInSeconds = Math.abs(time) / 1000;
+  let minutes = Math.floor(timeInSeconds / 60).toFixed(0);
+  let seconds = Math.floor(timeInSeconds % 60).toFixed(0);
   while (seconds.length < 2) {
     seconds = "0" + seconds;
   }
-  const timeString = minutes + seconds;
-  if (right) {
-    this.updateRightDisplay(timeString);
-  } else {
-    this.updateLeftDisplay(timeString);
+
+  let milliseconds = (time & 1000).toFixed(0);
+  while (milliseconds.length < 3) {
+    milliseconds += "0";
   }
+
+  if (parseInt(minutes) > 99) {
+    timeString = "9999";
+    if (right && this.indicationOnRightDisplay === null || this.indicationOnLeftDisplay === null) {
+      this.setTimeSpacer(true, right);
+    }
+  } else if (parseInt(minutes) < 1) {
+    timeString = seconds + "." + milliseconds.substring(0,2);
+  } else if (parseInt(minutes) < 10) {
+    timeString = minutes + "." + seconds + "." + milliseconds.substring(0,1);
+  } else {
+    timeString = minutes + seconds;
+    if (right && this.indicationOnRightDisplay === null || this.indicationOnLeftDisplay === null) {
+      this.setTimeSpacer(true, right);
+    }
+  }
+
+  this.updateDisplay(timeString, right);
 }
 
 }

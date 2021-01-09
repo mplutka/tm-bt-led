@@ -108,31 +108,23 @@ struct SPageFilePhysics
     float localAngularVel[3];
     float finalFF = 0;
     float performanceMeter = 0;
-    float waterTemp = 0;
-
     int engineBrake = 0;
     int ersRecoveryLevel = 0;
     int ersPowerLevel = 0;
     int ersHeatCharging = 0;
     int ersIsCharging = 0;
     float kersCurrentKJ = 0;
-
     int drsAvailable = 0;
     int drsEnabled = 0;
-
     float brakeTemp[4];
     float clutch = 0;
-
     float tyreTempI[4];
     float tyreTempM[4];
     float tyreTempO[4];
-
     int isAIControlled;
-
     float tyreContactPoint[4][3];
     float tyreContactNormal[4][3];
     float tyreContactHeading[4][3];
-
     float brakeBias = 0;
 
     float localVelocity[3];
@@ -140,7 +132,7 @@ struct SPageFilePhysics
     int P2PActivations = 0;
     int P2PStatus = 0;
 
-    int currentMaxRpm = 0;
+    float currentMaxRpm = 0;
 
     float mz[4];
     float fx[4];
@@ -153,7 +145,19 @@ struct SPageFilePhysics
     int absInAction = 0;
     float suspensionDamage[4];
     float tyreTemp[4];
-
+    float waterTemp = 0;
+    float brakePressure[4];
+    int frontBrakeCompound = 0;
+    int rearBrakeCompound = 0;
+    float padLife[4];
+    float discLife[4];
+    int ignitionOn = 0;
+    int starterEngineOn = 0;
+    int isEngineRunning = 0;
+    float kerbVibration = 0;
+    float slipVibrations = 0;
+    float gVibrations = 0;
+    float absVibrations = 0;
 };
 
 
@@ -169,7 +173,6 @@ struct SPageFileGraphic
     int completedLaps = 0;
     int position = 0;
     int iCurrentTime = 0;
-    int iDeltaLapTime = 0;
     int iLastTime = 0;
     int iBestTime = 0;
     float sessionTimeLeft = 0;
@@ -216,6 +219,22 @@ struct SPageFileGraphic
     int DriverStintTotalTimeLeft = 0;
     int DriverStintTimeLeft = 0;
     int rainTyres = 0;
+
+    int sessionIndex = 0;
+    float usedFuel = 0;
+    wchar_t deltaLapTime[15];
+    int iDeltaLapTime = 0;
+    wchar_t estimatedLapTime [15];
+    int iEstimatedLapTime = 0;
+    int isDeltaPositive = 0;
+    int iSplit = 0;
+    int isValidLap = 0;
+    float fuelEstimatedLaps = 0;
+    wchar_t trackStatus[33];
+    int missingMandatoryPits = 0;
+    float Clock = 0;
+    int directionLightsLeft = 0;
+    int directionLightsRight = 0;
 };
 
 

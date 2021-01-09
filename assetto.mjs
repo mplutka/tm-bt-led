@@ -8,6 +8,10 @@
 
 import AssettoCorsaSharedMemory from "./AssettoCorsaSharedMemory/index.js";
 import TmBTLed from './tm_bt_led.mjs';
+import yargs from "yargs";
+import { hideBin } from 'yargs/helpers'
+const argv = yargs(hideBin(process.argv)).usage('Usage: $0 --mph --interval [num]').argv;
+
 
 function exitHandler(message, exitCode) {
   AssettoCorsaSharedMemory.cleanup();
@@ -45,29 +49,38 @@ class ACC {
       'rpm': {
         label: "RPM"
       },
-      /*'watT': {
-        label: "WATT"
-      },*/
+      'watT': {
+        label: "WTRT"
+      },
       'tyrT': {
         label: "TYRT"
       }
     }
 
     static rightModes = {
+      'curLapTime': {
+        label: "CLAP"
+      },      
       'delta': {
         label: "DELTA"
       },
+      'bestLapTime': {
+        label: "BLAP"
+      }, 
+      'lastLapTime': {
+        label: "LLAP"
+      },
+      'predLapTime': {
+        label: "PLAP"
+      },      
       'pos': {
         label: "POS"
       },
-      'lapCount': {
+      'curLap': {
         label: "LAP"
       },
       'lapsLeft': {
         label: "LEFT"
-      },
-      'curLapTime': {
-        label: "TIME"
       }
     }
 
@@ -85,7 +98,7 @@ class ACC {
         });        
 
         this.currentLeftMode = Object.keys(ACC.leftModes)[0];
-        this.currentRightMode = Object.keys(ACC.leftModes)[0];
+        this.currentRightMode = Object.keys(ACC.rightModes)[0];
     }
 
     onDeviceConnected = () =>  {
@@ -158,47 +171,103 @@ class ACC {
       const graphics =  AssettoCorsaSharedMemory.getGraphics();
       const statics =  AssettoCorsaSharedMemory.getStatics();
 
-      const rpmPercent = physics.rpms / statics.maxRpm * 100;
-
-      this.tmBtLed.setRevLights(rpmPercent > 98 ? 100 : rpmPercent);
-
       this.tmBtLed.setGear(physics.gear - 1);
+
+      // RevLights & PitLimiter
+      if (physics.pitLimiterOn === 1) {
+        this.tmBtLed.setRevLightsFlashing(1);
+      } else {
+        this.tmBtLed.setRevLightsFlashing(0);
+      }
+      
+      if (this.tmBtLed.revLightsFlashing !== 1) {
+        let rpmPercent = physics.rpms / statics.maxRpm * 100;
+        if (rpmPercent < 50) {
+          rpmPercent = 0;
+        } else {
+          rpmPercent = (rpmPercent - 50) / 50 * 100;
+        }
+
+        this.tmBtLed.setRevLights(rpmPercent >= 98 ? 100 : rpmPercent);
+      }
+
+      if (physics.isEngineRunning === 1) {
+        this.tmBtLed.setGearDot(true);
+      } else {
+        this.tmBtLed.setGearDot(false);
+      }
+
+      // Flags
+      switch(graphics.flag) {
+        case 1:
+          this.tmBtLed.setFlashingBlue(true);
+          break      
+        case 2:
+          this.tmBtLed.setFlashingYellow(true);
+          break         
+        case 8:
+        case 6:
+          this.tmBtLed.setFlashingRed(true);
+          break                      
+        case -1:
+        case 0:
+        default:
+          if (this.tmBtLed.isFlashingYellow) {
+            this.tmBtLed.setFlashingYellow(false);
+          }
+          if (this.tmBtLed.isFlashingRed) {
+            this.tmBtLed.setFlashingRed(false);
+          }
+          if (this.tmBtLed.isFlashingBlue) {
+            this.tmBtLed.setFlashingBlue(false);
+          }
+          break
+      }
 
       switch (this.currentLeftMode) {
         case "curFuel":
           this.tmBtLed.setInt(physics.fuel, false);
           break;
         case "speed":
-          this.tmBtLed.setInt(physics.speedKmh, false);
+          this.tmBtLed.setInt(physics.speedKmh * (argv.mph ? 0.62 : 1), false);
           break;
         case "rpm":
           this.tmBtLed.setRpm(physics.rpms, false);
-          break;  
-        /*case "watT":
-          this.tmBtLed.setTemperature(physics.waterTemp, false);
-          break; */
+          break;
         case "tyrT":
           this.tmBtLed.setTemperature(physics.tyreCoreTemperature, false);
+          break;  
+        case "watT":
+          this.tmBtLed.setTemperature(physics.waterTemp, false);
           break;
       }
 
-      switch (this.currentRightMode) {
+      switch (this.currentRightMode) {              
         case "delta":
-          this.tmBtLed.setTime(graphics.iDeltaLapTime / 1000, true);
-          break;        
+          this.tmBtLed.setDiffTime(graphics.iDeltaLapTime, true);
+          break;      
+        case "bestLapTime":
+          this.tmBtLed.setTime(graphics.iBestTime, true);
+          break;   
+        case "lastLapTime":
+          this.tmBtLed.setTime(graphics.iLastTime, true);
+          break;
+        case "predLapTime":
+          this.tmBtLed.setTime(graphics.iEstimatedLapTime, true);
+          break;                                  
         case "pos":
           this.tmBtLed.setInt(graphics.position, true);
           break;
-        case "lapCount":
-          this.tmBtLed.setInt(graphics.completedLaps, true);
+        case "curLap":
+          this.tmBtLed.setInt(graphics.completedLaps + 1, true);
           break;
-        default:
         case "lapsLeft":
           this.tmBtLed.setInt(graphics.numberOfLaps < 1000 ? (graphics.numberOfLaps - graphics.completedLaps) : 0, true);
-          break;               
+          break;          
+        default:
         case "curLapTime":
-          this.tmBtLed.setTime(graphics.iCurrentTime / 1000, true);
-          break;                    
+          this.tmBtLed.setTime(graphics.iCurrentTime, true);
+          break;
       }          
     };
 }
