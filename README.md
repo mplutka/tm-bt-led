@@ -178,4 +178,4 @@ The script tries to update the device every 60 ms. If the device requests a long
 
 ### SPECIAL THANKS
 
-Thank you, Dave Cook aka cookn for your great support, testing and precious feedback!
+Thank you, Dave Cook aka cooknn, for your great support, testing and precious feedback!
