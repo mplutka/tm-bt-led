@@ -8,10 +8,6 @@
 
 import AssettoCorsaSharedMemory from "./AssettoCorsaSharedMemory/index.js";
 import TmBTLed from './tm_bt_led.mjs';
-import yargs from "yargs";
-import { hideBin } from 'yargs/helpers'
-const argv = yargs(hideBin(process.argv)).usage('Usage: $0 --mph --interval [num]').argv;
-
 
 function exitHandler(message, exitCode) {
   AssettoCorsaSharedMemory.cleanup();
@@ -44,7 +40,7 @@ class ACC {
         label: "FUEL"
       },
       'speed': {
-        label: "VEL"
+        label: "SPD"
       },
       'rpm': {
         label: "RPM"
@@ -226,10 +222,10 @@ class ACC {
 
       switch (this.currentLeftMode) {
         case "curFuel":
-          this.tmBtLed.setInt(physics.fuel, false);
+          this.tmBtLed.setWeight(physics.fuel, false);
           break;
         case "speed":
-          this.tmBtLed.setInt(physics.speedKmh * (argv.mph ? 0.62 : 1), false);
+          this.tmBtLed.setSpeed(physics.speedKmh, false);
           break;
         case "rpm":
           this.tmBtLed.setRpm(physics.rpms, false);
