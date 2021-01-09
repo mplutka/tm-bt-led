@@ -120,7 +120,6 @@ class TmBTLed {
     // https://github.com/libusb/libusb/issues/334
     // 22.1. Poll abstraction
     quickConnect = (peripheral) => {
-      let myself = this;
       // BLE cannot scan and connect in parallel, so we stop scanning here:
       noble.stopScanning();
       peripheral.connect(async (error) => {
@@ -149,27 +148,33 @@ class TmBTLed {
           
           if (!report3) { // Report 3
             console.log('Warning - no update characteristic found. Using fallback...');
+            this.start();
           } else {
               report3.discoverDescriptors((err,descr) => {
                   if(err) {
                     console.error(err);
                   }
-                  console.log('4. Initialized successfully with refresh interval: ', this.updateInterval, ' ms');
-                  setInterval(() => {
-                      if (report3) {
-                        report3.write(myself.buffer, true);
-                      } else {
-                        peripheral.writeHandle("58", myself.buffer, true);                  
-                      }
-                  }, this.updateInterval);
-        
-                  if (myself.callbacks && myself.callbacks.onConnect) {
-                      myself.callbacks.onConnect();
-                  }
+                  this.start(report3);
               });
           }       
         });
     }
+
+    start = (report3) => {
+      let _this = this;
+      console.log('4. Initialized successfully with refresh interval: ', this.updateInterval, ' ms');
+      setInterval(() => {
+        if (report3) {
+          report3.write(_this.buffer, true);
+        } else {
+          peripheral.writeHandle("58", _this.buffer, true);                  
+        }
+      }, _this.updateInterval);
+
+      if (_this.callbacks && _this.callbacks.onConnect) {
+        _this.callbacks.onConnect();
+      }
+    } 
 
     handleEvent = (data) => {
         if (!this.callbacks || !this.callbacks.onLeftPreviousMode || !this.callbacks.onLeftNextMode || !this.callbacks.onRightNextMode || !this.callbacks.onRightPreviousMode) {
