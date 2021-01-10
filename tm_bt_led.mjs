@@ -4,9 +4,26 @@ import BitArray from "node-bitarray";
 import convert from 'convert-units';
 import osLocale from 'os-locale';
 
+import Debug from "debug";
+const debug = Debug("tmbtled");
+
 import yargs from "yargs";
 import { hideBin } from 'yargs/helpers'
 const argv = yargs(hideBin(process.argv)).usage('Usage: $0 <--metric> <--imperial> <--interval [num]>').argv;
+
+const startTime = new Date().getTime();
+function exitHandler(message, exitCode) {
+  if (message) {
+    console.error(message);
+  }
+  const endTime =  new Date().getTime();
+  console.log("Ran for " + ((endTime - startTime) / 1000 / 60).toFixed(1) + " minutes");
+}
+
+//do something when app is closing
+process.on('exit', exitHandler);
+//catches uncaught exceptions
+process.on('uncaughtException', exitHandler); 
 
 class TmBTLed {
     updateInterval = argv?.interval || 60;
@@ -144,36 +161,33 @@ class TmBTLed {
               report1.on("data", this.handleEvent);
           }
           
-          
-          if (!report3) { // Report 3
-            console.log('Warning - no update characteristic found. Using fallback...');
-            this.start();
-          } else {
-              report3.discoverDescriptors((err,descr) => {
-                  if(err) {
-                    console.error(err);
-                  }
-                  this.start(report3);
-              });
-          }       
+          const _this = this;
+          const start = () => {
+            console.log('4. Initialized successfully with refresh interval: ', this.updateInterval, ' ms');
+
+            // Attach listener to send next write after last one succeeded with given delay
+            peripheral.on("handleWrite58", () => {
+              setTimeout(write, _this.updateInterval);
+            });
+
+            // Actual write function
+            const write = () => {
+              peripheral.writeHandle("58", _this.buffer, true);
+            };
+
+            // Notify onConnect 
+            if (_this.callbacks && _this.callbacks.onConnect) {
+              _this.callbacks.onConnect();
+            }
+      
+            // Do first write which starts loop
+            write();      
+          } 
+
+          setTimeout(start, 7500);
         });
     }
 
-    start = (report3) => {
-      let _this = this;
-      console.log('4. Initialized successfully with refresh interval: ', this.updateInterval, ' ms');
-      setInterval(() => {
-        if (report3) {
-          report3.write(_this.buffer, true);
-        } else {
-          peripheral.writeHandle("58", _this.buffer, true);                  
-        }
-      }, _this.updateInterval);
-
-      if (_this.callbacks && _this.callbacks.onConnect) {
-        _this.callbacks.onConnect();
-      }
-    } 
     handleEvent = (data) => {
         if (!this.callbacks || !this.callbacks.onLeftPreviousMode || !this.callbacks.onLeftNextMode || !this.callbacks.onRightNextMode || !this.callbacks.onRightPreviousMode) {
             return;
