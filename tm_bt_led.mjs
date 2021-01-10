@@ -26,7 +26,7 @@ process.on('exit', exitHandler);
 process.on('uncaughtException', exitHandler); 
 
 class TmBTLed {
-    updateInterval = argv?.interval || 60;
+    updateInterval = argv?.interval || 125;
     metric = true;
  
     constructor(callbacks) {
@@ -161,30 +161,25 @@ class TmBTLed {
               report1.on("data", this.handleEvent);
           }
           
-          const _this = this;
           const start = () => {
+            const _this = this;
             console.log('4. Initialized successfully with refresh interval: ', this.updateInterval, ' ms');
 
-            // Attach listener to send next write after last one succeeded with given delay
-            peripheral.on("handleWrite58", () => {
-              setTimeout(write, _this.updateInterval);
-            });
-
-            // Actual write function
-            const write = () => {
-              peripheral.writeHandle("58", _this.buffer, true);
-            };
+            let sentBuffer = new Buffer.alloc(_this.buffer.length);
+            setInterval(() => {
+              if (!sentBuffer.equals(_this.buffer)) {
+                peripheral.writeHandle("58", _this.buffer, true);
+                _this.buffer.copy(sentBuffer);
+              }
+            }, _this.updateInterval);
 
             // Notify onConnect 
             if (_this.callbacks && _this.callbacks.onConnect) {
               _this.callbacks.onConnect();
             }
-      
-            // Do first write which starts loop
-            write();      
           } 
 
-          setTimeout(start, 7500);
+          setTimeout(start, 3000);
         });
     }
 
