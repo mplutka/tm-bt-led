@@ -150,7 +150,7 @@ class ACC {
         console.log("5. Listening for game data... GO!");
         setInterval(() => {
             this.updateValues();
-        }, 20);
+        }, 1000 / 60); // 60 Hz
     }
 
     updateValues = () => {
