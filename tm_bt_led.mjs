@@ -228,7 +228,7 @@ class TmBTLed {
                 noble.on('connectionUpdateCompleted', (status, handle, interval, latency, supervisionTimeout) => {
                     console.log("Refresh interval has been changed to ", interval, " ms");
                     this.updateInterval = interval;
-                    setTimeout(this.startLoop, 3000);
+                    this.startLoop();
                 });
       
                 const meta = this.loadData(this.peripheral);
@@ -241,7 +241,7 @@ class TmBTLed {
                 }
       
                 // -> This should trigger the startLoop
-                setTimeout(() => this.peripheral.connUpdateLe(this.targetInterval, this.targetInterval, 0, 3000), 1000);
+                setTimeout(() => this.peripheral.connUpdateLe(this.targetInterval, this.targetInterval, 0, 3000), 250);
             });
         });
     }
