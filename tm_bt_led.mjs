@@ -341,6 +341,295 @@ class TmBTLed {
       return foundCharacteristics;
     };
 
+    /**
+     * Setter for gear, display, rev lights and leds
+     * Will be used from game specific scripts
+     * Boolean parameter "right" display data on the right screen
+     */
+
+    setGear = gear => {
+        let gearCode = "1111111";
+        switch(gear) {
+          case -1:
+            gearCode = "1001100";
+            break;		
+          case 0:
+            gearCode = "1000000";
+            break;
+          case 1:
+            gearCode = "1111001";
+            break;
+          case 2:
+            gearCode = "0100100";
+            break;
+          case 3:
+            gearCode = "0110000";
+            break;
+          case 4:
+            gearCode = "0011001";
+            break;
+          case 5:
+            gearCode = "0010010";
+            break;
+          case 6:
+            gearCode = "0000011";
+            break;
+          case 7:
+            gearCode = "1111000";
+            break;
+          case 8:
+            gearCode = "0000000";
+            break;
+          case 9:
+            gearCode = "0011000";
+            break;
+          case null:
+          case undefined:
+          case false:
+          default:
+            gearCode: "1111111";
+            break;      
+        }
+        this.setLedSegments("gear", gearCode);
+    };
+    
+    setNumber = (numberString, right) => {
+      let chars = (numberString || "").split("");
+      let slots = [];
+      for (let i = 0; i < chars.length; i++) {
+        if(i < chars.length - 1 && (chars[i + 1] === "." || chars[i + 1] === ",")) {
+          slots.push(chars[i] + ".");
+          i++;
+        } else {
+          slots.push(chars[i]);
+        }
+      }
+      while(slots.length < 4) {
+        slots.unshift(" ");
+      }
+      for(let i = 0; i < Math.min(4,slots.length); i++) {
+        const splittedChar = (slots[i] || "").split("");
+        const char = TmBTLed.CharMap[splittedChar[0]];
+        const withDot = splittedChar.length === 2 && splittedChar[1] === ".";
+        this.setLedSegments((right ? "right" : "left") + "Char" + (i + 1), char, withDot);
+      }
+    };
+
+    setRevLightsFlashing = (flashStatus) => {
+      if (flashStatus === 0 && this.revLightsFlashing !== 0) {
+        this.revLightsFlashing = 0;
+        this.setRevLights(0);
+        if(this.revLightsFlashingIntervalId !== null) {
+          clearInterval(this.revLightsFlashingIntervalId);
+          this.revLightsFlashingIntervalId = null;
+        }
+        return;
+      }
+      if (flashStatus == this.revLightsFlashing) {
+        return;
+      }
+
+      this.revLightsFlashing = flashStatus;
+      if (this.revLightsFlashingIntervalId !== null) {
+        clearInterval(this.revLightsFlashingIntervalId);
+        this.revLightsFlashingIntervalId = null;
+      }
+      this.revLightsFlashingIntervalId = setInterval(() => {
+        this.toggleRevLights();
+      }, this.revLightsFlashing === 1 ? 500 : 250);
+    };
+
+    setRevLights = (percent) => {
+        if (percent > 100) {
+            percent = 100;
+        }
+        
+        let firstByte = (1 << Math.floor((8/50) * percent)) - 1;
+        let secondByte = 0;
+        if (percent >= 50) {
+            firstByte = 255;
+            secondByte = (1 << Math.floor((7/50) * (percent - 50))) - 1;
+        }
+        const firstBitStart = TmBTLed.BitRanges["revLights1"][0];
+        const firstBitEnd = TmBTLed.BitRanges["revLights1"][1] + 1;
+        let firstBitArray = BitArray.fromNumber(firstByte).toJSON();
+        while (firstBitArray.length < 8) {
+          firstBitArray.unshift(0);
+        }
+        // Prevent overflow
+        firstBitArray = firstBitArray.slice(0, firstBitEnd - firstBitStart );
+        const secondBitStart = TmBTLed.BitRanges["revLights2"][0];
+        const secondBitEnd = TmBTLed.BitRanges["revLights2"][1] + 1;
+        let secondBitArray = BitArray.fromNumber(secondByte).toJSON();
+        while (secondBitArray.length < 7) {
+          secondBitArray.unshift(0);
+        }
+        // Prevent overflow
+        secondBitArray = secondBitArray.slice(0, secondBitEnd - secondBitStart);
+        for (let i = 0; i < firstBitArray.length; i++) {
+          this.bitArray[firstBitStart + i] = parseInt(firstBitArray[i]);
+          if (i < secondBitArray.length) {
+            this.bitArray[secondBitStart + i] = parseInt(secondBitArray[i]);
+          }
+        }
+
+        this.updateBuffer();
+    }
+
+    toggleRevLights = () => {
+      this.revLightsOn = !this.revLightsOn;
+      this.setRevLights(this.revLightsOn ? 100 : 0);
+    };
+
+    setTemperature = (value, right) => { // expects C
+      if (value < 0) {
+        value = 0;
+      }
+
+      if (!this.metric) {
+        value = convert(value).from("C").to("F").toFixed(1);    
+      } else {
+        value = value.toFixed(1);
+      }
+      this.updateDisplay(value, right);
+    }
+
+    setWeight = (value, right) => { // expects kg
+      if (value < 0) {
+        value = 0;
+      }
+
+      if (!this.metric) {
+        value = convert(value).from("kg").to("lb").toFixed(1);
+      } else {
+        value = value.toFixed(1);
+      }
+
+      this.updateDisplay(value, right);
+    }
+
+    setFloat = (value, right) => {
+        if (value < 0) {
+          value = 0;
+        }
+        value = value.toFixed(1);
+        this.updateDisplay(value, right);
+    }
+
+    setInt = (value, right) => {
+      value = parseInt(value);
+      if (value < 0) {
+        value = 0;
+      }
+      value = value.toFixed(0);
+      this.updateDisplay(value, right);
+    }
+
+    setSpeed = (value, right) => { // expects Kmh
+      value = parseInt(value);
+      if (value < 0) {
+        value = 0;
+      }
+      if (!this.metric) {
+        value = convert(value).from("km/h").to("m/h").toFixed(0);
+      } else {
+        value = value.toFixed(0);
+      }
+      this.updateDisplay(value, right);
+    }
+
+    setRpm = (rpm, right) => {
+        if (rpm >= 10000) {
+          rpm = (rpm / 1000).toFixed(1) + "K";
+        } else {
+          rpm = rpm.toFixed(0);
+        }
+        this.updateDisplay(rpm, right);
+    }
+
+    setDiffTime = (time, right) => {
+      const isNegative = time < 0;
+      time = Math.abs(time) / 1000;
+
+      let timeString = "----";
+
+      if (time === null || isNaN(time) || time >= 2147483647) {
+        this.updateDisplay(timeString, right);
+        if ((right && this.indicationOnRightDisplay === null) || (!right && this.indicationOnLeftDisplay === null)) {
+          this.setTimeSpacer(true, right);
+        }
+        return;
+      }
+
+
+      if (time > 99.99) {
+        timeString = "99.9";
+      } else if (time < 10) {
+        timeString = time.toFixed(2);
+      } else {
+        timeString = time.toFixed(1);
+      }
+
+      if (isNegative) {
+        timeString = "-" + timeString;
+      } else {
+        timeString = "+" + timeString;
+      }
+      this.updateDisplay(timeString, right);
+    };
+
+    setTime = (time, right) => { // time in Milliseconds
+      let timeString = "----";
+      if (time === null || isNaN(time) || time >= 2147483647) {
+        this.updateDisplay(timeString, right);
+        if (right && this.indicationOnRightDisplay === null || (!right && this.indicationOnLeftDisplay === null)) {
+          this.setTimeSpacer(true, right);
+        }
+        return;
+      }
+
+      let timeInSeconds = Math.abs(time) / 1000;
+      let minutes = Math.floor(timeInSeconds / 60).toFixed(0);
+      let seconds = Math.floor(timeInSeconds % 60).toFixed(0);
+      while (seconds.length < 2) {
+        seconds = "0" + seconds;
+      }
+
+      let milliseconds = (time & 1000).toFixed(0);
+      while (milliseconds.length < 3) {
+        milliseconds += "0";
+      }
+
+      if (timeInSeconds === 0) {
+        timeString = "0.000";
+      }
+      if (parseInt(minutes) > 99) {
+        timeString = "9999";
+        if (right && this.indicationOnRightDisplay === null || this.indicationOnLeftDisplay === null) {
+          this.setTimeSpacer(true, right);
+        }
+      } else if (timeInSeconds < 10) {
+        timeString = "" + timeInSeconds;
+        while (timeString.length < 5) {
+          timeString = timeString + "0";
+        }
+      } else if (parseInt(minutes) < 1) {
+        timeString = seconds + "." + milliseconds.substring(0,2);
+      } else if (parseInt(minutes) < 10) {
+        timeString = minutes + "." + seconds + "." + milliseconds.substring(0,1);
+      } else {
+        timeString = minutes + seconds;
+        if (right && this.indicationOnRightDisplay === null || this.indicationOnLeftDisplay === null) {
+          this.setTimeSpacer(true, right);
+        }
+      }
+
+      this.updateDisplay(timeString, right);
+    }
+
+
+
+
     // Manipulation of bit array which holds the current state of all leds and led segment displays
     updateBuffer = () => {
         BitArray.toBuffer(this.bitArray).copy(this.buffer);
@@ -494,56 +783,10 @@ class TmBTLed {
       this.setLedSegments("rightChar4", TmBTLed.CharMap[char]);
     };
 
-    setGear = gear => {
-        let gearCode = "1111111";
-        switch(gear) {
-          case -1:
-            gearCode = "1001100";
-            break;		
-          case 0:
-            gearCode = "1000000";
-            break;
-          case 1:
-            gearCode = "1111001";
-            break;
-          case 2:
-            gearCode = "0100100";
-            break;
-          case 3:
-            gearCode = "0110000";
-            break;
-          case 4:
-            gearCode = "0011001";
-            break;
-          case 5:
-            gearCode = "0010010";
-            break;
-          case 6:
-            gearCode = "0000011";
-            break;
-          case 7:
-            gearCode = "1111000";
-            break;
-          case 8:
-            gearCode = "0000000";
-            break;
-          case 9:
-            gearCode = "0011000";
-            break;
-          case null:
-          case undefined:
-          case false:
-          default:
-            gearCode: "1111111";
-            break;      
-        }
-        this.setLedSegments("gear", gearCode);
-    };
-
-
     setGearDot = (on) => {
       this.setBit(TmBTLed.BitRanges["gearDot"][0], on, true);
     };
+
     toggleGearDot = () => {
       this.flipBit(TmBTLed.BitRanges["gearDot"][0]);
     };
@@ -756,244 +999,6 @@ class TmBTLed {
         this.toggleRed();
         this.toggleYellow();
     } 
-
-    setNumber = (numberString, right) => {
-      let chars = (numberString || "").split("");
-      let slots = [];
-      for (let i = 0; i < chars.length; i++) {
-        if(i < chars.length - 1 && (chars[i + 1] === "." || chars[i + 1] === ",")) {
-          slots.push(chars[i] + ".");
-          i++;
-        } else {
-          slots.push(chars[i]);
-        }
-      }
-      while(slots.length < 4) {
-        slots.unshift(" ");
-      }
-      for(let i = 0; i < Math.min(4,slots.length); i++) {
-        const splittedChar = (slots[i] || "").split("");
-        const char = TmBTLed.CharMap[splittedChar[0]];
-        const withDot = splittedChar.length === 2 && splittedChar[1] === ".";
-        this.setLedSegments((right ? "right" : "left") + "Char" + (i + 1), char, withDot);
-      }
-    };
-
-    setRevLightsFlashing = (flashStatus) => {
-      if (flashStatus === 0 && this.revLightsFlashing !== 0) {
-        this.revLightsFlashing = 0;
-        this.setRevLights(0);
-        if(this.revLightsFlashingIntervalId !== null) {
-          clearInterval(this.revLightsFlashingIntervalId);
-          this.revLightsFlashingIntervalId = null;
-        }
-        return;
-      }
-      if (flashStatus == this.revLightsFlashing) {
-        return;
-      }
-
-      this.revLightsFlashing = flashStatus;
-      if (this.revLightsFlashingIntervalId !== null) {
-        clearInterval(this.revLightsFlashingIntervalId);
-        this.revLightsFlashingIntervalId = null;
-      }
-      this.revLightsFlashingIntervalId = setInterval(() => {
-        this.toggleRevLights();
-      }, this.revLightsFlashing === 1 ? 500 : 250);
-    };
-
-    setRevLights = (percent) => {
-        if (percent > 100) {
-            percent = 100;
-        }
-        
-        let firstByte = (1 << Math.floor((8/50) * percent)) - 1;
-        let secondByte = 0;
-        if (percent >= 50) {
-            firstByte = 255;
-            secondByte = (1 << Math.floor((7/50) * (percent - 50))) - 1;
-        }
-        const firstBitStart = TmBTLed.BitRanges["revLights1"][0];
-        const firstBitEnd = TmBTLed.BitRanges["revLights1"][1] + 1;
-        let firstBitArray = BitArray.fromNumber(firstByte).toJSON();
-        while (firstBitArray.length < 8) {
-          firstBitArray.unshift(0);
-        }
-        // Prevent overflow
-        firstBitArray = firstBitArray.slice(0, firstBitEnd - firstBitStart );
-        const secondBitStart = TmBTLed.BitRanges["revLights2"][0];
-        const secondBitEnd = TmBTLed.BitRanges["revLights2"][1] + 1;
-        let secondBitArray = BitArray.fromNumber(secondByte).toJSON();
-        while (secondBitArray.length < 7) {
-          secondBitArray.unshift(0);
-        }
-        // Prevent overflow
-        secondBitArray = secondBitArray.slice(0, secondBitEnd - secondBitStart);
-        for (let i = 0; i < firstBitArray.length; i++) {
-          this.bitArray[firstBitStart + i] = parseInt(firstBitArray[i]);
-          if (i < secondBitArray.length) {
-            this.bitArray[secondBitStart + i] = parseInt(secondBitArray[i]);
-          }
-        }
-
-        this.updateBuffer();
-    }
-
-    toggleRevLights = () => {
-      this.revLightsOn = !this.revLightsOn;
-      this.setRevLights(this.revLightsOn ? 100 : 0);
-    };
-
-
-    // Set data specific
-
-    setTemperature = (value, right) => { // expects C
-      if (value < 0) {
-        value = 0;
-      }
-
-      if (!this.metric) {
-        value = convert(value).from("C").to("F").toFixed(1);    
-      } else {
-        value = value.toFixed(1);
-      }
-      this.updateDisplay(value, right);
-    }
-
-    setWeight = (value, right) => { // expects kg
-      if (value < 0) {
-        value = 0;
-      }
-
-      if (!this.metric) {
-        value = convert(value).from("kg").to("lb").toFixed(1);
-      } else {
-        value = value.toFixed(1);
-      }
-
-      this.updateDisplay(value, right);
-    }
-
-    setFloat = (value, right) => {
-        if (value < 0) {
-          value = 0;
-        }
-        value = value.toFixed(1);
-        this.updateDisplay(value, right);
-    }
-
-    setInt = (value, right) => {
-      value = parseInt(value);
-      if (value < 0) {
-        value = 0;
-      }
-      value = value.toFixed(0);
-      this.updateDisplay(value, right);
-    }
-
-    setSpeed = (value, right) => { // expects Kmh
-      value = parseInt(value);
-      if (value < 0) {
-        value = 0;
-      }
-      if (!this.metric) {
-        value = convert(value).from("km/h").to("m/h").toFixed(0);
-      } else {
-        value = value.toFixed(0);
-      }
-      this.updateDisplay(value, right);
-    }
-
-    setRpm = (rpm, right) => {
-        if (rpm >= 10000) {
-          rpm = (rpm / 1000).toFixed(1) + "K";
-        } else {
-          rpm = rpm.toFixed(0);
-        }
-        this.updateDisplay(rpm, right);
-    }
-
-    setDiffTime = (time, right) => {
-      const isNegative = time < 0;
-      time = Math.abs(time) / 1000;
-
-      let timeString = "----";
-
-      if (time === null || isNaN(time) || time >= 2147483647) {
-        this.updateDisplay(timeString, right);
-        if ((right && this.indicationOnRightDisplay === null) || (!right && this.indicationOnLeftDisplay === null)) {
-          this.setTimeSpacer(true, right);
-        }
-        return;
-      }
-
-
-      if (time > 99.99) {
-        timeString = "99.9";
-      } else if (time < 10) {
-        timeString = time.toFixed(2);
-      } else {
-        timeString = time.toFixed(1);
-      }
-
-      if (isNegative) {
-        timeString = "-" + timeString;
-      } else {
-        timeString = "+" + timeString;
-      }
-      this.updateDisplay(timeString, right);
-    };
-
-    setTime = (time, right) => { // time in Milliseconds
-      let timeString = "----";
-      if (time === null || isNaN(time) || time >= 2147483647) {
-        this.updateDisplay(timeString, right);
-        if (right && this.indicationOnRightDisplay === null || (!right && this.indicationOnLeftDisplay === null)) {
-          this.setTimeSpacer(true, right);
-        }
-        return;
-      }
-
-      let timeInSeconds = Math.abs(time) / 1000;
-      let minutes = Math.floor(timeInSeconds / 60).toFixed(0);
-      let seconds = Math.floor(timeInSeconds % 60).toFixed(0);
-      while (seconds.length < 2) {
-        seconds = "0" + seconds;
-      }
-
-      let milliseconds = (time & 1000).toFixed(0);
-      while (milliseconds.length < 3) {
-        milliseconds += "0";
-      }
-
-      if (timeInSeconds === 0) {
-        timeString = "0.000";
-      }
-      if (parseInt(minutes) > 99) {
-        timeString = "9999";
-        if (right && this.indicationOnRightDisplay === null || this.indicationOnLeftDisplay === null) {
-          this.setTimeSpacer(true, right);
-        }
-      } else if (timeInSeconds < 10) {
-        timeString = "" + timeInSeconds;
-        while (timeString.length < 5) {
-          timeString = timeString + "0";
-        }
-      } else if (parseInt(minutes) < 1) {
-        timeString = seconds + "." + milliseconds.substring(0,2);
-      } else if (parseInt(minutes) < 10) {
-        timeString = minutes + "." + seconds + "." + milliseconds.substring(0,1);
-      } else {
-        timeString = minutes + seconds;
-        if (right && this.indicationOnRightDisplay === null || this.indicationOnLeftDisplay === null) {
-          this.setTimeSpacer(true, right);
-        }
-      }
-
-      this.updateDisplay(timeString, right);
-    }
-
 }
 
 export default TmBTLed;
