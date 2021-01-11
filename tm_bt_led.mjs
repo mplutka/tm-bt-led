@@ -191,7 +191,7 @@ class TmBTLed {
         noble.on('discover', function (peripheral) {
 
           if (!discovered) {
-            console.log("2. Discovering devices...");
+            console.log("2. Discovering devices... Please press both pair buttons now.");
             discovered = true;
           }
           // Check if a dump  exists in the current directory.
