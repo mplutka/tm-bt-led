@@ -26,27 +26,27 @@ process.on('exit', exitHandler);
 process.on('uncaughtException', exitHandler); 
 
 class TmBTLed {
-    updateInterval = argv?.interval || 125;
+    updateInterval = 250;
+    targetInterval = argv?.interval || 15;
     metric = true;
+    intervalId = null;
+    peripheral = null;
+    gameConnectionStarted = false;
  
-    constructor(callbacks) {
-        if (argv.metric) {
-          this.metric = true;
-        } else if (argv.imperial) {
-          this.metric = false;
-        } else {
-          osLocale().then(loc => {
-            if(loc.toLowerCase() === "en-us") {
-              this.metric = false;
-            }
-          });
-        }
-
-        this.buffer = new Buffer.alloc(20);
-        this.updateBuffer();
-        this.initNoble();
-        this.callbacks = callbacks;
-    }
+    indicationOnLeftDisplay = null; // Timer
+    indicationOnRightDisplay = null;  // Timer
+    flashingYellowInterval = null;
+    isFlashingYellow = false;
+    flashingBlueInterval = null;
+    isFlashingBlue = false;
+    flashingRedInterval = null;
+    isFlashingRed = false;
+    revLimitIntervalId = null;
+    revLightsFlashingIntervalId = null;
+    revLightsFlashing = 0;
+    revLightsOn = false;
+    currentLeftButton = null;
+    currentRightButton = null;
 
     static EXT = '.dump';
       
@@ -119,70 +119,159 @@ class TmBTLed {
         "+": "11000000 0010010",        
     };
 
-    indicationOnLeftDisplay = null; // Timer
-    indicationOnRightDisplay = null;  // Timer
-    flashingYellowInterval = null;
-    isFlashingYellow = false;
-    flashingBlueInterval = null;
-    isFlashingBlue = false;
-    flashingRedInterval = null;
-    isFlashingRed = false;
-    revLimitIntervalId = null;
-    revLightsFlashingIntervalId = null;
-    revLightsFlashing = 0;
-    revLightsOn = false;
-    currentLeftButton = null;
-    currentRightButton = null;
 
-    // https://github.com/libusb/libusb/issues/334
-    // 22.1. Poll abstraction
-    quickConnect = (peripheral) => {
-      let myself = this;
-      // BLE cannot scan and connect in parallel, so we stop scanning here:
-      noble.stopScanning();
-      peripheral.connect(async (error) => {
-          if (error) {
-            console.log(`Connect error: ${error}`);
-            noble.startScanning([], true);
-            return;
-          }
+    // special:
+    // Rev Left Blue
+    // L1  MUST SET!
+    // L2  Left TimeSpacer
+    // L3  Left Red
+    // L4  Left Yellow
 
-          noble.on('connectionParameterUpdateRequest', (minInterval, maxInterval) => {
-            console.log("Update interval has changed", minInterval);
-            this.updateInterval = minInterval;
-          });
+    // R1  Right Yellow
+    // R2  Right Red
+    // R3  Right TimeSpacer
+    // R4  Right Blue
+    bitArray = [ 
+        0, 0, 0, 0, 0, 1, 0, 0, // 0   // 0, Mode: Muss 4 sein
+        0, 0, 0, 0, 0, 0, 0, 0, // 8   // 1, RevLights 1.
+        0, 0, 0, 0, 0, 0, 0, 0, // 16  // 2, RevLights 2. + Blue left
+        0, 0, 0, 0, 0, 0, 0, 0, // 24  // 3, L1
+        1, 0, 0, 0, 0, 0, 0, 0, // 32  // 4, Special Bit (muss 1 sein!), L1
+        0, 0, 0, 0, 0, 0, 0, 0, // 40  // 5, L2
+        0, 0, 0, 0, 0, 0, 0, 0, // 48  // 6, Special Bit, L2
+        0, 0, 0, 0, 0, 0, 0, 0, // 56  // 7, L3
+        0, 0, 0, 0, 0, 0, 0, 0, // 64  // 8, Special Bit, L3
+        0, 0, 0, 0, 0, 0, 0, 0, // 72  // 9, L4
+        0, 0, 0, 0, 0, 0, 0, 0, // 80  // 10, Special Bit, L4 
+        1, 1, 1, 1, 1, 1, 1, 1, // 88  // 11, Gear
+        0, 0, 0, 0, 0, 0, 0, 0, // 96  // 12, R1
+        0, 0, 0, 0, 0, 0, 0, 0, // 104 // 13, Special Bit, R1
+        0, 0, 0, 0, 0, 0, 0, 0, // 112 // 14, R2
+        0, 0, 0, 0, 0, 0, 0, 0, // 120 // 15, Special Bit, R2
+        0, 0, 0, 0, 0, 0, 0, 0, // 128 // 16, R3
+        0, 0, 0, 0, 0, 0, 0, 0, // 136 // 17, Special Bit, R3
+        0, 0, 0, 0, 0, 0, 0, 0, // 144 // 18, R4
+        0, 0, 0, 0, 0, 0, 0, 0  // 152 // 19, Special Bit, R4
+    ];
 
-          const meta = this.loadData(peripheral);
-          const [report1, report2, report3, report4 ] = this.setData(peripheral, meta);
-
-          if (!report1) { // Report 1
-              console.log('Warning - no event characteristic found.');
-          } else {
-              report1.on("data", this.handleEvent);
-          }
-          
-          const start = () => {
-            const _this = this;
-            console.log('4. Initialized successfully with refresh interval: ', this.updateInterval, ' ms');
-
-            let sentBuffer = new Buffer.alloc(_this.buffer.length);
-            setInterval(() => {
-              if (!sentBuffer.equals(_this.buffer)) {
-                peripheral.writeHandle("58", _this.buffer, true);
-                _this.buffer.copy(sentBuffer);
-              }
-            }, _this.updateInterval);
-
-            // Notify onConnect 
-            if (_this.callbacks && _this.callbacks.onConnect) {
-              _this.callbacks.onConnect();
+    constructor(callbacks) {
+        if (argv.metric) {
+            this.metric = true;
+        } else if (argv.imperial) {
+            this.metric = false;
+        } else {
+          osLocale().then(loc => {
+            if(loc.toLowerCase() === "en-us") {
+              this.metric = false;
             }
-          } 
+          });
+        }
 
-          setTimeout(start, 3000);
+        this.callbacks = callbacks;
+
+        this.buffer = new Buffer.alloc(20);
+        this.updateBuffer();
+        this.initNoble(); 
+    }
+
+    initNoble = () => {
+        let myself = this;
+        noble.stopScanning();
+
+        noble.on('stateChange', function (state) {
+          if (state === 'poweredOn') {
+            console.log("1. Starting scan...");
+            noble.startScanning();
+          } else {
+            noble.stopScanning();
+          }
+        });
+
+        let discovered = false;
+        noble.on('discover', function (peripheral) {
+
+          if (!discovered) {
+            console.log("2. Discovering devices...");
+            discovered = true;
+          }
+          // Check if a dump  exists in the current directory.
+          fs.access(peripheral.uuid + TmBTLed.EXT, fs.constants.F_OK, (err) => {
+            if (!err) {
+              console.log(` -- Found device config ${peripheral.uuid}`);
+
+              myself.quickConnect(peripheral);
+            }
+          });
         });
     }
 
+    quickConnect = (p) => {
+        noble.stopScanning();
+        p.connect(async (error) => {
+            if (error) {
+              console.log(`Connect error: ${error}`);
+              noble.startScanning([], true);
+              return;
+            }
+
+            this.peripheral = p;
+            this.peripheral.discoverSomeServicesAndCharacteristics(["1800"], [], (error, services, characteristics) => {
+                noble.on('connectionParameterUpdateRequest', (minInterval, maxInterval) => {
+                  console.log("Refresh interval was forcefully set to ", maxInterval, " ms");
+                  this.updateInterval = maxInterval;
+                  if (this.intervalId) {
+                    console.log("Restarting loop...");
+                    this.startLoop();
+                  }
+                });
+      
+                noble.on('connectionUpdateCompleted', (status, handle, interval, latency, supervisionTimeout) => {
+                    console.log("Refresh interval has been changed to ", interval, " ms");
+                    this.updateInterval = interval;
+                    setTimeout(this.startLoop, 3000);
+                });
+      
+                const meta = this.loadData(this.peripheral);
+                const [report1, report2, report3, report4 ] = this.setData(this.peripheral, meta);
+      
+                if (!report1) { // Report 1
+                    console.log('Warning - no event characteristic found. Mode buttons won\'t work.');
+                } else {
+                    report1.on("data", this.handleEvent);
+                }
+      
+                // -> This should trigger the startLoop
+                setTimeout(() => this.peripheral.connUpdateLe(this.targetInterval, this.targetInterval, 0, 3000), 1000);
+            });
+        });
+    }
+
+    startLoop = () => {
+        const _this = this;
+        if (_this.intervalId) {
+          console.log('Stopping running loop...');
+          clearInterval(_this.intervalId);
+        }
+
+        console.log('Starting loop with refresh interval: ', this.updateInterval, ' ms...');
+
+        let sentBuffer = new Buffer.alloc(_this.buffer.length);
+        this.intervalId = setInterval(() => {
+          if (!sentBuffer.equals(_this.buffer)) {
+            _this.peripheral.writeHandle("58", _this.buffer, true);
+            _this.buffer.copy(sentBuffer);
+          }
+        }, this.updateInterval);
+
+                        
+        // Notify onConnect 
+        if (!_this.gameConnectionStarted && _this.callbacks && _this.callbacks.onConnect) {
+            _this.callbacks.onConnect();
+            _this.gameConnectionStarted = true;
+        }
+    } 
+
+    // Read mode button input
     handleEvent = (data) => {
         if (!this.callbacks || !this.callbacks.onLeftPreviousMode || !this.callbacks.onLeftNextMode || !this.callbacks.onRightNextMode || !this.callbacks.onRightPreviousMode) {
             return;
@@ -252,223 +341,158 @@ class TmBTLed {
       return foundCharacteristics;
     };
 
-    initNoble = () => {
-        let myself = this;
-        noble.stopScanning();
-
-        noble.on('stateChange', function (state) {
-          if (state === 'poweredOn') {
-            console.log("1. Starting scan...");
-            noble.startScanning();
-          } else {
-
-            noble.stopScanning();
-            // process.exit(0);
-          }
-        });
-
-        let discovered = false;
-        noble.on('discover', function (peripheral) {
-
-          if (!discovered) {
-            console.log("2. Discovering devices...");
-            discovered = true;
-          }
-          // Check if a dump  exists in the current directory.
-          fs.access(peripheral.uuid + TmBTLed.EXT, fs.constants.F_OK, (err) => {
-            if (!err) {
-              console.log(` -- Found device config ${peripheral.uuid}`);
-
-              myself.quickConnect(peripheral);
-            }
-          });
-        });
-    }
-  // special:
-  // Rev Left Blue
-  // L1  MUST SET!
-  // L2  Left TimeSpacer
-  // L3  Left Red
-  // L4  Left Yellow
-
-  // R1  Right Yellow
-  // R2  Right Red
-  // R3  Right TimeSpacer
-  // R4  Right Blue
-  bitArray = [ 
-      0, 0, 0, 0, 0, 1, 0, 0, // 0   // 0, Mode: Muss 4 sein
-      0, 0, 0, 0, 0, 0, 0, 0, // 8   // 1, RevLights 1.
-      0, 0, 0, 0, 0, 0, 0, 0, // 16  // 2, RevLights 2. + Blue left
-      0, 0, 0, 0, 0, 0, 0, 0, // 24  // 3, L1
-      1, 0, 0, 0, 0, 0, 0, 0, // 32  // 4, Special Bit (muss 1 sein!), L1
-      0, 0, 0, 0, 0, 0, 0, 0, // 40  // 5, L2
-      0, 0, 0, 0, 0, 0, 0, 0, // 48  // 6, Special Bit, L2
-      0, 0, 0, 0, 0, 0, 0, 0, // 56  // 7, L3
-      0, 0, 0, 0, 0, 0, 0, 0, // 64  // 8, Special Bit, L3
-      0, 0, 0, 0, 0, 0, 0, 0, // 72  // 9, L4
-      0, 0, 0, 0, 0, 0, 0, 0, // 80  // 10, Special Bit, L4 
-      1, 1, 1, 1, 1, 1, 1, 1, // 88  // 11, Gear
-      0, 0, 0, 0, 0, 0, 0, 0, // 96  // 12, R1
-      0, 0, 0, 0, 0, 0, 0, 0, // 104 // 13, Special Bit, R1
-      0, 0, 0, 0, 0, 0, 0, 0, // 112 // 14, R2
-      0, 0, 0, 0, 0, 0, 0, 0, // 120 // 15, Special Bit, R2
-      0, 0, 0, 0, 0, 0, 0, 0, // 128 // 16, R3
-      0, 0, 0, 0, 0, 0, 0, 0, // 136 // 17, Special Bit, R3
-      0, 0, 0, 0, 0, 0, 0, 0, // 144 // 18, R4
-      0, 0, 0, 0, 0, 0, 0, 0  // 152 // 19, Special Bit, R4
-  ];
-
+    // Manipulation of bit array which holds the current state of all leds and led segment displays
     updateBuffer = () => {
-      BitArray.toBuffer(this.bitArray).copy(this.buffer);
+        BitArray.toBuffer(this.bitArray).copy(this.buffer);
     };  
 
-flipBit = (bit) => {
-  this.bitArray[bit] = this.bitArray[bit] === 1 ? 0 : 1;
-  this.updateBuffer();
-}
+    flipBit = (bit) => {
+      this.bitArray[bit] = this.bitArray[bit] === 1 ? 0 : 1;
+      this.updateBuffer();
+    }
 
-setBit = (bit, on, inverted) => {
-  this.bitArray[bit] = on ? (inverted ? 0 : 1) : (inverted ? 1 : 0);
-  this.updateBuffer();
-}
+    setBit = (bit, on, inverted) => {
+      this.bitArray[bit] = on ? (inverted ? 0 : 1) : (inverted ? 1 : 0);
+      this.updateBuffer();
+    }
 
-setLedSegments = (type, bitString, withDot) => {
-    let bits = (bitString || "").split("");
-    const bitStart = TmBTLed.BitRanges[type][0];
-    const bitEnd = TmBTLed.BitRanges[type][1] + 1;
+    setLedSegments = (type, bitString, withDot) => {
+        let bits = (bitString || "").split("");
+        const bitStart = TmBTLed.BitRanges[type][0];
+        const bitEnd = TmBTLed.BitRanges[type][1] + 1;
 
-    // Prevent overflow
-    bits = bits.slice(0, bitEnd - bitStart);
-    for(let i = 0; i < bits.length; i++) {
-      // TODO: Daten nicht als String erhalten
-      if (bits[i] === " ") {
-        // Skip this bit
-        continue;
+        // Prevent overflow
+        bits = bits.slice(0, bitEnd - bitStart);
+        for(let i = 0; i < bits.length; i++) {
+          // TODO: Daten nicht als String erhalten
+          if (bits[i] === " ") {
+            // Skip this bit
+            continue;
+          }
+          this.bitArray[bitStart + i] = parseInt(bits[i]);
+        }
+        if (bits.length > 9) {
+          this.bitArray[bitStart + 9] = withDot ? 1 : 0;
+        }
+        this.updateBuffer();
+    };
+
+    setLeftDisplay = str => {
+      while(str.length < 4) {
+        str = " " + str;
       }
-      this.bitArray[bitStart + i] = parseInt(bits[i]);
+
+      str.split("").slice(0,4).forEach((c, i) => {
+        this.setLedSegments("leftChar" + (i + 1), TmBTLed.CharMap[c], false);
+      });
     }
-    if (bits.length > 9) {
-      this.bitArray[bitStart + 9] = withDot ? 1 : 0;
+
+    flashLeftDisplay = str => {
+      this.setLeftTimeSpacer(false);
+      if (this.indicationOnLeftDisplay !== null) {
+        clearTimeout(this.indicationOnLeftDisplay);
+        this.indicationOnLeftDisplay = null;
+      }
+      this.setLeftDisplay(str);
+      let myself = this;
+      this.indicationOnLeftDisplay = setTimeout(() => {
+        myself.indicationOnLeftDisplay = null;
+      }, 2000);
     }
-    this.updateBuffer();
-};
 
-setLeftDisplay = str => {
-  while(str.length < 4) {
-    str = " " + str;
-  }
+    updateLeftDisplay = (str, isNumber) => {
+      if (this.indicationOnLeftDisplay !== null) {
+        return;
+      }
+      if(str.match(/[\.\d]/)) {
+        this.setNumber(str, false);
+      } else {
+        this.setLeftDisplay(str);
+      }
+    }
 
-  str.split("").slice(0,4).forEach((c, i) => {
-    this.setLedSegments("leftChar" + (i + 1), TmBTLed.CharMap[c], false);
-  });
-}
+    setRightDisplay = str => {
+      while(str.length < 4) {
+        str = " " + str;
+      }
 
-flashLeftDisplay = str => {
-  this.setLeftTimeSpacer(false);
-  if (this.indicationOnLeftDisplay !== null) {
-    clearTimeout(this.indicationOnLeftDisplay);
-    this.indicationOnLeftDisplay = null;
-  }
-  this.setLeftDisplay(str);
-  let myself = this;
-  this.indicationOnLeftDisplay = setTimeout(() => {
-    myself.indicationOnLeftDisplay = null;
-  }, 2000);
-}
+      str.split("").slice(0,4).forEach((c, i) => {
+        this.setLedSegments("rightChar" + (i + 1), TmBTLed.CharMap[c], false);
+      })
+    }
 
-updateLeftDisplay = (str, isNumber) => {
-  if (this.indicationOnLeftDisplay !== null) {
-    return;
-  }
-  if(str.match(/[\.\d]/)) {
-    this.setNumber(str, false);
-  } else {
-    this.setLeftDisplay(str);
-  }
-}
+    updateDisplay = (str, right) => {
+      if (right) {
+        this.updateRightDisplay(str);
+      } else {
+        this.updateLeftDisplay(str);
+      }
+    }
 
-setRightDisplay = str => {
-  while(str.length < 4) {
-    str = " " + str;
-  }
+    flashRightDisplay = str => {
+      this.setRightTimeSpacer(false);
+      if (this.indicationOnRightDisplay !== null) {
+        clearTimeout(this.indicationOnRightDisplay);
+        this.indicationOnRightDisplay = null;
+      }
+      this.setRightDisplay(str);
+      let myself = this;
+      this.indicationOnRightDisplay = setTimeout(() => {
+        myself.indicationOnRightDisplay = null;
+      }, 2000);
+    }
 
-  str.split("").slice(0,4).forEach((c, i) => {
-    this.setLedSegments("rightChar" + (i + 1), TmBTLed.CharMap[c], false);
-  })
-}
+    updateRightDisplay = (str) => {
+      if (this.indicationOnRightDisplay !== null) {
+        return;
+      }
 
-updateDisplay = (str, right) => {
-  if (right) {
-    this.updateRightDisplay(str);
-  } else {
-    this.updateLeftDisplay(str);
-  }
-}
+      if(str.match(/[\.\d]+/) !== null) {
+        this.setNumber(str, true);
+      } else {
+        this.setRightDisplay(str);
+      }
+    }
 
-flashRightDisplay = str => {
-  this.setRightTimeSpacer(false);
-  if (this.indicationOnRightDisplay !== null) {
-    clearTimeout(this.indicationOnRightDisplay);
-    this.indicationOnRightDisplay = null;
-  }
-  this.setRightDisplay(str);
-  let myself = this;
-  this.indicationOnRightDisplay = setTimeout(() => {
-    myself.indicationOnRightDisplay = null;
-  }, 2000);
-}
+    updateDisplay = (str, right) => {
+      if (right) {
+        this.updateRightDisplay(str);
+      } else {
+        this.updateLeftDisplay(str);
+      }
+    };
 
-updateRightDisplay = (str) => {
-  if (this.indicationOnRightDisplay !== null) {
-    return;
-  }
+    setLeftChar1 = char => {
+      this.setLedSegments("leftChar1", TmBTLed.CharMap[char]);
+    };
 
-  if(str.match(/[\.\d]+/) !== null) {
-    this.setNumber(str, true);
-  } else {
-    this.setRightDisplay(str);
-  }
-}
+    setLeftChar2 = char => {
+      this.setLedSegments("leftChar2", TmBTLed.CharMap[char]);
+    };
 
-updateDisplay = (str, right) => {
-  if (right) {
-    this.updateRightDisplay(str);
-  } else {
-    this.updateLeftDisplay(str);
-  }
-};
+    setLeftChar3 = char => {
+      this.setLedSegments("leftChar3", TmBTLed.CharMap[char]);
+    };
 
-setLeftChar1 = char => {
-  this.setLedSegments("leftChar1", TmBTLed.CharMap[char]);
-};
+    setLeftChar4 = char => {
+      this.setLedSegments("leftChar4", TmBTLed.CharMap[char]);
+    };
 
-setLeftChar2 = char => {
-  this.setLedSegments("leftChar2", TmBTLed.CharMap[char]);
-};
+    setRightChar1 = char => {
+      this.setLedSegments("rightChar1", TmBTLed.CharMap[char]);
+    };
 
-setLeftChar3 = char => {
-  this.setLedSegments("leftChar3", TmBTLed.CharMap[char]);
-};
+    setRightChar2 = char => {
+      this.setLedSegments("rightChar2", TmBTLed.CharMap[char]);
+    };
 
-setLeftChar4 = char => {
-  this.setLedSegments("leftChar4", TmBTLed.CharMap[char]);
-};
+    setRightChar3 = char => {
+      this.setLedSegments("rightChar3", TmBTLed.CharMap[char]);
+    };
 
-setRightChar1 = char => {
-  this.setLedSegments("rightChar1", TmBTLed.CharMap[char]);
-};
-
-setRightChar2 = char => {
-  this.setLedSegments("rightChar2", TmBTLed.CharMap[char]);
-};
-
-setRightChar3 = char => {
-  this.setLedSegments("rightChar3", TmBTLed.CharMap[char]);
-};
-
-setRightChar4 = char => {
-  this.setLedSegments("rightChar4", TmBTLed.CharMap[char]);
-};
+    setRightChar4 = char => {
+      this.setLedSegments("rightChar4", TmBTLed.CharMap[char]);
+    };
 
     setGear = gear => {
         let gearCode = "1111111";
@@ -517,13 +541,12 @@ setRightChar4 = char => {
     };
 
 
-  setGearDot = (on) => {
-    this.setBit(TmBTLed.BitRanges["gearDot"][0], on, true);
-  };
-  toggleGearDot = () => {
-    this.flipBit(TmBTLed.BitRanges["gearDot"][0]);
-  };
-
+    setGearDot = (on) => {
+      this.setBit(TmBTLed.BitRanges["gearDot"][0], on, true);
+    };
+    toggleGearDot = () => {
+      this.flipBit(TmBTLed.BitRanges["gearDot"][0]);
+    };
 
     setLeftTimeSpacer = (on) => {
       this.setBit(TmBTLed.BitRanges["leftTimeSpacer"][0], on);
@@ -560,415 +583,416 @@ setRightChar4 = char => {
     setRightBlue = (on) => {
       this.setBit(TmBTLed.BitRanges["rightBlue"][0], on);
     }
-toggleRightBlue = () => {
-    this.flipBit(TmBTLed.BitRanges["rightBlue"][0]);
-};
-setBlue = (on) => {
-  this.setBit(TmBTLed.BitRanges["leftBlue"][0], on)
-  this.setBit(TmBTLed.BitRanges["rightBlue"][0], on)
-};
-toggleBlue = () => {
-  this.flipBit(TmBTLed.BitRanges["leftBlue"][0]);
-  this.flipBit(TmBTLed.BitRanges["rightBlue"][0]);
-};
 
-setLeftRed = (on) => {
-  this.setBit(TmBTLed.BitRanges["leftRed"][0], on);
-}
-toggleLeftRed = () => {
-  this.flipBit(TmBTLed.BitRanges["leftRed"][0]);
-};
-setRightRed = (on) => {
-  this.setBit(TmBTLed.BitRanges["rightRed"][0], on);
-}
-toggleRightRed = () => {
-  this.flipBit(TmBTLed.BitRanges["rightRed"][0]);
-};
-setRed = (on) => {
-  this.setBit(TmBTLed.BitRanges["leftRed"][0], on)
-  this.setBit(TmBTLed.BitRanges["rightRed"][0], on)
-};
-toggleRed = () => {
-  this.flipBit(TmBTLed.BitRanges["leftRed"][0]);
-  this.flipBit(TmBTLed.BitRanges["rightRed"][0]);
-};
+    toggleRightBlue = () => {
+        this.flipBit(TmBTLed.BitRanges["rightBlue"][0]);
+    };
+    setBlue = (on) => {
+      this.setBit(TmBTLed.BitRanges["leftBlue"][0], on)
+      this.setBit(TmBTLed.BitRanges["rightBlue"][0], on)
+    };
+    toggleBlue = () => {
+      this.flipBit(TmBTLed.BitRanges["leftBlue"][0]);
+      this.flipBit(TmBTLed.BitRanges["rightBlue"][0]);
+    };
 
-setLeftYellow = (on) => {
-  this.setBit(TmBTLed.BitRanges["leftYellow"][0], on);
-}
-toggleLeftYellow = () => {
-  this.flipBit(TmBTLed.BitRanges["leftYellow"][0]);
-};
-setRightYellow = (on) => {
-  this.setBit(TmBTLed.BitRanges["rightYellow"][0], on);
-}
-toggleRightYellow = () => {
-  this.flipBit(TmBTLed.BitRanges["rightYellow"][0]);
-};
-flashingRightYellowInterval = null;
-isFlashingRightYellow = false;
-setFlashingRightYellow = (shouldFlash) => {
-  if (!shouldFlash) {
-    this.setRightYellow(false);
-    if(this.flashingRightYellowInterval !== null) {
-      clearInterval(this.flashingRightYellowInterval);
-      this.flashingRightYellowInterval = null;
-      this.isFlashingRightYellow = false;
+    setLeftRed = (on) => {
+      this.setBit(TmBTLed.BitRanges["leftRed"][0], on);
     }
-    return;
-  }
-  if (shouldFlash == this.isFlashingRightYellow) {
-    return;
-  }
-
-  this.isFlashingRightYellow = shouldFlash;
-  if (this.flashingRightYellowInterval !== null) {
-    clearInterval(this.flashingRightYellowInterval);
-    this.flashingRightYellowInterval = null;
-  }
-  this.flashingRightYellowInterval = setInterval(() => {
-    this.toggleRightYellow();
-  }, 500);
-}
-
-
-setYellow = (on) => {
-  this.setBit(TmBTLed.BitRanges["leftYellow"][0], on)
-  this.setBit(TmBTLed.BitRanges["rightYellow"][0], on)
-};
-toggleYellow = () => {
-  this.flipBit(TmBTLed.BitRanges["leftYellow"][0]);
-  this.flipBit(TmBTLed.BitRanges["rightYellow"][0]);
-};
-
-setFlashingYellow = (shouldFlash) => {
-  if (!shouldFlash) {
-    this.setYellow(false);
-    if(this.flashingYellowInterval !== null) {
-      clearInterval(this.flashingYellowInterval);
-      this.flashingYellowInterval = null;
-      this.isFlashingYellow = false;
+    toggleLeftRed = () => {
+      this.flipBit(TmBTLed.BitRanges["leftRed"][0]);
+    };
+    setRightRed = (on) => {
+      this.setBit(TmBTLed.BitRanges["rightRed"][0], on);
     }
-    return;
-  }
-  if (shouldFlash == this.isFlashingYellow) {
-    return;
-  }
+    toggleRightRed = () => {
+      this.flipBit(TmBTLed.BitRanges["rightRed"][0]);
+    };
+    setRed = (on) => {
+      this.setBit(TmBTLed.BitRanges["leftRed"][0], on)
+      this.setBit(TmBTLed.BitRanges["rightRed"][0], on)
+    };
+    toggleRed = () => {
+      this.flipBit(TmBTLed.BitRanges["leftRed"][0]);
+      this.flipBit(TmBTLed.BitRanges["rightRed"][0]);
+    };
 
-  this.isFlashingYellow = shouldFlash;
-  if (this.flashingYellowInterval !== null) {
-    clearInterval(this.flashingYellowInterval);
-    this.flashingYellowInterval = null;
-  }
-  this.flashingYellowInterval = setInterval(() => {
-    this.toggleYellow();
-  }, 500);
-}
-
-
-setFlashingBlue = (shouldFlash) => {
-if (!shouldFlash) {
-  this.setBlue(false);
-  if(this.flashingBlueInterval !== null) {
-    clearInterval(this.flashingBlueInterval);
-    this.flashingBlueInterval = null;
-    this.isFlashingBlue = false;
-  }
-  return;
-}
-if (shouldFlash == this.isFlashingBlue) {
-  return;
-}
-
-this.isFlashingBlue = shouldFlash;
-if (this.flashingBlueInterval !== null) {
-  clearInterval(this.flashingBlueInterval);
-  this.flashingBlueInterval = null;
-}
-this.flashingBlueInterval = setInterval(() => {
-  this.toggleBlue();
-}, 500);
-}
-
-
-setFlashingRed = (shouldFlash) => {
-if (!shouldFlash) {
-  this.setRed(false);
-  if(this.flashingRedInterval !== null) {
-    clearInterval(this.flashingRedInterval);
-    this.flashingRedInterval = null;
-    this.isFlashingRed = false;
-  }
-  return;
-}
-if (shouldFlash == this.isFlashingRed) {
-  return;
-}
-
-this.isFlashingRed = shouldFlash;
-if (this.flashingRedInterval !== null) {
-  clearInterval(this.flashingRedInterval);
-  this.flashingRedInterval = null;
-}
-this.flashingRedInterval = setInterval(() => {
-  this.toggleRed();
-}, 500);
-}
-
-setAllFlashing = (shouldFlash) => {
-    this.setFlashingBlue(shouldFlash);
-    this.setFlashingYellow(shouldFlash);
-    this.setFlashingRed(shouldFlash);
-}
-
-setAllColors = (on) => {
-    this.setBlue(on);
-    this.setRed(on);
-    this.setYellow(on);
-} 
-
-toggleAllColors = () => {
-    this.toggleBlue();
-    this.toggleRed();
-    this.toggleYellow();
-} 
-
-setNumber = (numberString, right) => {
-  let chars = (numberString || "").split("");
-  let slots = [];
-  for (let i = 0; i < chars.length; i++) {
-    if(i < chars.length - 1 && (chars[i + 1] === "." || chars[i + 1] === ",")) {
-      slots.push(chars[i] + ".");
-      i++;
-    } else {
-      slots.push(chars[i]);
+    setLeftYellow = (on) => {
+      this.setBit(TmBTLed.BitRanges["leftYellow"][0], on);
     }
-  }
-  while(slots.length < 4) {
-    slots.unshift(" ");
-  }
-  for(let i = 0; i < Math.min(4,slots.length); i++) {
-    const splittedChar = (slots[i] || "").split("");
-    const char = TmBTLed.CharMap[splittedChar[0]];
-    const withDot = splittedChar.length === 2 && splittedChar[1] === ".";
-    this.setLedSegments((right ? "right" : "left") + "Char" + (i + 1), char, withDot);
-  }
-};
+    toggleLeftYellow = () => {
+      this.flipBit(TmBTLed.BitRanges["leftYellow"][0]);
+    };
+    setRightYellow = (on) => {
+      this.setBit(TmBTLed.BitRanges["rightYellow"][0], on);
+    }
+    toggleRightYellow = () => {
+      this.flipBit(TmBTLed.BitRanges["rightYellow"][0]);
+    };
 
-setRevLightsFlashing = (flashStatus) => {
-  if (flashStatus === 0 && this.revLightsFlashing !== 0) {
-    this.revLightsFlashing = 0;
-    this.setRevLights(0);
-    if(this.revLightsFlashingIntervalId !== null) {
-      clearInterval(this.revLightsFlashingIntervalId);
-      this.revLightsFlashingIntervalId = null;
-    }
-    return;
-  }
-  if (flashStatus == this.revLightsFlashing) {
-    return;
-  }
+    flashingRightYellowInterval = null;
+    isFlashingRightYellow = false;
 
-  this.revLightsFlashing = flashStatus;
-  if (this.revLightsFlashingIntervalId !== null) {
-    clearInterval(this.revLightsFlashingIntervalId);
-    this.revLightsFlashingIntervalId = null;
-  }
-  this.revLightsFlashingIntervalId = setInterval(() => {
-    this.toggleRevLights();
-  }, this.revLightsFlashing === 1 ? 500 : 250);
-};
-
-setRevLights = (percent) => {
-    if (percent > 100) {
-        percent = 100;
-    }
-    
-    let firstByte = (1 << Math.floor((8/50) * percent)) - 1;
-    let secondByte = 0;
-    if (percent >= 50) {
-        firstByte = 255;
-        secondByte = (1 << Math.floor((7/50) * (percent - 50))) - 1;
-    }
-    const firstBitStart = TmBTLed.BitRanges["revLights1"][0];
-    const firstBitEnd = TmBTLed.BitRanges["revLights1"][1] + 1;
-    let firstBitArray = BitArray.fromNumber(firstByte).toJSON();
-    while (firstBitArray.length < 8) {
-      firstBitArray.unshift(0);
-    }
-    // Prevent overflow
-    firstBitArray = firstBitArray.slice(0, firstBitEnd - firstBitStart );
-    const secondBitStart = TmBTLed.BitRanges["revLights2"][0];
-    const secondBitEnd = TmBTLed.BitRanges["revLights2"][1] + 1;
-    let secondBitArray = BitArray.fromNumber(secondByte).toJSON();
-    while (secondBitArray.length < 7) {
-      secondBitArray.unshift(0);
-    }
-    // Prevent overflow
-    secondBitArray = secondBitArray.slice(0, secondBitEnd - secondBitStart);
-    for (let i = 0; i < firstBitArray.length; i++) {
-      this.bitArray[firstBitStart + i] = parseInt(firstBitArray[i]);
-      if (i < secondBitArray.length) {
-        this.bitArray[secondBitStart + i] = parseInt(secondBitArray[i]);
+    setFlashingRightYellow = (shouldFlash) => {
+      if (!shouldFlash) {
+        this.setRightYellow(false);
+        if(this.flashingRightYellowInterval !== null) {
+          clearInterval(this.flashingRightYellowInterval);
+          this.flashingRightYellowInterval = null;
+          this.isFlashingRightYellow = false;
+        }
+        return;
       }
+      if (shouldFlash == this.isFlashingRightYellow) {
+        return;
+      }
+
+      this.isFlashingRightYellow = shouldFlash;
+      if (this.flashingRightYellowInterval !== null) {
+        clearInterval(this.flashingRightYellowInterval);
+        this.flashingRightYellowInterval = null;
+      }
+      this.flashingRightYellowInterval = setInterval(() => {
+        this.toggleRightYellow();
+      }, 500);
     }
 
-    this.updateBuffer();
-}
+    setYellow = (on) => {
+      this.setBit(TmBTLed.BitRanges["leftYellow"][0], on)
+      this.setBit(TmBTLed.BitRanges["rightYellow"][0], on)
+    };
 
-toggleRevLights = () => {
-  this.revLightsOn = !this.revLightsOn;
-  this.setRevLights(this.revLightsOn ? 100 : 0);
-};
+    toggleYellow = () => {
+      this.flipBit(TmBTLed.BitRanges["leftYellow"][0]);
+      this.flipBit(TmBTLed.BitRanges["rightYellow"][0]);
+    };
 
+    setFlashingYellow = (shouldFlash) => {
+      if (!shouldFlash) {
+        this.setYellow(false);
+        if(this.flashingYellowInterval !== null) {
+          clearInterval(this.flashingYellowInterval);
+          this.flashingYellowInterval = null;
+          this.isFlashingYellow = false;
+        }
+        return;
+      }
+      if (shouldFlash == this.isFlashingYellow) {
+        return;
+      }
 
-// Set data specific
-
-setTemperature = (value, right) => { // expects C
-  if (value < 0) {
-    value = 0;
-  }
-
-  if (!this.metric) {
-    value = convert(value).from("C").to("F").toFixed(1);    
-  } else {
-    value = value.toFixed(1);
-  }
-  this.updateDisplay(value, right);
-}
-
-setWeight = (value, right) => { // expects kg
-  if (value < 0) {
-    value = 0;
-  }
-
-  if (!this.metric) {
-    value = convert(value).from("kg").to("lb").toFixed(1);
-  } else {
-    value = value.toFixed(1);
-  }
-
-  this.updateDisplay(value, right);
-}
-
-setFloat = (value, right) => {
-    if (value < 0) {
-      value = 0;
+      this.isFlashingYellow = shouldFlash;
+      if (this.flashingYellowInterval !== null) {
+        clearInterval(this.flashingYellowInterval);
+        this.flashingYellowInterval = null;
+      }
+      this.flashingYellowInterval = setInterval(() => {
+        this.toggleYellow();
+      }, 500);
     }
-    value = value.toFixed(1);
-    this.updateDisplay(value, right);
-}
 
-setInt = (value, right) => {
-  value = parseInt(value);
-  if (value < 0) {
-    value = 0;
-  }
-  value = value.toFixed(0);
-  this.updateDisplay(value, right);
-}
+    setFlashingBlue = (shouldFlash) => {
+      if (!shouldFlash) {
+        this.setBlue(false);
+        if(this.flashingBlueInterval !== null) {
+          clearInterval(this.flashingBlueInterval);
+          this.flashingBlueInterval = null;
+          this.isFlashingBlue = false;
+        }
+        return;
+      }
+      if (shouldFlash == this.isFlashingBlue) {
+        return;
+      }
 
-setSpeed = (value, right) => { // expects Kmh
-  value = parseInt(value);
-  if (value < 0) {
-    value = 0;
-  }
-  if (!this.metric) {
-    value = convert(value).from("km/h").to("m/h").toFixed(0);
-  } else {
-    value = value.toFixed(0);
-  }
-  this.updateDisplay(value, right);
-}
-
-setRpm = (rpm, right) => {
-    if (rpm >= 10000) {
-      rpm = (rpm / 1000).toFixed(1) + "K";
-    } else {
-      rpm = rpm.toFixed(0);
+      this.isFlashingBlue = shouldFlash;
+      if (this.flashingBlueInterval !== null) {
+        clearInterval(this.flashingBlueInterval);
+        this.flashingBlueInterval = null;
+      }
+      this.flashingBlueInterval = setInterval(() => {
+        this.toggleBlue();
+      }, 500);
     }
-    this.updateDisplay(rpm, right);
-}
 
-setDiffTime = (time, right) => {
-  const isNegative = time < 0;
-  time = Math.abs(time) / 1000;
+    setFlashingRed = (shouldFlash) => {
+        if (!shouldFlash) {
+          this.setRed(false);
+          if(this.flashingRedInterval !== null) {
+            clearInterval(this.flashingRedInterval);
+            this.flashingRedInterval = null;
+            this.isFlashingRed = false;
+          }
+          return;
+        }
+        if (shouldFlash == this.isFlashingRed) {
+          return;
+        }
 
-  let timeString = "----";
-
-  if (time === null || isNaN(time) || time >= 2147483647) {
-    this.updateDisplay(timeString, right);
-    if ((right && this.indicationOnRightDisplay === null) || (!right && this.indicationOnLeftDisplay === null)) {
-      this.setTimeSpacer(true, right);
+        this.isFlashingRed = shouldFlash;
+        if (this.flashingRedInterval !== null) {
+          clearInterval(this.flashingRedInterval);
+          this.flashingRedInterval = null;
+        }
+        this.flashingRedInterval = setInterval(() => {
+          this.toggleRed();
+        }, 500);
     }
-    return;
-  }
 
-
-  if (time > 99.99) {
-    timeString = "99.9";
-  } else if (time < 10) {
-    timeString = time.toFixed(2);
-  } else {
-    timeString = time.toFixed(1);
-  }
-
-  if (isNegative) {
-    timeString = "-" + timeString;
-  } else {
-    timeString = "+" + timeString;
-  }
-  this.updateDisplay(timeString, right);
-};
-
-setTime = (time, right) => { // time in Milliseconds
-  let timeString = "----";
-  if (time === null || isNaN(time) || time >= 2147483647) {
-    this.updateDisplay(timeString, right);
-    if (right && this.indicationOnRightDisplay === null || (!right && this.indicationOnLeftDisplay === null)) {
-      this.setTimeSpacer(true, right);
+    setAllFlashing = (shouldFlash) => {
+        this.setFlashingBlue(shouldFlash);
+        this.setFlashingYellow(shouldFlash);
+        this.setFlashingRed(shouldFlash);
     }
-    return;
-  }
 
-  let timeInSeconds = Math.abs(time) / 1000;
-  let minutes = Math.floor(timeInSeconds / 60).toFixed(0);
-  let seconds = Math.floor(timeInSeconds % 60).toFixed(0);
-  while (seconds.length < 2) {
-    seconds = "0" + seconds;
-  }
+    setAllColors = (on) => {
+        this.setBlue(on);
+        this.setRed(on);
+        this.setYellow(on);
+    } 
 
-  let milliseconds = (time & 1000).toFixed(0);
-  while (milliseconds.length < 3) {
-    milliseconds += "0";
-  }
+    toggleAllColors = () => {
+        this.toggleBlue();
+        this.toggleRed();
+        this.toggleYellow();
+    } 
 
-  if (timeInSeconds === 0) {
-    timeString = "0.000";
-  }
-  if (parseInt(minutes) > 99) {
-    timeString = "9999";
-    if (right && this.indicationOnRightDisplay === null || this.indicationOnLeftDisplay === null) {
-      this.setTimeSpacer(true, right);
+    setNumber = (numberString, right) => {
+      let chars = (numberString || "").split("");
+      let slots = [];
+      for (let i = 0; i < chars.length; i++) {
+        if(i < chars.length - 1 && (chars[i + 1] === "." || chars[i + 1] === ",")) {
+          slots.push(chars[i] + ".");
+          i++;
+        } else {
+          slots.push(chars[i]);
+        }
+      }
+      while(slots.length < 4) {
+        slots.unshift(" ");
+      }
+      for(let i = 0; i < Math.min(4,slots.length); i++) {
+        const splittedChar = (slots[i] || "").split("");
+        const char = TmBTLed.CharMap[splittedChar[0]];
+        const withDot = splittedChar.length === 2 && splittedChar[1] === ".";
+        this.setLedSegments((right ? "right" : "left") + "Char" + (i + 1), char, withDot);
+      }
+    };
+
+    setRevLightsFlashing = (flashStatus) => {
+      if (flashStatus === 0 && this.revLightsFlashing !== 0) {
+        this.revLightsFlashing = 0;
+        this.setRevLights(0);
+        if(this.revLightsFlashingIntervalId !== null) {
+          clearInterval(this.revLightsFlashingIntervalId);
+          this.revLightsFlashingIntervalId = null;
+        }
+        return;
+      }
+      if (flashStatus == this.revLightsFlashing) {
+        return;
+      }
+
+      this.revLightsFlashing = flashStatus;
+      if (this.revLightsFlashingIntervalId !== null) {
+        clearInterval(this.revLightsFlashingIntervalId);
+        this.revLightsFlashingIntervalId = null;
+      }
+      this.revLightsFlashingIntervalId = setInterval(() => {
+        this.toggleRevLights();
+      }, this.revLightsFlashing === 1 ? 500 : 250);
+    };
+
+    setRevLights = (percent) => {
+        if (percent > 100) {
+            percent = 100;
+        }
+        
+        let firstByte = (1 << Math.floor((8/50) * percent)) - 1;
+        let secondByte = 0;
+        if (percent >= 50) {
+            firstByte = 255;
+            secondByte = (1 << Math.floor((7/50) * (percent - 50))) - 1;
+        }
+        const firstBitStart = TmBTLed.BitRanges["revLights1"][0];
+        const firstBitEnd = TmBTLed.BitRanges["revLights1"][1] + 1;
+        let firstBitArray = BitArray.fromNumber(firstByte).toJSON();
+        while (firstBitArray.length < 8) {
+          firstBitArray.unshift(0);
+        }
+        // Prevent overflow
+        firstBitArray = firstBitArray.slice(0, firstBitEnd - firstBitStart );
+        const secondBitStart = TmBTLed.BitRanges["revLights2"][0];
+        const secondBitEnd = TmBTLed.BitRanges["revLights2"][1] + 1;
+        let secondBitArray = BitArray.fromNumber(secondByte).toJSON();
+        while (secondBitArray.length < 7) {
+          secondBitArray.unshift(0);
+        }
+        // Prevent overflow
+        secondBitArray = secondBitArray.slice(0, secondBitEnd - secondBitStart);
+        for (let i = 0; i < firstBitArray.length; i++) {
+          this.bitArray[firstBitStart + i] = parseInt(firstBitArray[i]);
+          if (i < secondBitArray.length) {
+            this.bitArray[secondBitStart + i] = parseInt(secondBitArray[i]);
+          }
+        }
+
+        this.updateBuffer();
     }
-  } else if (timeInSeconds < 10) {
-    timeString = "" + timeInSeconds;
-    while (timeString.length < 5) {
-      timeString = timeString + "0";
-    }
-  } else if (parseInt(minutes) < 1) {
-    timeString = seconds + "." + milliseconds.substring(0,2);
-  } else if (parseInt(minutes) < 10) {
-    timeString = minutes + "." + seconds + "." + milliseconds.substring(0,1);
-  } else {
-    timeString = minutes + seconds;
-    if (right && this.indicationOnRightDisplay === null || this.indicationOnLeftDisplay === null) {
-      this.setTimeSpacer(true, right);
-    }
-  }
 
-  this.updateDisplay(timeString, right);
-}
+    toggleRevLights = () => {
+      this.revLightsOn = !this.revLightsOn;
+      this.setRevLights(this.revLightsOn ? 100 : 0);
+    };
+
+
+    // Set data specific
+
+    setTemperature = (value, right) => { // expects C
+      if (value < 0) {
+        value = 0;
+      }
+
+      if (!this.metric) {
+        value = convert(value).from("C").to("F").toFixed(1);    
+      } else {
+        value = value.toFixed(1);
+      }
+      this.updateDisplay(value, right);
+    }
+
+    setWeight = (value, right) => { // expects kg
+      if (value < 0) {
+        value = 0;
+      }
+
+      if (!this.metric) {
+        value = convert(value).from("kg").to("lb").toFixed(1);
+      } else {
+        value = value.toFixed(1);
+      }
+
+      this.updateDisplay(value, right);
+    }
+
+    setFloat = (value, right) => {
+        if (value < 0) {
+          value = 0;
+        }
+        value = value.toFixed(1);
+        this.updateDisplay(value, right);
+    }
+
+    setInt = (value, right) => {
+      value = parseInt(value);
+      if (value < 0) {
+        value = 0;
+      }
+      value = value.toFixed(0);
+      this.updateDisplay(value, right);
+    }
+
+    setSpeed = (value, right) => { // expects Kmh
+      value = parseInt(value);
+      if (value < 0) {
+        value = 0;
+      }
+      if (!this.metric) {
+        value = convert(value).from("km/h").to("m/h").toFixed(0);
+      } else {
+        value = value.toFixed(0);
+      }
+      this.updateDisplay(value, right);
+    }
+
+    setRpm = (rpm, right) => {
+        if (rpm >= 10000) {
+          rpm = (rpm / 1000).toFixed(1) + "K";
+        } else {
+          rpm = rpm.toFixed(0);
+        }
+        this.updateDisplay(rpm, right);
+    }
+
+    setDiffTime = (time, right) => {
+      const isNegative = time < 0;
+      time = Math.abs(time) / 1000;
+
+      let timeString = "----";
+
+      if (time === null || isNaN(time) || time >= 2147483647) {
+        this.updateDisplay(timeString, right);
+        if ((right && this.indicationOnRightDisplay === null) || (!right && this.indicationOnLeftDisplay === null)) {
+          this.setTimeSpacer(true, right);
+        }
+        return;
+      }
+
+
+      if (time > 99.99) {
+        timeString = "99.9";
+      } else if (time < 10) {
+        timeString = time.toFixed(2);
+      } else {
+        timeString = time.toFixed(1);
+      }
+
+      if (isNegative) {
+        timeString = "-" + timeString;
+      } else {
+        timeString = "+" + timeString;
+      }
+      this.updateDisplay(timeString, right);
+    };
+
+    setTime = (time, right) => { // time in Milliseconds
+      let timeString = "----";
+      if (time === null || isNaN(time) || time >= 2147483647) {
+        this.updateDisplay(timeString, right);
+        if (right && this.indicationOnRightDisplay === null || (!right && this.indicationOnLeftDisplay === null)) {
+          this.setTimeSpacer(true, right);
+        }
+        return;
+      }
+
+      let timeInSeconds = Math.abs(time) / 1000;
+      let minutes = Math.floor(timeInSeconds / 60).toFixed(0);
+      let seconds = Math.floor(timeInSeconds % 60).toFixed(0);
+      while (seconds.length < 2) {
+        seconds = "0" + seconds;
+      }
+
+      let milliseconds = (time & 1000).toFixed(0);
+      while (milliseconds.length < 3) {
+        milliseconds += "0";
+      }
+
+      if (timeInSeconds === 0) {
+        timeString = "0.000";
+      }
+      if (parseInt(minutes) > 99) {
+        timeString = "9999";
+        if (right && this.indicationOnRightDisplay === null || this.indicationOnLeftDisplay === null) {
+          this.setTimeSpacer(true, right);
+        }
+      } else if (timeInSeconds < 10) {
+        timeString = "" + timeInSeconds;
+        while (timeString.length < 5) {
+          timeString = timeString + "0";
+        }
+      } else if (parseInt(minutes) < 1) {
+        timeString = seconds + "." + milliseconds.substring(0,2);
+      } else if (parseInt(minutes) < 10) {
+        timeString = minutes + "." + seconds + "." + milliseconds.substring(0,1);
+      } else {
+        timeString = minutes + seconds;
+        if (right && this.indicationOnRightDisplay === null || this.indicationOnLeftDisplay === null) {
+          this.setTimeSpacer(true, right);
+        }
+      }
+
+      this.updateDisplay(timeString, right);
+    }
 
 }
 
