@@ -215,7 +215,7 @@ class TmBTLed {
             }
 
             this.peripheral = p;
-            this.peripheral.discoverSomeServicesAndCharacteristics(["1800"], [], (error, services, characteristics) => {
+            this.peripheral.discoverAllServicesAndCharacteristics((error, services, characteristics) => {
                 noble.on('connectionParameterUpdateRequest', (minInterval, maxInterval) => {
                   console.log("Refresh interval was forcefully set to ", maxInterval, " ms");
                   this.updateInterval = maxInterval;
@@ -241,7 +241,7 @@ class TmBTLed {
                 }
       
                 // -> This should trigger the startLoop
-                setTimeout(() => this.peripheral.connUpdateLe(this.targetInterval, this.targetInterval, 0, 3000), 250);
+                this.peripheral.connUpdateLe(this.targetInterval, this.targetInterval, 0, 3000);
             });
         });
     }
