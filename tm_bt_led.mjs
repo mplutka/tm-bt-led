@@ -539,6 +539,10 @@ class TmBTLed {
     }
 
     setRpm = (rpm, right) => {
+        if (rpm < 0) {
+          rpm = 0;
+        }
+
         if (rpm >= 10000) {
           rpm = (rpm / 1000).toFixed(1) + "K";
         } else {
