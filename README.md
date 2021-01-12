@@ -5,7 +5,7 @@
 
 I bought the device as part of a set and didn't notice before that it was for PS4 only. :-( So I played around with it a bit and discovered that it was basically working as a Bluetooth LE HID over GATT device, spent many many hours figuring out how it works internally and can be communicated with and wrote some horrible code to be able to address all the leds and led segments and to make it display whatever I like.
 
-Combined it with telemetry plugins for F1 2019 and Assetto Corsa/Comp and it is in a state now that I'm happy to share with you. Yes, this is WIP and very yes, this is quite hacky and might crash on your side or don't work at all. **IT MIGHT EVEN DAMAGE YOUR DEVICE** (It shouldn't but don't blame me.)
+Combined it with telemetry plugins for some games and it is in a state now that I'm happy to share with you. Yes, this is WIP and very yes, this is quite hacky and might crash on your side or don't work at all. **IT MIGHT EVEN DAMAGE YOUR DEVICE** (It shouldn't but don't blame me.)
 Feedback is very welcome!
 
 Please note that **I can't provide any specific support** for your environment or setup. I will do my best to document anything special you need to know to make it work.
@@ -17,11 +17,19 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 **Please don't buy a Thrustmaster BT LED for this only to use at with your PC!** This method works now but could easily break because of future updates etc. I also don't recommend to do any firmware updates on the device if it works as intended.
 
 
+## Supported games
+
+* F1 2019: f12019.bat
+* F1 2020: f12019.bat
+* Assetto Corsa: assetto.bat
+* Assetto Corsa Competizione: assetto.bat
+* iRacing: iracing.bat
+
 ## Prerequisites
 
 1. You should be familiar with installing and using NodeJS application on Windows command line (cmd.exe).
 2. Thrustmaster BT LED ;-) (I won't guarantee that it works on your PC, so keep this in mind when buying one extra for this!)
-3. Compatible game (F1 2019/2020 or Assetto Corsa/Comp). F1 2018 might work too. Others might follow.
+3. Compatible game with enabled telemetry data
 4. Windows 10 19042 or higher (might work on other but not tested) and the following software:
 
 		a. Git
@@ -34,8 +42,6 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 
 5. Zadig [Link](https://zadig.akeo.ie/)
 6. USB stick (I'm using a CSR8510 A10 based one which performs very good, my ASUS BT400 didn't work very well) or chipset that provides Bluetooth LE with supported chipset! [List of supported devices](https://github.com/abandonware/node-bluetooth-hci-socket#windows)
-
-7. Windows firewall shouldn't block UPD traffic to 20777 (F1)
   
 
 ## Installation
@@ -60,7 +66,7 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 2. Press both upper buttons on the TM BT and let it connect when prompted to do so. It shouldn't be paired to your PC or other device before doing this!
 3. If it is not picking up any devices ("2. Discovering devices" or "1. Starting scan..." never shows up), try restarting the script.
 4. It should say "5. Listening for game data..." if all went well. If not also try to unplug and replug the USB stick and start over.
-5. Start the game itself and enjoy. For F1 2019 you need to activate and configure telemetry broadcast in the settings (change IP and leave frequency at 60Hz).
+5. Start the game itself and enjoy.
 
 
 ## Video

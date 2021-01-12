@@ -17,7 +17,7 @@
     "Thrustmaster BT LED PC",
     "TM BT LED F1 2020",
     "TM BT LED ACC",
-    "TM BT LED iRacing",    
+    "TM BT LED iRacing"
   ],
   "main": "./index.mjs",
   "engines": {
