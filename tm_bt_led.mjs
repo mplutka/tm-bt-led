@@ -584,7 +584,7 @@ class TmBTLed {
 
     setTime = (time, right) => { // time in Milliseconds
       let timeString = "----";
-      if (time === null || isNaN(time) || time >= 2147483647) {
+      if (time === 0 || time === null || isNaN(time) || time >= 2147483647) {
         this.updateDisplay(timeString, right);
         if (right && this.indicationOnRightDisplay === null || (!right && this.indicationOnLeftDisplay === null)) {
           this.setTimeSpacer(true, right);
