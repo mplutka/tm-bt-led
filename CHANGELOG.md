@@ -25,3 +25,7 @@
 
   * Negotiate new connection update interval after initial connection for much higher refresh rates (down to 7.5ms). Default is 15 ms but may be overriden with --interval parameter and raised to save the device's battery life or prevent crashes.
   * Added "test.bat" for some light show and to test stability. ;-)
+  
+## Version 2.0.1
+
+  * Support for iRacing
