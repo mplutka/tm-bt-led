@@ -24,6 +24,8 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 * Assetto Corsa: assetto.bat
 * Assetto Corsa Competizione: assetto.bat
 * iRacing: iracing.bat
+* Dirt Rally: dirt.bat
+
 
 ## Prerequisites
 
