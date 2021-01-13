@@ -4,7 +4,7 @@
   "license": "MIT",
   "name": "tm-bt-led",
   "description": "A library for accessing the Thrustmaster BT LED peripheral on Windows/PC",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "repository": {
     "type": "git",
     "url": "https://github.com/mplutka/tm-bt-led.git"
@@ -17,7 +17,8 @@
     "Thrustmaster BT LED PC",
     "TM BT LED F1 2020",
     "TM BT LED ACC",
-    "TM BT LED iRacing"
+    "TM BT LED iRacing",
+    "TM BT LED Dirt Rally"
   ],
   "main": "./index.mjs",
   "engines": {

@@ -29,3 +29,7 @@
 ## Version 2.0.1
 
   * Support for iRacing
+
+## Version 2.0.3
+
+  * Support for Dirt Rally
