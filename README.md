@@ -62,7 +62,7 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 
 ## Launch
 
-1. Inside the code dir in the CLI, type `f12019.bat` or `assetto.bat` and hit enter
+1. Inside the code directory, open the game's batch file (f12019.bat, assetto.bat...).
 2. Press both upper buttons on the TM BT and let it connect when prompted to do so. It shouldn't be paired to your PC or other device before doing this!
 3. If it is not picking up any devices ("2. Discovering devices" or "1. Starting scan..." never shows up), try restarting the script.
 4. It should say "5. Listening for game data..." if all went well. If not also try to unplug and replug the USB stick and start over.
