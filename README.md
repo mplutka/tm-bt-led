@@ -3,10 +3,11 @@
 
 ## Disclaimer
 
+**I do not work for Thrustmaster and thus this is no official release. It comes with no guarantee or liability for any harm or damage to hardware or software. Use it at your own risk!**
+
 I bought the device as part of a set and didn't notice before that it was for PS4 only. :-( So I played around with it a bit and discovered that it was basically working as a Bluetooth LE HID over GATT device, spent many many hours figuring out how it works internally and can be communicated with and wrote some horrible code to be able to address all the leds and led segments and to make it display whatever I like.
 
-Combined it with telemetry plugins for some games and it is in a state now that I'm happy to share with you. Yes, this is WIP and very yes, this is quite hacky and might crash on your side or don't work at all. **IT MIGHT EVEN DAMAGE YOUR DEVICE** (It shouldn't but don't blame me.)
-Feedback is very welcome!
+Combined it with telemetry plugins for some games and it is in a state now that I'm happy to share with you. Yes, this is WIP and very yes, this is quite hacky and might crash on your side or don't work at all.
 
 Please note that **I can't provide any specific support** for your environment or setup. I will do my best to document anything special you need to know to make it work.
 
@@ -17,15 +18,24 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 **Please don't buy a Thrustmaster BT LED for this only to use at with your PC!** This method works now but could easily break because of future updates etc. I also don't recommend to do any firmware updates on the device if it works as intended.
 
 
-## Supported games
+## Currently supported games
 
-* F1 2019: f12019.bat
-* F1 2020: f12019.bat
-* Assetto Corsa: assetto.bat
-* Assetto Corsa Competizione: assetto.bat
-* iRacing: iracing.bat
-* Dirt Rally: dirt.bat
+* F1 2019, F1 2020 (f1.bat)
+* Assetto Corsa, Assetto Corsa Competizione (assetto.bat)
+* iRacing (iracing.bat)
+* Dirt 3, Dirt 4, Dirt Rally, Dirt Rally 2 (dirt.bat)
 
+If you would like to add a game that uses udp port 20777 to the list, you can use dump_udp.bat to create a dumpfile with recorded telemetry data.
+Either you use _template.mjs and create your own game file or get in touch with me by creating an issue here on Github and attach the dump.
+
+
+## Recommended Bluetooth chipsets/sticks known to be working
+
+* CSR 8510 A10 based devices (USB VID: 0x0a12, USB PID: 0x0001)
+* Realtek Bluetooth 8761B (USB VID: 0x0bda, USB PID: 0x8771, e.g. MPOW Bluetooth 5.0 stick)
+* Intel Wireless Bluetooth 8265 (USB VID: 0x8087, USB PID: 0x0a2b)
+
+Others might work too, but again: No guarantee.
 
 ## Prerequisites
 
@@ -50,21 +60,14 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 
 1. Checkout this repo or download the code on your PC on which you intend to run
 2. Open a Windows and `cd` inside the code directory
-3. Attach your own Thrustmaster BT LED
-
-		a. Determine your TM BT's bluetooth address. Use discover.bat for this and start pairing by pressing both upper buttons an the peripheral while scanning. It should find it and show you the device's address.
-		
-		b. Inside file 0008d3aabbcc.dump, change "uuid" and "address" at the bottom of the file to match your TM BL address (e.g. 0008d3112233 and 00:08:d3:11:22:33)
-		
-		c. Rename file 0008d3aabbcc.dump to match your TM BL address (e.g. 0008d3112233.dump)
-
-4.  `npm install` (This should install everything needed. If something fails especially on compilation, check Prerequisites#5)
-5. You can try your device and test it's stability by running "test.bat" inside this folder.
+3. `npm install` (This should install everything needed. If something fails especially on compilation, check Prerequisites#5)
+4. Run "setup.bat" to detect your device and dump it's data to a file for faster reconnects (necessary)
+5. You can start "test.bat" to run demo mode.
 
 
 ## Launch
 
-1. Inside the code directory, open the game's batch file (f12019.bat, assetto.bat...).
+1. Inside the code directory, launch run.bat followed by the game name (e.g. "run.bat f1").
 2. Press both upper buttons on the TM BT and let it connect when prompted to do so. It shouldn't be paired to your PC or other device before doing this!
 3. If it is not picking up any devices ("2. Discovering devices" or "1. Starting scan..." never shows up), try restarting the script.
 4. It should say "5. Listening for game data..." if all went well. If not also try to unplug and replug the USB stick and start over.

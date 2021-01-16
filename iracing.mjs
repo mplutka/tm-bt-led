@@ -1,148 +1,43 @@
-import TmBTLed from './tm_bt_led.mjs';
+/*
+ * Game client for iRacing
+ *
+ * Created Date: Wednesday, January 13th 2021, 11:20:51 pm
+ * Author: Markus Plutka
+ * 
+ * Copyright (c) 2021 Markus Plutka
+ */
 
 import irsdk from 'node-irsdk';
+import AbstractClient from './lib/abstractClient.mjs';
 
-class iRacing {
-    client;
+const gameTitle = " IRACING";
 
-    static leftModes = {
-      'curFuel': {
-        label: "FUEL"
-      },
-      'speed': {
-        label: "SPD"
-      },
-      'rpm': {
-        label: "RPM"
-      },
-      'watT': {
-        label: "WTRT"
-      },
-      'oilT': {
-        label: "OILT"
-      },
-      'tyrT': {
-        label: "TYRT"
-      }
-    }
+const leftModes = ["SPD", "RPM", "FUEL", "TYRT", "OILT", "WTRT"];
+const rightModes = ["CLAP", "DELTA", "LLAP", "BLAP", "POS", "LAP", "LEFT"];
 
-    static rightModes = {
-      'curLapTime': {
-        label: "CLAP"
-      },      
-      'delta': {
-        label: "DELTA"
-      },
-      'bestLapTime': {
-        label: "BLAP"
-      }, 
-      'lastLapTime': {
-        label: "LLAP"
-      },    
-      'pos': {
-        label: "POS"
-      },
-      'curLap': {
-        label: "LAP"
-      },
-      'lapsLeft': {
-        label: "LEFT"
-      }
-    }
+class iRacing extends AbstractClient {
 
-    currentLeftMode;
-    currentRightMode;
+    constructor(...params) {
+      super(...params);    
 
-    constructor() {
-        this.tmBtLed = new TmBTLed({
-          onConnect: this.onDeviceConnected,
-          onLeftPreviousMode: this.leftPreviousMode,
-          onLeftNextMode: this.leftNextMode,
-          onRightPreviousMode: this.rightPreviousMode,
-          onRightNextMode: this.rightNextMode,
-        });
-
-        irsdk.init({
+      irsdk.init({
           telemetryUpdateInterval: 1000 / 60,
           sessionInfoUpdateInterval: 10
-        })
+      })
         
-        this.client = irsdk.getInstance();
+      this.client = irsdk.getInstance();
 
-        this.currentLeftMode = Object.keys(iRacing.leftModes)[0];
-        this.currentRightMode = Object.keys(iRacing.rightModes)[0];
+      this.initTmBtLed({
+        onConnect: this.onDeviceConnected,
+        onLeftPreviousMode: this.leftPreviousMode,
+        onLeftNextMode: this.leftNextMode,
+        onRightPreviousMode: this.rightPreviousMode,
+        onRightNextMode: this.rightNextMode,
+      });      
     }
 
-    onDeviceConnected = () =>  {
-        // to start listening:
-        this.initCLient();
-        
-
-      this.tmBtLed.setLeftDisplay(" IRAC");
-      this.tmBtLed.setRightDisplay("ING");
-
-    }
-
-      leftPreviousMode = () => {
-          const modeKeys = Object.keys(iRacing.leftModes);
-          if (modeKeys.length === 0) {
-            console.error("No left modes")
-            return;
-          }
-          const newModeIndex = modeKeys.findIndex(c => c === this.currentLeftMode) > 0 ? modeKeys.findIndex(c => c === this.currentLeftMode) - 1 : modeKeys.length - 1;
-          this.currentLeftMode = modeKeys[newModeIndex];
-          this.tmBtLed.flashLeftDisplay(iRacing.leftModes[this.currentLeftMode].label);
-          return this.currentLeftMode;
-      }
-
-      leftNextMode = () => {
-          const modeKeys = Object.keys(iRacing.leftModes);
-          if (modeKeys.length === 0) {
-            console.error("No left modes")
-            return;
-          }
-          const newModeIndex = modeKeys.findIndex(c => c === this.currentLeftMode) < modeKeys.length - 1 ? modeKeys.findIndex(c => c === this.currentLeftMode) + 1 : 0;
-          this.currentLeftMode = modeKeys[newModeIndex];
-          this.tmBtLed.flashLeftDisplay(iRacing.leftModes[this.currentLeftMode].label);
-          return this.currentLeftMode;        
-      }
-
-      rightPreviousMode = () => {
-          const modeKeys = Object.keys(iRacing.rightModes);
-          if (modeKeys.length === 0) {
-            console.error("No right modes")
-            return;
-          }
-          const newModeIndex = modeKeys.findIndex(c => c === this.currentRightMode) > 0 ? modeKeys.findIndex(c => c === this.currentRightMode) - 1 : modeKeys.length - 1;
-          this.currentRightMode = modeKeys[newModeIndex];
-          this.tmBtLed.flashRightDisplay(iRacing.rightModes[this.currentRightMode].label);
-          return this.currentRightMode;
-    }
-
-    rightNextMode = () => {
-        const modeKeys = Object.keys(iRacing.rightModes);
-        if (modeKeys.length === 0) {
-          console.error("No right modes")
-          return;
-        }
-        const newModeIndex = modeKeys.findIndex(c => c === this.currentRightMode) < modeKeys.length - 1 ? modeKeys.findIndex(c => c === this.currentRightMode) + 1 : 0;
-        this.currentRightMode = modeKeys[newModeIndex];
-        this.tmBtLed.flashRightDisplay(iRacing.rightModes[this.currentRightMode].label);
-        return this.currentRightMode;        
-    } 
-
-    initCLient = () => {
-        
+    onDeviceConnected = () =>  {          
         console.log("5. Listening for game data... GO!");
-
-        /*this.client.on('Connected', function () {
-          console.log('connected to iRacing..')
-        })
-        
-        this.client.on('Disconnected', function () {
-          console.log('iRacing shut down, exiting.\n')
-          process.exit()
-        }) */
 
         let maxRpm = 7500;
         
@@ -181,22 +76,16 @@ class iRacing {
 
           switch (this.currentLeftMode) {
             default:
-            case "curFuel":
+            case 0:
+              this.tmBtLed.setSpeed(telemetry.Speed * 3.6, false);
+              break;      
+            case 1:
+              this.tmBtLed.setRpm(telemetry.RPM, false);
+              break;                        
+            case 2:
               this.tmBtLed.setWeight(telemetry.FuelLevel, false);
               break;
-            case "speed":
-              this.tmBtLed.setSpeed(telemetry.Speed * 3.6, false);
-              break;
-            case "rpm":
-              this.tmBtLed.setRpm(telemetry.RPM, false);
-              break;  
-            case "oilT":
-              this.tmBtLed.setTemperature(telemetry.OilTemp, false);
-              break;               
-            case "watT":
-              this.tmBtLed.setTemperature(telemetry.WaterTemp, false);
-              break;  
-            case "tyrT":
+            case 3:
               if (!telemetry.RFtempCM) {
                 this.tmBtLed.setTemperature(0, false);  
               } else {
@@ -204,32 +93,38 @@ class iRacing {
                 let temp = temps / 4;
                 this.tmBtLed.setTemperature(temp, false);
               }
-              break;                                                                                                            
+              break;               
+            case 4:
+              this.tmBtLed.setTemperature(telemetry.OilTemp, false);
+              break;               
+            case 5:
+              this.tmBtLed.setTemperature(telemetry.WaterTemp, false);
+              break;                                                                                   
           }
 
-          switch (this.currentRightMode) {              
-            case "delta":
-              this.tmBtLed.setDiffTime(telemetry.LapDeltaToBestLap * 1000, true);
-              break;      
-            case "bestLapTime":
-              this.tmBtLed.setTime(telemetry.LapBestLapTime * 1000, true);
-              break;   
-            case "lastLapTime":
-              this.tmBtLed.setTime(telemetry.LapLastLapTime < 0 ? 0 : telemetry.LapLastLapTime * 1000, true);
-              break;                          
-            case "pos":
-              this.tmBtLed.setInt(telemetry.PlayerCarPosition, true);
-              break;
-            case "curLap":
-              this.tmBtLed.setInt(telemetry.Lap, true);
-              break;
-            case "lapsLeft":
-              this.tmBtLed.setInt(telemetry.SessionLapsRemain, true);
-              break;          
+          switch (this.currentRightMode) {       
             default:
-            case "curLapTime":
+            case 0:
               this.tmBtLed.setTime(telemetry.LapCurrentLapTime * 1000, true);
               break;
+            case 1:
+              this.tmBtLed.setDiffTime(telemetry.LapDeltaToBestLap * 1000, true);
+              break;  
+            case 2:
+              this.tmBtLed.setTime(telemetry.LapLastLapTime < 0 ? 0 : telemetry.LapLastLapTime * 1000, true);
+              break;                   
+            case 3:
+              this.tmBtLed.setTime(telemetry.LapBestLapTime * 1000, true);
+              break;          
+            case 4:
+              this.tmBtLed.setInt(telemetry.PlayerCarPosition, true);
+              break;
+            case 5:
+              this.tmBtLed.setInt(telemetry.Lap, true);
+              break;                
+            case 6:
+              this.tmBtLed.setInt(telemetry.SessionLapsRemain > 9999 ? 0 : telemetry.SessionLapsRemain, true);
+              break; 
           }     
 
         });
@@ -244,4 +139,4 @@ class iRacing {
     }
 }
 
-const iRac = new iRacing();
+const iRac = new iRacing(gameTitle, leftModes, rightModes);
