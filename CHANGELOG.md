@@ -33,3 +33,11 @@
 ## Version 2.0.3
 
   * Support for Dirt Rally
+
+## Version 2.1.0
+
+  * Remaining lap distance for Dirt Rally
+  * PitLimiter indication for ACC
+  * Data dumper for easier game integration (dump_udp.bat). Change listened port with --port xxxxx
+  * Easier device dump creation with batch file (setup.bat)
+  * Commented template file (_template.bat/.mjs)

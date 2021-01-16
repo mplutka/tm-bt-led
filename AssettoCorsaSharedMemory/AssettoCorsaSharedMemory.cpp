@@ -176,6 +176,7 @@ Napi::Object AssettoCorsaSharedMemory::GetGraphics(const Napi::CallbackInfo& inf
 	ret.Set("sessionTimeLeft", Napi::Number::New(env, graphics->sessionTimeLeft));
 	ret.Set("distanceTraveled", Napi::Number::New(env, graphics->distanceTraveled));
 	ret.Set("isInPit", Napi::Number::New(env, graphics->isInPit));
+	ret.Set("isInPitLane", Napi::Number::New(env, graphics->isInPitLane));
 	ret.Set("currentSectorIndex", Napi::Number::New(env, graphics->currentSectorIndex));
 	ret.Set("lastSectorTime", Napi::Number::New(env, graphics->lastSectorTime));
 	ret.Set("numberOfLaps", Napi::Number::New(env, graphics->numberOfLaps));
