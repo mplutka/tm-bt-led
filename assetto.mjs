@@ -62,8 +62,11 @@ class ACC extends AbstractClient {
 
         this.isACC = !(statics.smVersion < 1.8);
 
-        let graphics = AssettoCorsaSharedMemory.getGraphicsACC();
-        if (!this.isACC) {
+        let graphics = null;
+        if (this.isACC) {
+          graphics = AssettoCorsaSharedMemory.getGraphicsACC();
+          this.rightModes = rightModes;
+        } else {
           graphics = AssettoCorsaSharedMemory.getGraphicsAssetto();
           this.rightModes = rightModesAssetto;
         }
@@ -149,25 +152,25 @@ class ACC extends AbstractClient {
             case 1:
               this.tmBtLed.setDiffTime(graphics.iDeltaLapTime, true);
               break;     
-            case 1:
+            case 2:
               this.tmBtLed.setTime(graphics.iLastTime, true);
               break; 
-            case 2:
+            case 3:
               this.tmBtLed.setTime(graphics.iBestTime, true);
               break;   
             case 4:
               this.tmBtLed.setTime(graphics.iEstimatedLapTime, true);
               break;                                  
-            case 3:
+            case 5:
               this.tmBtLed.setInt(graphics.position, true);
               break;
-            case 4:
+            case 6:
               this.tmBtLed.setInt(graphics.completedLaps + 1, true);
               break;          
-            case 5:
+            case 7:
               this.tmBtLed.setInt(graphics.numberOfLaps < 1000 ? (graphics.numberOfLaps - graphics.completedLaps) : 0, true);
               break;
-          }   
+          }
         } else {
           switch (this.currentRightMode) {        
             default:

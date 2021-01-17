@@ -46,3 +46,7 @@
 
   * Bugfixes for Assetto Corsa (PitLimiter flashing leds, flags, deactivated unavailable modes)
   * install.bat for easier recompilation
+
+  ## Version 2.1.2
+
+  * Bugfix for ACC right modes
