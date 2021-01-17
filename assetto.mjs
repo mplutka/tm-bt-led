@@ -25,11 +25,17 @@ process.on('uncaughtException', exitHandler);
 
 const gameTitle = "ASSECORS";
 
-const leftModes = ["SPD", "RPM", "FUEL", "TYRT", "WTRT"];
+const leftModes = ["SPD", "RPM", "FUEL", "TYRT", "BRKT"];
 const rightModes = ["CLAP", "DELTA", "LLAP", "BLAP", "PLAP", "POS", "LAP", "LEFT"];
+
+const rightModesAssetto = ["CLAP", /*"DELTA",*/ "LLAP", "BLAP", /*"PLAP",*/ "POS", "LAP", "LEFT"];
+
+
+// SM Version 1.7
 
 class ACC extends AbstractClient {
     maxRpm = 0;
+    isACC = true;
 
     constructor(...params) {
       super(...params);    
@@ -52,8 +58,15 @@ class ACC extends AbstractClient {
 
     updateValues = () => {
         const physics =  AssettoCorsaSharedMemory.getPhysics();
-        const graphics =  AssettoCorsaSharedMemory.getGraphics();
         const statics =  AssettoCorsaSharedMemory.getStatics();
+
+        this.isACC = !(statics.smVersion < 1.8);
+
+        let graphics = AssettoCorsaSharedMemory.getGraphicsACC();
+        if (!this.isACC) {
+          graphics = AssettoCorsaSharedMemory.getGraphicsAssetto();
+          this.rightModes = rightModesAssetto;
+        }
 
         this.tmBtLed.setGear(physics.gear - 1);
 
@@ -123,37 +136,62 @@ class ACC extends AbstractClient {
             this.tmBtLed.setTemperature(physics.tyreCoreTemperature, false);
             break;  
           case 4:
-            this.tmBtLed.setTemperature(physics.waterTemp, false);
+            this.tmBtLed.setTemperature(physics.brakeTemp, false);
             break;
         }
 
-        switch (this.currentRightMode) {        
-          default:
-          case 0:
-            this.tmBtLed.setTime(graphics.iCurrentTime, true);
-            break;      
-          case 1:
-            this.tmBtLed.setDiffTime(graphics.iDeltaLapTime, true);
-            break;     
-          case 2:
-            this.tmBtLed.setTime(graphics.iLastTime, true);
-            break; 
-          case 3:
-            this.tmBtLed.setTime(graphics.iBestTime, true);
-            break;   
-          case 4:
-            this.tmBtLed.setTime(graphics.iEstimatedLapTime, true);
-            break;                                  
-          case 5:
-            this.tmBtLed.setInt(graphics.position, true);
-            break;
-          case 6:
-            this.tmBtLed.setInt(graphics.completedLaps + 1, true);
-            break;          
-          case 7:
-            this.tmBtLed.setInt(graphics.numberOfLaps < 1000 ? (graphics.numberOfLaps - graphics.completedLaps) : 0, true);
-            break;
-        }          
+        if (this.isACC) {
+          switch (this.currentRightMode) {        
+            default:
+            case 0:
+              this.tmBtLed.setTime(graphics.iCurrentTime, true);
+              break;      
+            case 1:
+              this.tmBtLed.setDiffTime(graphics.iDeltaLapTime, true);
+              break;     
+            case 1:
+              this.tmBtLed.setTime(graphics.iLastTime, true);
+              break; 
+            case 2:
+              this.tmBtLed.setTime(graphics.iBestTime, true);
+              break;   
+            case 4:
+              this.tmBtLed.setTime(graphics.iEstimatedLapTime, true);
+              break;                                  
+            case 3:
+              this.tmBtLed.setInt(graphics.position, true);
+              break;
+            case 4:
+              this.tmBtLed.setInt(graphics.completedLaps + 1, true);
+              break;          
+            case 5:
+              this.tmBtLed.setInt(graphics.numberOfLaps < 1000 ? (graphics.numberOfLaps - graphics.completedLaps) : 0, true);
+              break;
+          }   
+        } else {
+          switch (this.currentRightMode) {        
+            default:
+            case 0:
+              this.tmBtLed.setTime(graphics.iCurrentTime, true);
+              break;      
+            case 1:
+              this.tmBtLed.setTime(graphics.iLastTime, true);
+              break; 
+            case 2:
+              this.tmBtLed.setTime(graphics.iBestTime, true);
+              break;   
+            case 3:
+              this.tmBtLed.setInt(graphics.position, true);
+              break;
+            case 4:
+              this.tmBtLed.setInt(graphics.completedLaps + 1, true);
+              break;          
+            case 5:
+              this.tmBtLed.setInt(graphics.numberOfLaps < 1000 ? (graphics.numberOfLaps - graphics.completedLaps) : 0, true);
+              break;
+          }   
+        }
+       
     };
 }
 

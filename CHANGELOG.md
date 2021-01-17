@@ -41,3 +41,8 @@
   * Data dumper for easier game integration (dump_udp.bat). Change listened port with --port xxxxx
   * Easier device dump creation with batch file (setup.bat)
   * Commented template file (_template.bat/.mjs)
+
+## Version 2.1.1
+
+  * Bugfixes for Assetto Corsa (PitLimiter flashing leds, flags, deactivated unavailable modes)
+  * install.bat for easier recompilation

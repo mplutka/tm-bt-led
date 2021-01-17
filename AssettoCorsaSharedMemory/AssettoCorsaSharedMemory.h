@@ -4,7 +4,8 @@ namespace AssettoCorsaSharedMemory {
 
     Napi::Object GetPhysics(const Napi::CallbackInfo& info);
 
-    Napi::Object GetGraphics(const Napi::CallbackInfo& info);
+    Napi::Object GetGraphicsAssetto(const Napi::CallbackInfo& info);
+    Napi::Object GetGraphicsACC(const Napi::CallbackInfo& info);
 
     Napi::Object GetStatics(const Napi::CallbackInfo& info);
 

@@ -25,7 +25,7 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 * iRacing (iracing.bat)
 * Dirt 3, Dirt 4, Dirt Rally, Dirt Rally 2 (dirt.bat)
 
-If you would like to add a game that uses udp port 20777 to the list, you can use dump_udp.bat to create a dumpfile with recorded telemetry data.
+If you would like to add a game that uses udp port 20777 to the list, you can use `dump_udp.bat` to create a dumpfile with recorded telemetry data.
 Either you use _template.mjs and create your own game file or get in touch with me by creating an issue here on Github and attach the dump.
 
 
@@ -60,14 +60,14 @@ Others might work too, but again: No guarantee.
 
 1. Checkout this repo or download the code on your PC on which you intend to run
 2. Open a Windows and `cd` inside the code directory
-3. `npm install` (This should install everything needed. If something fails especially on compilation, check Prerequisites#5)
-4. Run "setup.bat" to detect your device and dump it's data to a file for faster reconnects (necessary)
-5. You can start "test.bat" to run demo mode.
+3. `install.bat` (This should install everything needed. If something fails especially on compilation, check Prerequisites#5)
+4. Run `setup.bat` to detect your device and dump it's data to a file for faster reconnects (necessary)
+5. You can start `test.bat` to run demo mode.
 
 
 ## Launch
 
-1. Inside the code directory, launch run.bat followed by the game name (e.g. "run.bat f1").
+1. Inside the code directory, launch `run.bat` followed by the game name (e.g. `run.bat f1`) or use the provided shortcut batch files.
 2. Press both upper buttons on the TM BT and let it connect when prompted to do so. It shouldn't be paired to your PC or other device before doing this!
 3. If it is not picking up any devices ("2. Discovering devices" or "1. Starting scan..." never shows up), try restarting the script.
 4. It should say "5. Listening for game data..." if all went well. If not also try to unplug and replug the USB stick and start over.
@@ -83,7 +83,7 @@ Here is a little video showing the device in action: [Youtube](https://www.youtu
  
 ### Localization
 
-The script tries to read your OS's locale to automatically switch to MPH/F/LB if "en-us" is selected. To can force measurement units by adding "--imperial" or "--metric" after the game batch file (e.g. assetto.bat --metric).
+The script tries to read your OS's locale to automatically switch to MPH/F/LB if "en-us" is selected. To can force measurement units by adding `--imperial` or `--metric` after the game batch file (e.g. assetto.bat --metric).
 
 ### Bluetooth USB driver
 
@@ -98,7 +98,7 @@ If you wish to go back to the stock drivers, simply do an automatic driver updat
 
 Stability has been improved with Version 2.0. After the initial connection the script tries to negotiate a connection interval of 15 ms which should give you a nice 60 Hz refresh rate. If your device freezes or USB errors are thrown in the command line window, try to kill the script and restart the TM BT LED and unplug/plug the usb stick.
 
-If you can't get it to run without crashes, you could add "--interval xxx" after the batch files to try out other refresh intervals (e.g. assetto.bat --interval 125). Please note that the given interval must be a multiple of 1.25 (15, 30, 75, 125). Also try out another USB port on your PC as this might help as well.
+If you can't get it to run without crashes, you could add `--interval xxx` after the batch files to try out other refresh intervals (e.g. `assetto.bat --interval 125`). Please note that the given interval must be a multiple of 1.25 (15, 30, 75, 125). Also try out another USB port on your PC as this might help as well.
 
 ### SPECIAL THANKS
 

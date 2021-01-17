@@ -129,6 +129,8 @@ struct SPageFilePhysics
 
     float localVelocity[3];
 
+// ACC
+
     int P2PActivations = 0;
     int P2PStatus = 0;
 
@@ -161,7 +163,83 @@ struct SPageFilePhysics
 };
 
 
-struct SPageFileGraphic
+struct AssettoSPageFileGraphic
+{
+    int packetId = 0;
+    AC_STATUS status = AC_OFF;
+    AC_SESSION_TYPE session = AC_PRACTICE;
+    wchar_t currentTime[15];
+    wchar_t lastTime[15];
+    wchar_t bestTime[15];
+    wchar_t split[15];
+    int completedLaps = 0;
+    int position = 0;
+    int iCurrentTime = 0;
+    int iLastTime = 0;
+    int iBestTime = 0;
+    float sessionTimeLeft = 0;
+    float distanceTraveled = 0;
+    int isInPit = 0;
+    int currentSectorIndex = 0;
+    int lastSectorTime = 0;
+    int numberOfLaps = 0;
+    wchar_t tyreCompound[33];
+    float replayTimeMultiplier = 0;
+    float normalizedCarPosition = 0;
+
+     //   int activeCars = 0;
+    float carCoordinates[3];
+        // int carID[60];
+     //   int playerCarID = 0;
+    float penaltyTime = 0;
+    AC_FLAG_TYPE flag = AC_NO_FLAG;
+    //PenaltyShortcut penalty = PenaltyShortcut::None;
+    int idealLineOn = 0;
+    int isInPitLane = 0;
+
+    float surfaceGrip = 0;
+    int mandatoryPitDone = 0;
+
+    float windSpeed = 0;
+    float windDirection = 0;
+/*
+
+    int isSetupMenuVisible = 0;
+
+    int mainDisplayIndex = 0;
+    int secondaryDisplayIndex = 0;
+    int TC = 0;
+    int TCCut = 0;
+    int EngineMap = 0;
+    int ABS = 0;
+    int fuelXLap = 0;
+    int rainLights = 0;
+    int flashingLights = 0;
+    int lightsStage = 0;
+    float exhaustTemperature = 0.0f;
+    int wiperLV = 0;
+    int DriverStintTotalTimeLeft = 0;
+    int DriverStintTimeLeft = 0;
+    int rainTyres = 0;
+
+    int sessionIndex = 0;
+    float usedFuel = 0;
+    wchar_t deltaLapTime[15];
+    int iDeltaLapTime = 0;
+    wchar_t estimatedLapTime [15];
+    int iEstimatedLapTime = 0;
+    int isDeltaPositive = 0;
+    int iSplit = 0;
+    int isValidLap = 0;
+    float fuelEstimatedLaps = 0;
+    wchar_t trackStatus[33];
+    int missingMandatoryPits = 0;
+    float Clock = 0;
+    int directionLightsLeft = 0;
+    int directionLightsRight = 0;*/
+};
+
+struct ACCSPageFileGraphic
 {
     int packetId = 0;
     AC_STATUS status = AC_OFF;
@@ -237,7 +315,6 @@ struct SPageFileGraphic
     int directionLightsRight = 0;
 };
 
-
 struct SPageFileStatic
 {
     wchar_t smVersion[15];
@@ -294,6 +371,5 @@ struct SPageFileStatic
     int PitWindowEnd = 0;
     int isOnline = 0;
 };
-
 
 #pragma pack(pop)
