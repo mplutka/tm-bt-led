@@ -57,31 +57,18 @@ void initPhysics()
 	}
 }
 
-void initGraphicsAssetto()
-{
-	TCHAR szName[] = TEXT("Local\\acpmf_graphics");
-	m_graphics_assetto.hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(AssettoSPageFileGraphic), szName);
-	if (!m_graphics_assetto.hMapFile)
-	{
-		MessageBoxA(GetActiveWindow(), "CreateFileMapping failed", "ACCS", MB_OK);
-	}
-	m_graphics_assetto.mapFileBuffer = (unsigned char*)MapViewOfFile(m_graphics_assetto.hMapFile, FILE_MAP_READ, 0, 0, sizeof(AssettoSPageFileGraphic));
-	if (!m_graphics_assetto.mapFileBuffer)
-	{
-		MessageBoxA(GetActiveWindow(), "MapViewOfFile failed", "ACCS", MB_OK);
-	}
-}
-
-void initGraphicsACC()
+void initGraphics()
 {
 	TCHAR szName[] = TEXT("Local\\acpmf_graphics");
 	m_graphics_acc.hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(ACCSPageFileGraphic), szName);
-	if (!m_graphics_acc.hMapFile)
+	m_graphics_assetto.hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(AssettoSPageFileGraphic), szName);
+	if (!m_graphics_acc.hMapFile || !m_graphics_assetto.hMapFile)
 	{
 		MessageBoxA(GetActiveWindow(), "CreateFileMapping failed", "ACCS", MB_OK);
 	}
 	m_graphics_acc.mapFileBuffer = (unsigned char*)MapViewOfFile(m_graphics_acc.hMapFile, FILE_MAP_READ, 0, 0, sizeof(ACCSPageFileGraphic));
-	if (!m_graphics_acc.mapFileBuffer)
+	m_graphics_assetto.mapFileBuffer = (unsigned char*)MapViewOfFile(m_graphics_assetto.hMapFile, FILE_MAP_READ, 0, 0, sizeof(AssettoSPageFileGraphic));
+	if (!m_graphics_acc.mapFileBuffer || !m_graphics_assetto.mapFileBuffer)
 	{
 		MessageBoxA(GetActiveWindow(), "MapViewOfFile failed", "ACCS", MB_OK);
 	}
@@ -111,8 +98,7 @@ void dismiss(SMElement element)
 Napi::Object AssettoCorsaSharedMemory::Init(Napi::Env env, Napi::Object exports)
 {
 	initPhysics();
-	initGraphicsAssetto();
-	initGraphicsACC();
+	initGraphics();
 	initStatic();
 
 	exports.Set("getPhysics", Napi::Function::New(env, AssettoCorsaSharedMemory::GetPhysics));

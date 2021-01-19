@@ -8,34 +8,40 @@
  */
 
 import { F1TelemetryClient, constants } from 'f1-telemetry-client';
-import AbstractClient from './lib/abstractClient.mjs';
+import AbstractClient from '../lib/abstractClient.mjs';
 const { PACKETS } = constants;
 
 
 const leftModes = ["SPD", "RPM", "FUEL", "TYRT", "ENGT"];
 const rightModes = ["CLAP", "LLAP", "BLAP", "POS", "LAP", "LEFT"];
 
-const gameTitle = "  F120XX";
-
-class F120XX extends AbstractClient {
+class F1 extends AbstractClient {
     port = 20777;       // UDP port the client should listen on for telemetry data 
 
-    constructor(...params) {
-        super(...params);    
+    constructor(tmBtLed) {
+        if (!tmBtLed) {
+            throw "No TM BT Led lib found.";
+        }
 
-        this.initTmBtLed({
-            onConnect: this.onDeviceConnected,
+        super(tmBtLed);    
+
+        
+        this.setCallbacks({
             onLeftPreviousMode: this.leftPreviousMode,
             onLeftNextMode: this.leftNextMode,
             onRightPreviousMode: this.rightPreviousMode,
-            onRightNextMode: this.rightNextMode,
+            onRightNextMode: this.rightNextMode
         });
+        this.setModes(leftModes, rightModes);
+
         this.client = new F1TelemetryClient({ port: this.port, bigintEnabled: true });
     }
 
-    onDeviceConnected = () =>  {     
-        console.log("5. Listening for game data on port "+ this.port +" ... GO!");
+    stopClient = () => {
+        this.client.stop();
+    }
 
+    startClient = () =>  {     
         let totalLaps = 60;
         // https://f1-2019-telemetry.readthedocs.io/en/latest/telemetry-specification.html
         /*client.on(PACKETS.event, console.log);
@@ -171,4 +177,4 @@ class F120XX extends AbstractClient {
     }
 }
 
-const f120XX = new F120XX(gameTitle, leftModes, rightModes);
+export default F1;

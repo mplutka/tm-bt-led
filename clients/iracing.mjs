@@ -8,7 +8,7 @@
  */
 
 import irsdk from 'node-irsdk';
-import AbstractClient from './lib/abstractClient.mjs';
+import AbstractClient from '../lib/abstractClient.mjs';
 
 const gameTitle = " IRACING";
 
@@ -17,28 +17,31 @@ const rightModes = ["CLAP", "DELTA", "LLAP", "BLAP", "POS", "LAP", "LEFT"];
 
 class iRacing extends AbstractClient {
 
-    constructor(...params) {
-      super(...params);    
+    constructor(tmBtLed) {
+        if (!tmBtLed) {
+            throw "No TM BT Led lib found.";
+        }
 
-      irsdk.init({
+        super(tmBtLed);    
+        
+        this.setCallbacks({
+            onLeftPreviousMode: this.leftPreviousMode,
+            onLeftNextMode: this.leftNextMode,
+            onRightPreviousMode: this.rightPreviousMode,
+            onRightNextMode: this.rightNextMode
+        });
+        this.setModes(leftModes, rightModes);
+
+        irsdk.init({
           telemetryUpdateInterval: 1000 / 60,
           sessionInfoUpdateInterval: 10
-      })
-        
-      this.client = irsdk.getInstance();
-
-      this.initTmBtLed({
-        onConnect: this.onDeviceConnected,
-        onLeftPreviousMode: this.leftPreviousMode,
-        onLeftNextMode: this.leftNextMode,
-        onRightPreviousMode: this.rightPreviousMode,
-        onRightNextMode: this.rightNextMode,
-      });      
+        });
+          
+        this.client = irsdk.getInstance();
+        this.startClient();
     }
 
-    onDeviceConnected = () =>  {          
-        console.log("5. Listening for game data... GO!");
-
+    startClient = () =>  {          
         let maxRpm = 7500;
         
         this.client.on('Telemetry', data => {
@@ -139,4 +142,4 @@ class iRacing extends AbstractClient {
     }
 }
 
-const iRac = new iRacing(gameTitle, leftModes, rightModes);
+export default iRacing;

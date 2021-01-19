@@ -7,8 +7,8 @@
  * Copyright (c) 2021 Markus Plutka
  */
 
-import { UdpListener } from './lib/udpListener.js';
-import AbstractClient from './lib/abstractClient.mjs';
+import { UdpListener } from '../lib/udpListener.js';
+import AbstractClient from '../lib/abstractClient.mjs';
 
 const gameTitle   = "DIRTRALY";  // Game title, is shown while no other data is display. Max. 8 characters
 
@@ -89,23 +89,31 @@ class DirtRally extends AbstractClient {
         "max_gears"
     ];
 
-    constructor(...params) {
-        super(...params);    
+    constructor(tmBtLed) {
+        if (!tmBtLed) {
+            throw "No TM BT Led lib found.";
+        }
 
-        this.initTmBtLed({
-            onConnect: this.onDeviceConnected,
+        super(tmBtLed);    
+        
+        this.setCallbacks({
             onLeftPreviousMode: this.leftPreviousMode,
             onLeftNextMode: this.leftNextMode,
             onRightPreviousMode: this.rightPreviousMode,
-            onRightNextMode: this.rightNextMode,
+            onRightNextMode: this.rightNextMode
         });
+        this.setModes(leftModes, rightModes);
+
+        this.client = new UdpListener({ port: this.port, bigintEnabled: true });
+        this.client.on("data", this.parseData);
     }
 
-    onDeviceConnected = () =>  {
-        this.client = new UdpListener({ port: this.port, bigintEnabled: true });
-        console.log("5. Listening for game data on port "+ this.port +" ... GO!");
-        this.client.on("data", this.parseData);
+    startClient = () =>  {
         this.client.start();
+    }
+
+    stopClient = () => {
+        this.client.stop();
     }
 
     /**
@@ -191,4 +199,4 @@ class DirtRally extends AbstractClient {
     }
 }
 
-const dirtRally = new DirtRally(gameTitle, leftModes, rightModes);
+export default DirtRally;
