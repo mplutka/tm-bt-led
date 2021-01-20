@@ -67,16 +67,18 @@ Others might work too, but again: No guarantee.
 
 ## Launch
 
-1. Inside the code directory, launch `run.bat` (autodetect) or use the provided shortcut batch files.
+1. Inside the code directory, launch `run.bat` (recommended, see below) or use the provided shortcut batch files.
 2. Press both upper buttons on the TM BT and let it connect when prompted to do so. It shouldn't be paired to your PC or other device before doing this!
-3. If it is not picking up any devices ("Discovering devices" or "Starting scan..." never shows up), try restarting the script.
-4. It should say "Waiting for data..." if all went well. If not also try to unplug and replug the USB stick and start over.
+3. If it is not picking up any devices ("Discovering devices" or "Starting scan..." never shows up), try restarting the script. If still no success, also try to unplug and replug the USB stick and start over.
+4. It should say "Waiting for data..." if all went well.
 5. Start the game itself and enjoy.
 
-## Auto detect mode
+
+### Auto detect mode
 
 `run.bat` automatically listens for the launch of any supported game, switches to performance mode (higher refresh rates) and steps down to power save mode after you exit the game. Keep it running in the background to automatically switch between supported games without needing to stop/start the shortcut batch files.
 If you encounter false detections or any other problems, please let me know.
+
 
 ## Video
 
