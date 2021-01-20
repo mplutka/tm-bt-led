@@ -1,2 +1,2 @@
 @echo off
-node assetto.mjs  %*
+node lib\launcher.mjs --game assetto %*

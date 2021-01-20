@@ -1,12 +1,5 @@
 #include "AssettoCorsaSharedMemory.h"
 
-
-Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
-  return AssettoCorsaSharedMemory::Init(env, exports);
-}
-
-NODE_API_MODULE(NODE_GYP_MODULE_NAME, InitAll)
-
 #include "stdafx.h"
 #include <windows.h>
 #include <tchar.h>
@@ -42,6 +35,23 @@ SMElement m_graphics_assetto;
 SMElement m_graphics_acc;
 SMElement m_static;
 
+Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
+  	return AssettoCorsaSharedMemory::SetExports(env, exports);
+}
+
+NODE_API_MODULE(NODE_GYP_MODULE_NAME, InitAll)
+
+Napi::Object AssettoCorsaSharedMemory::SetExports(Napi::Env env, Napi::Object exports)
+{
+	exports.Set("initMaps", Napi::Function::New(env, AssettoCorsaSharedMemory::InitMaps));
+	exports.Set("getPhysics", Napi::Function::New(env, AssettoCorsaSharedMemory::GetPhysics));
+	exports.Set("getGraphicsAssetto", Napi::Function::New(env, AssettoCorsaSharedMemory::GetGraphicsAssetto));
+	exports.Set("getGraphicsACC", Napi::Function::New(env, AssettoCorsaSharedMemory::GetGraphicsACC));
+	exports.Set("getStatics", Napi::Function::New(env, AssettoCorsaSharedMemory::GetStatics));
+	exports.Set("cleanup", Napi::Function::New(env, AssettoCorsaSharedMemory::Cleanup));
+	return exports;
+}
+
 void initPhysics()
 {
 	TCHAR szName[] = TEXT("Local\\acpmf_physics");
@@ -57,31 +67,18 @@ void initPhysics()
 	}
 }
 
-void initGraphicsAssetto()
-{
-	TCHAR szName[] = TEXT("Local\\acpmf_graphics");
-	m_graphics_assetto.hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(AssettoSPageFileGraphic), szName);
-	if (!m_graphics_assetto.hMapFile)
-	{
-		MessageBoxA(GetActiveWindow(), "CreateFileMapping failed", "ACCS", MB_OK);
-	}
-	m_graphics_assetto.mapFileBuffer = (unsigned char*)MapViewOfFile(m_graphics_assetto.hMapFile, FILE_MAP_READ, 0, 0, sizeof(AssettoSPageFileGraphic));
-	if (!m_graphics_assetto.mapFileBuffer)
-	{
-		MessageBoxA(GetActiveWindow(), "MapViewOfFile failed", "ACCS", MB_OK);
-	}
-}
-
-void initGraphicsACC()
+void initGraphics()
 {
 	TCHAR szName[] = TEXT("Local\\acpmf_graphics");
 	m_graphics_acc.hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(ACCSPageFileGraphic), szName);
-	if (!m_graphics_acc.hMapFile)
+	m_graphics_assetto.hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(AssettoSPageFileGraphic), szName);
+	if (!m_graphics_acc.hMapFile || !m_graphics_assetto.hMapFile)
 	{
 		MessageBoxA(GetActiveWindow(), "CreateFileMapping failed", "ACCS", MB_OK);
 	}
 	m_graphics_acc.mapFileBuffer = (unsigned char*)MapViewOfFile(m_graphics_acc.hMapFile, FILE_MAP_READ, 0, 0, sizeof(ACCSPageFileGraphic));
-	if (!m_graphics_acc.mapFileBuffer)
+	m_graphics_assetto.mapFileBuffer = (unsigned char*)MapViewOfFile(m_graphics_assetto.hMapFile, FILE_MAP_READ, 0, 0, sizeof(AssettoSPageFileGraphic));
+	if (!m_graphics_acc.mapFileBuffer || !m_graphics_assetto.mapFileBuffer)
 	{
 		MessageBoxA(GetActiveWindow(), "MapViewOfFile failed", "ACCS", MB_OK);
 	}
@@ -102,39 +99,17 @@ void initStatic()
 	}
 }
 
-void dismiss(SMElement element)
+Napi::Number AssettoCorsaSharedMemory::InitMaps(const Napi::CallbackInfo& info)
 {
-	UnmapViewOfFile(element.mapFileBuffer);
-	CloseHandle(element.hMapFile);
-}
-
-Napi::Object AssettoCorsaSharedMemory::Init(Napi::Env env, Napi::Object exports)
-{
-	initPhysics();
-	initGraphicsAssetto();
-	initGraphicsACC();
-	initStatic();
-
-	exports.Set("getPhysics", Napi::Function::New(env, AssettoCorsaSharedMemory::GetPhysics));
-	exports.Set("getGraphicsAssetto", Napi::Function::New(env, AssettoCorsaSharedMemory::GetGraphicsAssetto));
-	exports.Set("getGraphicsACC", Napi::Function::New(env, AssettoCorsaSharedMemory::GetGraphicsACC));
-	exports.Set("getStatics", Napi::Function::New(env, AssettoCorsaSharedMemory::GetStatics));
-	exports.Set("cleanup", Napi::Function::New(env, AssettoCorsaSharedMemory::Cleanup));
-	return exports;
-}
-
-Napi::Number AssettoCorsaSharedMemory::Cleanup(const Napi::CallbackInfo& info)
-{
-
 	Napi::Env env = info.Env();
 
-	dismiss(m_graphics_assetto);
-	dismiss(m_graphics_acc);
-	dismiss(m_physics);
-	dismiss(m_static);
+	initPhysics();
+	initGraphics();
+	initStatic();
 
 	return Napi::Number::New(env, 0);
 }
+
 
 Napi::Object AssettoCorsaSharedMemory::GetPhysics(const Napi::CallbackInfo& info) {
 	Napi::Env env = info.Env();
@@ -273,4 +248,23 @@ Napi::Object AssettoCorsaSharedMemory::GetStatics(const Napi::CallbackInfo& info
 
 	return ret;
 }
+
+void dismiss(SMElement element)
+{
+	CloseHandle(element.hMapFile);
+	UnmapViewOfFile(element.mapFileBuffer);
+}
+
+Napi::Number AssettoCorsaSharedMemory::Cleanup(const Napi::CallbackInfo& info)
+{
+	Napi::Env env = info.Env();
+
+	dismiss(m_graphics_assetto);
+	dismiss(m_graphics_acc);
+	dismiss(m_physics);
+	dismiss(m_static);
+
+	return Napi::Number::New(env, 0);
+}
+
 

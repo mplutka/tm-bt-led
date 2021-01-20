@@ -47,6 +47,10 @@
   * Bugfixes for Assetto Corsa (PitLimiter flashing leds, flags, deactivated unavailable modes)
   * install.bat for easier recompilation
 
-  ## Version 2.1.2
+## Version 2.1.2
 
   * Bugfix for ACC right modes
+
+## Version 2.2.0
+
+  * Autodetect running game and switch between power save mode and performance mode. Just run run.bat and keep it running in the background.

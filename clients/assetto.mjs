@@ -7,59 +7,56 @@
  * Copyright (c) 2021 Markus Plutka
  */
 
-import AssettoCorsaSharedMemory from "./lib/assettoCorsaSharedMemory.js";
-import AbstractClient from './lib/abstractClient.mjs';
-
-function exitHandler(message, exitCode) {
-  AssettoCorsaSharedMemory.cleanup();
-  if (message) {
-    console.error(message);
-  }
-  console.log("Cleaning up");
-}
-
-//do something when app is closing
-process.on('exit', exitHandler);
-//catches uncaught exceptions
-process.on('uncaughtException', exitHandler); 
-
-const gameTitle = "ASSECORS";
+import { AssettoCorsaSharedMemory } from "../lib/assettoCorsaSharedMemory.js";
+import AbstractClient from '../lib/abstractClient.mjs';
 
 const leftModes = ["SPD", "RPM", "FUEL", "TYRT", "BRKT"];
 const rightModes = ["CLAP", "DELTA", "LLAP", "BLAP", "PLAP", "POS", "LAP", "LEFT"];
 
 const rightModesAssetto = ["CLAP", /*"DELTA",*/ "LLAP", "BLAP", /*"PLAP",*/ "POS", "LAP", "LEFT"];
 
-
 // SM Version 1.7
-
 class ACC extends AbstractClient {
     maxRpm = 0;
     isACC = true;
+    refreshInterval = null;
 
-    constructor(...params) {
-      super(...params);    
+    constructor(tmBtLed) {
+      if (!tmBtLed) {
+          throw "No TM BT Led lib found.";
+      }
 
-      this.initTmBtLed({
-          onConnect: this.onDeviceConnected,
+      super(tmBtLed);    
+
+      this.setCallbacks({
           onLeftPreviousMode: this.leftPreviousMode,
           onLeftNextMode: this.leftNextMode,
           onRightPreviousMode: this.rightPreviousMode,
-          onRightNextMode: this.rightNextMode,
+          onRightNextMode: this.rightNextMode
       });
+      this.setModes(leftModes, rightModes);
+
+      AssettoCorsaSharedMemory.initMaps();
     }
 
-    onDeviceConnected = () =>  {
-        console.log("5. Listening for game data... GO!");
-        setInterval(() => {
+    startClient = () =>  {
+        this.refreshInterval = setInterval(() => {
             this.updateValues();
         }, 1000 / 60); // 60 Hz
+    }
+
+    stopClient = () => {
+        if (this.refreshInterval) {
+          console.log("Stopping interval")
+            clearInterval(this.refreshInterval);
+            this.refreshInterval = null;
+        }
+        AssettoCorsaSharedMemory.cleanup();
     }
 
     updateValues = () => {
         const physics =  AssettoCorsaSharedMemory.getPhysics();
         const statics =  AssettoCorsaSharedMemory.getStatics();
-
         this.isACC = !(statics.smVersion < 1.8);
 
         let graphics = null;
@@ -198,4 +195,4 @@ class ACC extends AbstractClient {
     };
 }
 
-const acc = new ACC(gameTitle, leftModes, rightModes);
+export default ACC;

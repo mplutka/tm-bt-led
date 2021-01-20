@@ -7,8 +7,8 @@
  * Copyright (c) 2021 Markus Plutka
  */
 
-import { UdpListener } from './udpListener.js';
-import AbstractClient from './abstractClient.mjs';
+import { UdpListener } from '../lib/udpListener.js';
+import AbstractClient from '../lib/abstractClient.mjs';
 import fs from "fs";
 
 import yargs from "yargs";
@@ -21,30 +21,31 @@ class DumpUdp extends AbstractClient {
     writtenLines = 0;
 
     // Telemetry structure according to documentation
-   
-    constructor(...params) {
-        super(...params);    
+    constructor(tmBtLed) {
+        if (!tmBtLed) {
+            throw "No TM BT Led lib found.";
+        }
 
-        this.initTmBtLed({
-            onConnect: this.onDeviceConnected,
+        super(tmBtLed);    
+        
+        this.setCallbacks({
             onLeftPreviousMode: this.leftPreviousMode,
             onLeftNextMode: this.leftNextMode,
             onRightPreviousMode: this.rightPreviousMode,
-            onRightNextMode: this.rightNextMode,
+            onRightNextMode: this.rightNextMode
         });
+        // this.setModes(leftModes, rightModes);
+
+        this.client = new UdpListener({ port: this.port, bigintEnabled: true });
+        this.client.on("data", this.dumpData);
     }
 
-    onDeviceConnected = () =>  {
-        this.client = new UdpListener({ port: this.port, bigintEnabled: true });
-        console.log("5. Listening for game data... GO!");
-        this.client.on("data", this.dumpData);
+    startClient = () => {
         this.client.start();
 
         fs.writeFile('udp_data.txt', 'Dump created on ' + new Date().toISOString() + "\r\n", function (err) {
           if (err) return console.log(err);
         });
-        this.tmBtLed.updateDisplay("DMPS");
-        this.tmBtLed.updateDisplay("0", true);
     }
 
     /**
@@ -63,5 +64,4 @@ class DumpUdp extends AbstractClient {
         });
     }
 }
-
-const dumpUdp = new DumpUdp("DUMPDATA", [], []);
+export default DumpUdp;
