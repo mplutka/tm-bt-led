@@ -15,7 +15,7 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/paypalme/mplutka/5)
 
-**Please don't buy a Thrustmaster BT LED for this only to use at with your PC!** This method works now but could easily break because of future updates etc. I also don't recommend to do any firmware updates on the device if it works as intended.
+**Please don't buy a Thrustmaster BT LED for this only to use it with your PC!** This method works now but could easily break because of future updates etc. I also don't recommend to do any firmware updates on the device if it works as intended.
 
 
 ## Currently supported games
