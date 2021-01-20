@@ -7,19 +7,15 @@
  * Copyright (c) 2021 Markus Plutka
  */
 
-import AssettoCorsaSharedMemory from "../lib/assettoCorsaSharedMemory.js";
+import { AssettoCorsaSharedMemory } from "../lib/assettoCorsaSharedMemory.js";
 import AbstractClient from '../lib/abstractClient.mjs';
-
-const gameTitle = "ASSECORS";
 
 const leftModes = ["SPD", "RPM", "FUEL", "TYRT", "BRKT"];
 const rightModes = ["CLAP", "DELTA", "LLAP", "BLAP", "PLAP", "POS", "LAP", "LEFT"];
 
 const rightModesAssetto = ["CLAP", /*"DELTA",*/ "LLAP", "BLAP", /*"PLAP",*/ "POS", "LAP", "LEFT"];
 
-
 // SM Version 1.7
-
 class ACC extends AbstractClient {
     maxRpm = 0;
     isACC = true;
@@ -39,6 +35,8 @@ class ACC extends AbstractClient {
           onRightNextMode: this.rightNextMode
       });
       this.setModes(leftModes, rightModes);
+
+      AssettoCorsaSharedMemory.initMaps();
     }
 
     startClient = () =>  {
@@ -53,14 +51,12 @@ class ACC extends AbstractClient {
             clearInterval(this.refreshInterval);
             this.refreshInterval = null;
         }
-        // const ret = AssettoCorsaSharedMemory.cleanup();
-        // TODO: Get cleanup working
+        AssettoCorsaSharedMemory.cleanup();
     }
 
     updateValues = () => {
         const physics =  AssettoCorsaSharedMemory.getPhysics();
         const statics =  AssettoCorsaSharedMemory.getStatics();
-
         this.isACC = !(statics.smVersion < 1.8);
 
         let graphics = null;
