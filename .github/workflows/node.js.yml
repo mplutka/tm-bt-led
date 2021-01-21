@@ -32,5 +32,9 @@ jobs:
       with:
         name: dist-without-markdown
         path: |
-          *
+          lib/
+          clients/
+          node_modules/
+          build/
+          *.*
 
