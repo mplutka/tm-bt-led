@@ -27,6 +27,8 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - run: npm ci
 
+    - run: npm uninstall node-gyp node-addon-api
+
     - name: Archive production artifacts
       uses: actions/upload-artifact@v2
       with:
@@ -40,5 +42,7 @@ jobs:
           *.json
           *.md
           *.dump
+
+     
           
 
