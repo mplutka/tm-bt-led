@@ -27,7 +27,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - run: npm ci
 
-    - run: npm uninstall node-gyp node-addon-api
+    - run: npm uninstall node-gyp node-addon-api readline-promise
 
     - name: Archive production artifacts
       uses: actions/upload-artifact@v2
