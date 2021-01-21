@@ -28,9 +28,9 @@ jobs:
     - run: npm ci
 
     - name: Archive production artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: dist-without-markdown
-          path: |
-            *
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist-without-markdown
+        path: |
+          *
 
