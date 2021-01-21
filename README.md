@@ -82,7 +82,7 @@ If you encounter false detections or any other problems, please let me know.
 
 ## Video
 
-Here is a little video showing the device in action: [Youtube](https://www.youtube.com/watch?v=Bq8g9qwUAUw)
+Here is a little video showing the device in action: [Youtube](https://www.youtube.com/watch?v=gbmkHltH9ts)
   
 
 ## Important notes
