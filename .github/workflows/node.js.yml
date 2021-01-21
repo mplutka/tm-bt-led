@@ -36,5 +36,9 @@ jobs:
           clients/
           node_modules/
           build/
-          *.*
+          *.bat
+          *.json
+          *.md
+          *.dump
+          
 
