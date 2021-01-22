@@ -54,3 +54,7 @@
 ## Version 2.2.0
 
   * Autodetect running game and switch between power save mode and performance mode. Just run run.bat and keep it running in the background.
+
+## Version 2.2.1
+
+  * Reset device between games
