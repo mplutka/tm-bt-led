@@ -104,7 +104,7 @@ If you wish to go back to the stock drivers, simply do an automatic driver updat
 
 Stability has been improved with Version 2.0. After the initial connection the script tries to negotiate a connection interval of 15 ms which should give you a nice 60 Hz refresh rate. If your device freezes or USB errors are thrown in the command line window, try to kill the script and restart the TM BT LED and unplug/plug the usb stick.
 
-If you can't get it to run without crashes, you could add `--interval xxx` after the batch files to try out other refresh intervals (e.g. `assetto.bat --interval 125`). Please note that the given interval must be a multiple of 1.25 (15, 30, 75, 125). Also try out another USB port on your PC as this might help as well.
+If you can't get it to run without crashes, you could add `--interval xxx` after the batch files to try out other refresh intervals (e.g. `assetto.bat --interval 50`). Please note that the given interval must be a multiple of 1.25 (15, 30, 50, 125). Also try out another USB port on your PC as this might help as well.
 
 ### SPECIAL THANKS
 
