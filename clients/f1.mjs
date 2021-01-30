@@ -12,7 +12,7 @@ import AbstractClient from '../lib/abstractClient.mjs';
 const { PACKETS } = constants;
 
 
-const leftModes = ["SPD", "RPM", "FUEL", "TYRT", "ENGT"];
+const leftModes = ["SPD", "RPM", "FUEL", "TYRT", "BRKT", "ENGT", "ERS"];
 const rightModes = ["CLAP", "LLAP", "BLAP", "POS", "LAP", "LEFT"];
 
 class F1 extends AbstractClient {
@@ -49,6 +49,19 @@ class F1 extends AbstractClient {
         client.on(PACKETS.carSetups, console.log);
         client.on(PACKETS.participants, console.log);*/
 
+        let onThrottle = null; // Differential
+        this.client.on(PACKETS.carSetups, d => {
+            const myIndex = d.m_header.m_playerCarIndex;
+            const carSetups = d.m_carSetups[myIndex];  
+
+            if (carSetups.m_onThrottle !== onThrottle) {
+                if (onThrottle >= 0) {
+                    this.tmBtLed.showTemporaryMessage("DIFF" + carSetups.m_onThrottle);
+                }
+                onThrottle = carSetups.m_onThrottle;
+            }    
+        });
+
         this.client.on(PACKETS.session, d => {
           totalLaps = d.m_totalLaps;
         });
@@ -78,13 +91,50 @@ class F1 extends AbstractClient {
                 case 5:
                   this.tmBtLed.setInt(totalLaps - lapData.m_currentLapNum, true);
                   break; 
-                         
+            }
+
+            if (lapData.m_currentLapInvalid === 1) {
+                this.tmBtLed.setFlashingRightRed(true);
+            } else {
+                this.tmBtLed.setFlashingRightRed(false);
             }
         });
+
         let drsOn = false;
+
+        let ersDeployMode = null;
+        const ersDeployModes = ["None","LOW ","MEDI", "HIGH", "OVRT", "HOTL"];
+
+        let fuelMix = null;
+        const fuelMixes = ["LEAN", "STND", "RICH", "MAX"];
+
+        let frontBrakeBias = null;
+
         this.client.on(PACKETS.carStatus, d => {
             const myIndex = d.m_header.m_playerCarIndex;
             const carStatus = d.m_carStatusData[myIndex];
+
+
+            if (carStatus.m_ersDeployMode !== ersDeployMode) {
+                if (ersDeployMode >= 0) {
+                    this.tmBtLed.showTemporaryMessage(" ERS" + ersDeployModes[carStatus.m_ersDeployMode]);
+                }
+                ersDeployMode = carStatus.m_ersDeployMode;
+            }
+
+            if (carStatus.m_fuelMix !== fuelMix) {
+                if (fuelMix >= 0) {
+                    this.tmBtLed.showTemporaryMessage("FLMX" + fuelMixes[carStatus.m_fuelMix]);
+                }
+                fuelMix = carStatus.m_fuelMix;
+            }
+
+            if (carStatus.m_frontBrakeBias !== frontBrakeBias) {
+                if (frontBrakeBias >= 0) {
+                    this.tmBtLed.showTemporaryMessage("BRKB" + carStatus.m_frontBrakeBias);
+                }
+                frontBrakeBias = carStatus.m_frontBrakeBias;
+            }            
 
             if (!drsOn && !this.tmBtLed.isFlashingYellow) { // Yellow flag and drs on overrides drs allowed
                 if (carStatus.m_drsAllowed === 1) {
@@ -93,7 +143,6 @@ class F1 extends AbstractClient {
                     this.tmBtLed.setFlashingRightYellow(false);
                 }
             }
-            
 
             switch(carStatus.m_vehicleFiaFlags) {
                 case 2:
@@ -129,7 +178,10 @@ class F1 extends AbstractClient {
             switch (this.currentLeftMode) {
                 case 2:
                     this.tmBtLed.setWeight(carStatus.m_fuelInTank, false);
-                    break;                                          
+                    break;           
+                case 6:
+                    this.tmBtLed.setInt(carStatus.m_ersStoreEnergy, false);
+                    break;                                                     
             }
         });
 
@@ -149,7 +201,6 @@ class F1 extends AbstractClient {
                 }
             }
             
-
             if (this.tmBtLed.revLightsFlashing !== 1) { // No override because of pit limiter
                 this.tmBtLed.setRevLights(carTelemetry.m_revLightsPercent);
             }
@@ -163,11 +214,12 @@ class F1 extends AbstractClient {
                   this.tmBtLed.setRpm(carTelemetry.m_engineRPM, false);
                   break;  
                 case 3:
-                  const tempSum = carTelemetry.m_tyresSurfaceTemperature.reduce((a, b) => a + b, 0);
-                  const tempAvg = (tempSum / carTelemetry.m_tyresSurfaceTemperature.length) || 0;
-                  this.tmBtLed.setTemperature(tempAvg, false);
-                  break;                       
+                  this.tmBtLed.setTemperature((carTelemetry.m_tyresSurfaceTemperature.reduce((a, b) => a + b, 0) / carTelemetry.m_tyresSurfaceTemperature.length) || 0, false);
+                  break; 
                 case 4:
+                  this.tmBtLed.setTemperature((carTelemetry.m_brakesTemperature.reduce((a, b) => a + b, 0) / carTelemetry.m_brakesTemperature.length) || 0, false);
+                  break;                                                           
+                case 5:
                   this.tmBtLed.setTemperature(carTelemetry.m_engineTemperature, false);
                   break; 
                                                                                            
