@@ -10,10 +10,8 @@
 import { UdpListener } from '../lib/udpListener.js';
 import AbstractClient from '../lib/abstractClient.mjs';
 
-const gameTitle   = "DIRTRALY";  // Game title, is shown while no other data is display. Max. 8 characters
-
-const leftModes   = ["SPD", "RPM", "BRKT"];                   // Mode titles for left display
-const rightModes  = ["CLAP", "LLAP", "DIST", "POS", "LAP", "LEFT"];  // Mode titles for right display
+const leftModes   = ["SPEED", "RPM", "BRAKETEMP"];                   // Mode titles for left display
+const rightModes  = ["LAPTIME", "LAST LAP", "DISTANCE", "POSITION", "LAP", "LAPS LEFT"];  // Mode titles for right display
 
 class DirtRally extends AbstractClient {
    

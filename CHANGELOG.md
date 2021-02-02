@@ -63,4 +63,8 @@
 
   * F1 2019/2020: Flash red led if lap is invalid
   * F1 2019/2020: Brake temp and ERS storage (if available) on left display
-  * F1 2019/2020: Fuel mix, Differential & ERS Mode shown when changed in game
+  * F1 2019/2020: Changes to fuel mix, differential & ERS mode mid-race are shown on display
+
+## Version 2.3.1
+
+  * Support for longer mode messages. Will scroll if longer than 4 characters
