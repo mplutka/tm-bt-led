@@ -10,10 +10,8 @@
 import irsdk from 'node-irsdk';
 import AbstractClient from '../lib/abstractClient.mjs';
 
-const gameTitle = " IRACING";
-
-const leftModes = ["SPD", "RPM", "FUEL", "TYRT", "OILT", "WTRT"];
-const rightModes = ["CLAP", "DELTA", "LLAP", "BLAP", "POS", "LAP", "LEFT"];
+const leftModes = ["SPEED", "RPM", "FUEL", "TYRETEMP", "OILTEMP", "WATERTEMP"];
+const rightModes = ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"];
 
 class iRacing extends AbstractClient {
 

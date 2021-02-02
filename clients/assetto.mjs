@@ -10,10 +10,10 @@
 import { AssettoCorsaSharedMemory } from "../lib/assettoCorsaSharedMemory.js";
 import AbstractClient from '../lib/abstractClient.mjs';
 
-const leftModes = ["SPD", "RPM", "FUEL", "TYRT", "BRKT"];
-const rightModes = ["CLAP", "DELTA", "LLAP", "BLAP", "PLAP", "POS", "LAP", "LEFT"];
+const leftModes = ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP"];
+const rightModes = ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "PRED LAP", "POSITION", "LAP", "LAPS LEFT"];
 
-const rightModesAssetto = ["CLAP", /*"DELTA",*/ "LLAP", "BLAP", /*"PLAP",*/ "POS", "LAP", "LEFT"];
+const rightModesAssetto = ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"];
 
 // SM Version 1.7
 class ACC extends AbstractClient {

@@ -11,9 +11,8 @@ import { F1TelemetryClient, constants } from 'f1-telemetry-client';
 import AbstractClient from '../lib/abstractClient.mjs';
 const { PACKETS } = constants;
 
-
-const leftModes = ["SPD", "RPM", "FUEL", "TYRT", "BRKT", "ENGT", "ERS"];
-const rightModes = ["CLAP", "LLAP", "BLAP", "POS", "LAP", "LEFT"];
+const leftModes = ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "ENGINETEMP", "ERSLEVEL"];
+const rightModes = ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"];
 
 class F1 extends AbstractClient {
     port = 20777;       // UDP port the client should listen on for telemetry data 
@@ -56,7 +55,7 @@ class F1 extends AbstractClient {
 
             if (carSetups.m_onThrottle !== onThrottle) {
                 if (onThrottle >= 0) {
-                    this.tmBtLed.showTemporaryMessage("DIFF" + carSetups.m_onThrottle);
+                    this.tmBtLed.showTemporary("DIFFERANTIAL", carSetups.m_onThrottle);
                 }
                 onThrottle = carSetups.m_onThrottle;
             }    
@@ -103,10 +102,10 @@ class F1 extends AbstractClient {
         let drsOn = false;
 
         let ersDeployMode = null;
-        const ersDeployModes = ["None","LOW ","MEDI", "HIGH", "OVRT", "HOTL"];
+        const ersDeployModes = ["NONE", "LOW ","MEDIUM", "HIGH", "OVERTAKE", "HOTLAP"];
 
         let fuelMix = null;
-        const fuelMixes = ["LEAN", "STND", "RICH", "MAX"];
+        const fuelMixes = ["LEAN", "STANDARD", "RICH", "MAX"];
 
         let frontBrakeBias = null;
 
@@ -117,21 +116,21 @@ class F1 extends AbstractClient {
 
             if (carStatus.m_ersDeployMode !== ersDeployMode) {
                 if (ersDeployMode >= 0) {
-                    this.tmBtLed.showTemporaryMessage(" ERS" + ersDeployModes[carStatus.m_ersDeployMode]);
+                    this.tmBtLed.showTemporary("ERSMODE", ersDeployModes[carStatus.m_ersDeployMode]);
                 }
                 ersDeployMode = carStatus.m_ersDeployMode;
             }
 
             if (carStatus.m_fuelMix !== fuelMix) {
                 if (fuelMix >= 0) {
-                    this.tmBtLed.showTemporaryMessage("FLMX" + fuelMixes[carStatus.m_fuelMix]);
+                    this.tmBtLed.showTemporary("FUELMIX", fuelMixes[carStatus.m_fuelMix]);
                 }
                 fuelMix = carStatus.m_fuelMix;
             }
 
             if (carStatus.m_frontBrakeBias !== frontBrakeBias) {
                 if (frontBrakeBias >= 0) {
-                    this.tmBtLed.showTemporaryMessage("BRKB" + carStatus.m_frontBrakeBias);
+                    this.tmBtLed.showTemporary("BRAKEBAL", carStatus.m_frontBrakeBias);
                 }
                 frontBrakeBias = carStatus.m_frontBrakeBias;
             }            
