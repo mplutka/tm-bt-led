@@ -68,3 +68,7 @@
 ## Version 2.3.1
 
   * Support for longer mode messages. Will scroll if longer than 4 characters
+
+## Version 2.4.0
+
+  * Added support for Project Cars 2, Project Cars 3 & Automobilista 2 (use UDP format "Project Cars 2")

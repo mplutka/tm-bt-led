@@ -4,7 +4,7 @@
   "license": "MIT",
   "name": "tm-bt-led",
   "description": "A library for accessing the Thrustmaster BT LED peripheral on Windows/PC",
-  "version": "2.3.2",
+  "version": "2.4.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/mplutka/tm-bt-led.git"
@@ -15,10 +15,14 @@
   "keywords": [
     "Thrustmaster BT LED Windows",
     "Thrustmaster BT LED PC",
-    "TM BT LED F1 2020",
+    "TM BT LED PC F1 2019",
+    "TM BT LED PC F1 2020",
     "TM BT LED ACC",
     "TM BT LED iRacing",
-    "TM BT LED Dirt Rally"
+    "TM BT LED Dirt Rally",
+    "TM BT LED Project Cars 2",
+    "TM BT LED Project Cars 3",
+    "TM BT LED Automobilista 2"
   ],
   "main": "./lib/test.mjs",
   "engines": {
@@ -42,7 +46,8 @@
   },
   "optionalDependencies": {},
   "devDependencies": {
-    "node-gyp": "^7.1.2"
+    "node-gyp": "^7.1.2",
+    "pcars2-udp": "git+https://github.com/saildeep/pcars2-udp.git"
   },
   "scripts": {
     "build": "node-gyp rebuild",

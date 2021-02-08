@@ -142,7 +142,7 @@ class DirtRally extends AbstractClient {
             case 2: // BRKT
               // Game provides brake temperature for each tyre. Calculate average here...
               const brakeTemps = data["brake_temp_bl"] + data["brake_temp_br"] + data["brake_temp_fl"] + data["brake_temp_fr"];
-              // Set current temperatur (brakes), expects Celsius (converted to Fahrenheit automatically
+              // Set current temperature (brakes), expects Celsius (converted to Fahrenheit automatically
               this.tmBtLed.setTemperature(brakeTemps / 4);
               break;                                                                                             
         }
