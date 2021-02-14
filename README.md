@@ -25,6 +25,7 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 * iRacing (iracing.bat)
 * Dirt 3, Dirt 4, Dirt Rally, Dirt Rally 2 (dirt.bat)
 * Project Cars 2, Project Cars 3, Automobilista 2 (pcars2.bat)
+* Forza Motorsport 7, Forza Horizon 4 (forza.bat)
 
 If you would like to add a game that uses udp port 20777 to the list, you can use `dump_udp.bat` to create a dumpfile with recorded telemetry data.
 Either you use _template.mjs and create your own game file or get in touch with me by creating an issue here on Github and attach the dump.
@@ -103,9 +104,15 @@ If you wish to go back to the stock drivers, simply do an automatic driver updat
 
 ### Instability
 
-Stability has been improved with Version 2.0. After the initial connection the script tries to negotiate a connection interval of 15 ms which should give you a nice 60 Hz refresh rate. If your device freezes or USB errors are thrown in the command line window, try to kill the script and restart the TM BT LED and unplug/plug the usb stick.
+Stability has been improved with Version 2.0. After the initial connection the script tries to negotiate a connection interval of 17.5 ms which should give you a nice 60 Hz refresh rate. If your device freezes or USB errors are thrown in the command line window, try to kill the script and restart the TM BT LED and unplug/plug the usb stick.
 
 If you can't get it to run without crashes, you could add `--interval xxx` after the batch files to try out other refresh intervals (e.g. `assetto.bat --interval 50`). Please note that the given interval must be a multiple of 1.25 (15, 30, 50, 125). Also try out another USB port on your PC as this might help as well.
+
+### Network settings for FORZA
+
+Please follow these tutorials and set port to 20127. Also make sure that you disable network isolation (checknetisolation command) as mentioned.
+Forza Horizon 4:	https://github.com/zackdevine/FH4RP
+Forza Motorsport 7:	https://www.pocketplayground.net/rs-dash-fm7
 
 ### SPECIAL THANKS
 

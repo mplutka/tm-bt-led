@@ -253,13 +253,17 @@ class Forza extends AbstractClient {
         obj.numCylinders = message.readInt32LE(cnt); //Number of cylinders in the engine
         cnt += 4;
     
-        //Position (meters)
+        if (message.length === 324) { // FH4
+            cnt += 12;
+        }
 
+        //Position (meters)
 
         if (message.length < 300) {
             console.warn("Wrong data format. Use \"DASH\"");
             return obj;
         }        
+
         obj.positionX = message.readFloatLE(cnt);
         cnt += 4;
         obj.positionY = message.readFloatLE(cnt);

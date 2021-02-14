@@ -72,3 +72,7 @@
 ## Version 2.4.0
 
   * Added support for Project Cars 2, Project Cars 3 & Automobilista 2 (use UDP format "Project Cars 2")
+
+## Version 2.5.0
+
+  * Added support for Forza Motorsport 7 and Forza Horizon 4 (please see README for network settings)
