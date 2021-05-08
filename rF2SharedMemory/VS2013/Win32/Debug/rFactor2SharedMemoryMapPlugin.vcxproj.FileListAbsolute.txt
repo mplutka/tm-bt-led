@@ -1,0 +1,2 @@
+D:\TMBTLED\repos\tm-bt-led\rF2SharedMemory\VS2013\Win32\Debug\rFactor2SharedMemoryMapPlugin32.dll
+D:\TMBTLED\repos\tm-bt-led\rF2SharedMemory\VS2013\Win32\Debug\rFactor2SharedMemoryMapPlugin32.pdb
