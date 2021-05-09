@@ -52,7 +52,6 @@
     "node-gyp": "^7.1.2"
   },
   "scripts": {
-    "build": "node-gyp rebuild -C AssettoCorsaSharedMemory",
-    "build-debug": "node-gyp --debug configure rebuild"
+    "build": "node-gyp rebuild -C AssettoCorsaSharedMemory && node-gyp rebuild -C rF2SharedMemory"
   }
 }
