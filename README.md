@@ -26,6 +26,7 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 * Dirt 3, Dirt 4, Dirt Rally, Dirt Rally 2 (dirt.bat)
 * Project Cars 2, Project Cars 3, Automobilista 2 (pcars2.bat)
 * Forza Motorsport 7, Forza Horizon 4 (forza.bat)
+* rFactor2 (rF2.bat)
 
 If you would like to add a game that uses udp port 20777 to the list, you can use `dump_udp.bat` to create a dumpfile with recorded telemetry data.
 Either you use _template.mjs and create your own game file or get in touch with me by creating an issue here on Github and attach the dump.
@@ -113,6 +114,11 @@ If you can't get it to run without crashes, you could add `--interval xxx` after
 Please follow these tutorials and set port to 20127. Also make sure that you disable network isolation (checknetisolation command) as mentioned.
 Forza Horizon 4:	https://github.com/zackdevine/FH4RP
 Forza Motorsport 7:	https://www.pocketplayground.net/rs-dash-fm7
+
+### Data plugin for rFactor2
+
+Download rF2 Shared Memory Plugin here: http://www.mediafire.com/file/qir5xkb7fqbqa2s/rf2_sm_tools_3.7.14.2.zip/file
+Extract and copy "rFactor2SharedMemoryMapPlugin64.dll" into rF2 plugins folder and activate the plugin in the game
 
 ### SPECIAL THANKS
 
