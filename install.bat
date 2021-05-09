@@ -1,2 +1,2 @@
 @echo off
-npm ci
+npm ci && npm run build

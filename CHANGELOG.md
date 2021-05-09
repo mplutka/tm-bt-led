@@ -76,3 +76,7 @@
 ## Version 2.5.0
 
   * Added support for Forza Motorsport 7 and Forza Horizon 4 (please see README for network settings)
+
+## Version 2.6.0
+
+  * Added support for rFactor2 (rFactor2SharedMemoryMapPlugin64.dll needs to be copied to rF2 plugin folder beforehand)
