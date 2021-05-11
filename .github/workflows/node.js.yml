@@ -39,7 +39,8 @@ jobs:
           lib/
           clients/
           node_modules/
-          build/Release
+          AssettoCorsaSharedMemory/build/Release
+          rF2SharedMemory/build/Release
           *.bat
           *.json
           *.md
