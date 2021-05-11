@@ -28,6 +28,8 @@ jobs:
     - run: npm ci && npm run build 
 
     - run: npm uninstall node-gyp node-addon-api readline-promise
+    
+    - run: rm install.bat
 
     - name: Archive production artifacts
       uses: actions/upload-artifact@v2
