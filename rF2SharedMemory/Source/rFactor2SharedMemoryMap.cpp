@@ -251,7 +251,7 @@ Napi::Object SharedMemoryPlugin::GetTelemetry(const Napi::CallbackInfo& info) {
         rF2VehicleTelemetry telemetry = smp->mTelemetry.mReadBuff.mVehicles[smp->mCurrTelemetryVehicleIndex];
         ret.Set("mGear", Napi::Number::New(env, telemetry.mGear));
         ret.Set("mSpeedLimiter", Napi::Number::New(env, telemetry.mSpeedLimiter));
-        ret.  Set("mEngineRPM", Napi::Number::New(env, telemetry.mEngineRPM));
+        ret.Set("mEngineRPM", Napi::Number::New(env, telemetry.mEngineRPM));
         ret.Set("mEngineMaxRPM", Napi::Number::New(env, telemetry.mEngineMaxRPM));
 
         double speed = sqrt((telemetry.mLocalVel.x * telemetry.mLocalVel.x)
@@ -290,8 +290,9 @@ Napi::Object SharedMemoryPlugin::GetTelemetry(const Napi::CallbackInfo& info) {
         ret.Set("mElapsedTime", Napi::Number::New(env, telemetry.mElapsedTime));
 
         ret.Set("mDeltaTime", Napi::Number::New(env, telemetry.mDeltaTime));
-        
-        
+        ret.Set("mLapStartET", Napi::Number::New(env, telemetry.mLapStartET));
+
+        ret.Set("mLapNumber", Napi::Number::New(env, telemetry.mLapNumber));
     }
     return ret;
 }
@@ -305,6 +306,9 @@ Napi::Object SharedMemoryPlugin::GetScoring(const Napi::CallbackInfo& info) {
         ret.Set("mFlag", Napi::Number::New(env, scoring.mFlag));
 
         ret.Set("mIndividualPhase", Napi::Number::New(env, scoring.mIndividualPhase));
+
+        int mSectorFlag = (unsigned char)smp->mScoring.mReadBuff.mScoringInfo.mSectorFlag[0] + (unsigned char)smp->mScoring.mReadBuff.mScoringInfo.mSectorFlag[1] + (unsigned char)smp->mScoring.mReadBuff.mScoringInfo.mSectorFlag[2];
+        ret.Set("mSectorFlag", Napi::Number::New(env, mSectorFlag));
 
 
         ret.Set("mTimeIntoLap", Napi::Number::New(env, scoring.mTimeIntoLap));
