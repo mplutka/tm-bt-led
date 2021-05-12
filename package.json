@@ -35,10 +35,10 @@
   ],
   "gypfile": true,
   "dependencies": {
-    "binary-parser": "^1.3.0",
+    "binary-parser": "^1.8.0",
     "convert-units": "^2.3.4",
     "f1-telemetry-client": "^0.1.18",
-    "lodash": "^4.17.20",
+    "lodash": "^4.17.21",
     "noble": "https://github.com/mplutka/noble.git",
     "node-addon-api": "^3.1.0",
     "node-bitarray": "^0.1.0",
