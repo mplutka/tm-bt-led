@@ -80,3 +80,7 @@
 ## Version 2.6.0
 
   * Added support for rFactor2 (rFactor2SharedMemoryMapPlugin64.dll needs to be copied to rF2 plugin folder beforehand)
+
+## Version 2.6.1
+
+  * Added some more rFactor2 time and flag data

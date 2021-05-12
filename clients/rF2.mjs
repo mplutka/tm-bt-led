@@ -11,7 +11,7 @@ import { rF2SharedMemory } from "../lib/rF2SharedMemory.js";
 import AbstractClient from '../lib/abstractClient.mjs';
 
 const leftModes = ["SPEED", "RPM", "FUEL", "TYRETEMP", "TYREPRESS", "BRAKETEMP", "OILTEMP"];
-const rightModes = ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"];
+const rightModes = ["LAPTIME", /*"DELTA",*/ "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"];
 
 class rF2 extends AbstractClient {
     scoring = {};
@@ -109,21 +109,35 @@ class rF2 extends AbstractClient {
           case 7:
             this.tmBtLed.setFlashingRed(true);
             break 
-          case 6:
+         /* case 6:
             this.tmBtLed.setFlashingYellow(true);
-            break                                   
+            break                                   */
           default:
-            if (this.tmBtLed.isFlashingYellow) {
+            /*if (this.tmBtLed.isFlashingYellow) {
               this.tmBtLed.setFlashingYellow(false);
-            }
+            }*/
             if (this.tmBtLed.isFlashingRed) {
               this.tmBtLed.setFlashingRed(false);
             }
             break;
         }
 
-
-        console.log(this.telemetry, this.scoring);
+        switch(this.scoring.mSectorFlag) {
+          case 33:
+            if (this.tmBtLed.isFlashingYellow) {
+              this.tmBtLed.setFlashingYellow(false);
+            }
+            break 
+         /* case 6:
+            this.tmBtLed.setFlashingYellow(true);
+            break                                   */
+          default:
+            /*if (this.tmBtLed.isFlashingYellow) {
+              this.tmBtLed.setFlashingYellow(false);
+            }*/
+            this.tmBtLed.setFlashingYellow(true);
+            break;
+        }        
 
         switch (this.currentLeftMode) {
           default:
@@ -140,7 +154,7 @@ class rF2 extends AbstractClient {
             this.tmBtLed.setTemperature(this.telemetry.mTireTemp - 273.15, false);
             break;  
           case 4:
-            this.tmBtLed.setFloat(this.telemetry.mPressure, false);
+            this.tmBtLed.setFloat(this.telemetry.mPressure / 100, false);
             break;                   
           case 5:
             this.tmBtLed.setTemperature(this.telemetry.mBrakeTemp - 273.15, false);
@@ -153,25 +167,25 @@ class rF2 extends AbstractClient {
         switch (this.currentRightMode) {        
           default:
           case 0:
-            this.tmBtLed.setTime((this.telemetry.mElapsedTime - this.scoring.mCurrentET) * 1000, true);
+            this.tmBtLed.setTime((this.scoring.mCurrentET - this.telemetry.mLapStartET) * 1000, true);
             break;      
-          case 1:
+          /*case 1:
             this.tmBtLed.setDiffTime(this.telemetry.mDeltaTime * 1000 * 1000, true);
-            break;     
-          case 2:
-            this.tmBtLed.setTime(this.scoring.mLastLapTime * 1000, true);
+            break;*/
+          case 1:
+            this.tmBtLed.setTime((this.scoring.mLastLapTime < 0 ? 0 : this.scoring.mLastLapTime) * 1000, true);
             break; 
-          case 3:
-            this.tmBtLed.setTime(this.scoring.mBestLapTime * 1000, true);
+          case 2:
+            this.tmBtLed.setTime((this.scoring.mBestLapTime < 0 ? 0 : this.scoring.mBestLapTime) * 1000, true);
             break;   
-          case 4:
+          case 3:
             this.tmBtLed.setInt(this.scoring.mPlace, true);
             break;
-          case 5:
+          case 4:
             this.tmBtLed.setInt(this.telemetry.mLapNumber, true);
             break;          
-          case 6:
-            this.tmBtLed.setInt(this.scoring.mMaxLaps - this.telemetry.mLapNumber, true);
+          case 5:
+            this.tmBtLed.setInt(this.scoring.mTotalLaps - this.telemetry.mLapNumber, true);
             break;
         }
        
