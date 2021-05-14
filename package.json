@@ -54,6 +54,6 @@
     "node-gyp": "^7.1.2"
   },
   "scripts": {
-    "build": "node-gyp rebuild -C AssettoCorsaSharedMemory && node-gyp rebuild -C rF2SharedMemory && node-gyp rebuild -C r3e"
+    "build": "node-gyp rebuild -C AssettoCorsaSharedMemory && node-gyp rebuild -C rF2SharedMemory && node-gyp rebuild -C r3e-api"
   }
 }
