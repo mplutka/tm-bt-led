@@ -84,3 +84,7 @@
 ## Version 2.6.1
 
   * Added some more rFactor2 time and flag data
+
+## Version 2.7.0
+
+  * Added Raceroom support and added tutorial for use of prebuilt version

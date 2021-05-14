@@ -47,10 +47,11 @@ Others might work too, but again: No guarantee.
 3. Compatible game with enabled telemetry data
 4. Windows 10 19042 or higher (might work on other but not tested) and the following software:
 
-		a. Git
-	
-		b. NodeJS [Link](https://nodejs.org/de/download/) (I'm using 14.15.3 LTS)
-	
+		a. NodeJS [Link](https://nodejs.org/de/download/) (I'm using 14.15.3 LTS)
+
+		For manual installation:
+		b. Git
+		
 		c. Python3 (get it from Windows Store)
 	
 		d. Visual Studio 2019 Community with C++ Desktop Development feature enabled for install (!)
@@ -58,11 +59,17 @@ Others might work too, but again: No guarantee.
 5. Zadig [Link](https://zadig.akeo.ie/)
 6. USB stick (I'm using a CSR8510 A10 based one which performs very good, my ASUS BT400 didn't work very well) or chipset that provides Bluetooth LE with supported chipset! [List of supported devices](https://github.com/abandonware/node-bluetooth-hci-socket#windows)
   
+## Run prebuilt application (recommended)
 
-## Installation
+1. Download version 2.7.1 [Link](https://github.com/mplutka/tm-bt-led/releases/download/2.7.0/2.7.0.zip) and extract in empty folder
+2. Run `setup.bat` to detect your device and dump it's data to a file for faster reconnects (necessary)
+3. (Optional) You can start `test.bat` to run demo mode.
+4. Start `run.bat` to launch auto detect mode and launch the game
+
+## Manual installation
 
 1. Checkout this repo or download the code on your PC on which you intend to run
-2. Open a Windows and `cd` inside the code directory
+2. Open a command prompt and `cd` into the code directory
 3. `install.bat` (This should install everything needed. If something fails especially on compilation, check Prerequisites#5)
 4. Run `setup.bat` to detect your device and dump it's data to a file for faster reconnects (necessary)
 5. You can start `test.bat` to run demo mode.
