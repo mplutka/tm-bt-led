@@ -41,7 +41,7 @@ jobs:
           node_modules/
           AssettoCorsaSharedMemory/build/Release
           rF2SharedMemory/build/Release
-          r3e/build/Release
+          r3e-api/build/Release
           *.bat
           *.json
           *.md
