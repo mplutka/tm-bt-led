@@ -27,6 +27,7 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 * Project Cars 2, Project Cars 3, Automobilista 2 (pcars2.bat)
 * Forza Motorsport 7, Forza Horizon 4 (forza.bat)
 * rFactor2 (rF2.bat)
+* Raceroom (raceroom.bat)
 
 If you would like to add a game that uses udp port 20777 to the list, you can use `dump_udp.bat` to create a dumpfile with recorded telemetry data.
 Either you use _template.mjs and create your own game file or get in touch with me by creating an issue here on Github and attach the dump.
@@ -47,21 +48,21 @@ Others might work too, but again: No guarantee.
 3. Compatible game with enabled telemetry data
 4. Windows 10 19042 or higher (might work on other but not tested) and the following software:
 
-		a. NodeJS [Link](https://nodejs.org/de/download/) (I'm using 14.15.3 LTS)
+	a. [NodeJS](https://nodejs.org/de/download/) (I'm using 14.15.3 LTS)
 
-		For manual installation:
-		b. Git
+	For manual installation:
+	b. Git
 		
-		c. Python3 (get it from Windows Store)
+	c. Python3 (get it from Windows Store)
 	
-		d. Visual Studio 2019 Community with C++ Desktop Development feature enabled for install (!)
+	d. Visual Studio 2019 Community with C++ Desktop Development feature enabled for install (!)
 
-5. Zadig [Link](https://zadig.akeo.ie/)
+5. [Zadig](https://zadig.akeo.ie/)
 6. USB stick (I'm using a CSR8510 A10 based one which performs very good, my ASUS BT400 didn't work very well) or chipset that provides Bluetooth LE with supported chipset! [List of supported devices](https://github.com/abandonware/node-bluetooth-hci-socket#windows)
   
 ## Run prebuilt application (recommended)
 
-1. Download version 2.7.0 [Link](https://github.com/mplutka/tm-bt-led/releases/download/2.7.0/2.7.0.zip) and extract in empty folder
+1. Download version [2.7.0](https://github.com/mplutka/tm-bt-led/releases/download/2.7.0/2.7.0.zip) and extract in empty folder
 2. Run `setup.bat` to detect your device and dump it's data to a file for faster reconnects (necessary)
 3. (Optional) You can start `test.bat` to run demo mode.
 4. Start `run.bat` and launch the game
