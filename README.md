@@ -65,7 +65,7 @@ Others might work too, but again: No guarantee.
 1. Download version [2.7.0](https://github.com/mplutka/tm-bt-led/releases/download/2.7.0/2.7.0.zip) and extract in empty folder
 2. Run `setup.bat` to detect your device and dump it's data to a file for faster reconnects (necessary)
 3. (Optional) You can start `test.bat` to run demo mode.
-4. Start `run.bat` and launch the game
+4. Proceed with "Launch" section of this tutorial
 
 ## Manual installation
 
@@ -73,8 +73,8 @@ Others might work too, but again: No guarantee.
 2. Open a command prompt and `cd` into the code directory
 3. `install.bat` (This should install everything needed. If something fails especially on compilation, check Prerequisites#5)
 4. Run `setup.bat` to detect your device and dump it's data to a file for faster reconnects (necessary)
-5. You can start `test.bat` to run demo mode.
-
+5. (Optional) You can start `test.bat` to run demo mode.
+6. Proceed with "Launch" section of this tutorial
 
 ## Launch
 
