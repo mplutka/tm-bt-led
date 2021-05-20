@@ -88,3 +88,7 @@
 ## Version 2.7.0
 
   * Added Raceroom support and added tutorial for use of prebuilt version
+
+## Version 2.7.1
+
+  * Added Delta timings for F1

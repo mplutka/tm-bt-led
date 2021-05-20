@@ -12,10 +12,10 @@ import AbstractClient from '../lib/abstractClient.mjs';
 const { PACKETS } = constants;
 
 const leftModes = ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "ENGINETEMP", "ERSLEVEL"];
-const rightModes = ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"];
+const rightModes = ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"];
 
 class F1 extends AbstractClient {
-    port = 20777;       // UDP port the client should listen on for telemetry data 
+    port = 20777;       // UDP port the client should listen on for telemetry data
 
     constructor(tmBtLed) {
         if (!tmBtLed) {
@@ -41,7 +41,10 @@ class F1 extends AbstractClient {
     }
 
     startClient = () =>  {     
+        let bestDeltaData = new Map();
+        let currentDeltaData = new Map();
         let totalLaps = 60;
+        let trackLength = 0;
         // https://f1-2019-telemetry.readthedocs.io/en/latest/telemetry-specification.html
         /*client.on(PACKETS.event, console.log);
         client.on(PACKETS.motion, console.log);
@@ -55,7 +58,7 @@ class F1 extends AbstractClient {
 
             if (carSetups.m_onThrottle !== onThrottle) {
                 if (onThrottle >= 0) {
-                    this.tmBtLed.showTemporary("DIFFERANTIAL", carSetups.m_onThrottle);
+                    this.tmBtLed.showTemporary("DIFFERENTIAL", carSetups.m_onThrottle);
                 }
                 onThrottle = carSetups.m_onThrottle;
             }    
@@ -63,12 +66,39 @@ class F1 extends AbstractClient {
 
         this.client.on(PACKETS.session, d => {
           totalLaps = d.m_totalLaps;
+          trackLength = d.m_trackLength || 0;
         });
 
         this.client.on(PACKETS.lapData, d => {
             this.tmBtLed.setRightTimeSpacer(false);
             const myIndex = d.m_header.m_playerCarIndex;
-            const lapData = d.m_lapData[myIndex];      
+            const lapData = d.m_lapData[myIndex];
+
+            const fractionOfLap = trackLength === 0 || lapData.m_lapDistance < 0 ? 0 : (lapData.m_lapDistance / trackLength).toFixed(6);
+            if (fractionOfLap >= 0.99 && currentDeltaData.size > 100) {
+                if (!lapData.m_bestLapTime && bestDeltaData.size > 0) {
+                    bestDeltaData.clear();
+                } else if (lapData.m_currentLapInvalid !== 1 && lapData.m_bestLapTime > 0 && (lapData.m_currentLapTime <= lapData.m_bestLapTime || !bestDeltaData.size)) {
+                    bestDeltaData.clear();
+                    bestDeltaData = new Map(currentDeltaData);
+                }
+                currentDeltaData.clear();
+            }
+
+            let delta = null;
+            if (bestDeltaData.size) {
+                let bestTimeForFraction = null;
+                bestDeltaData.forEach((bestTime, bestFraction) => {
+                    if (!bestTimeForFraction || bestFraction <= fractionOfLap) {
+                        bestTimeForFraction = bestTime;
+                    }
+                });
+
+                if (bestTimeForFraction) {
+                    delta = lapData.m_currentLapTime - bestTimeForFraction;
+                }
+            }
+            currentDeltaData.set(fractionOfLap, lapData.m_currentLapTime);
 
             switch (this.currentRightMode) {
                 default:                             
@@ -76,18 +106,21 @@ class F1 extends AbstractClient {
                   this.tmBtLed.setTime(lapData.m_currentLapTime * 1000, true);
                   break;
                 case 1:
+                  this.tmBtLed.setDiffTime(delta !== null ? delta * 1000 : null, true);
+                  break;                     
+                case 2:
                   this.tmBtLed.setTime(lapData.m_lastLapTime * 1000 , true);
                   break;   
-                case 2:
+                case 3:
                   this.tmBtLed.setTime(lapData.m_bestLapTime * 1000, true);
                   break;                        
-                case 3:
+                case 4:
                   this.tmBtLed.setInt(lapData.m_carPosition, true);
                   break;               
-                case 4:
+                case 5:
                   this.tmBtLed.setInt(lapData.m_currentLapNum, true);
                   break;
-                case 5:
+                case 6:
                   this.tmBtLed.setInt(totalLaps - lapData.m_currentLapNum, true);
                   break; 
             }
