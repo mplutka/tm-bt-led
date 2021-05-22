@@ -82,7 +82,6 @@ class F1 extends AbstractClient {
                 bestDeltaData.clear();
                 currentDeltaData.clear();
                 bestLapTime = 0;
-                console.log("RESET");
             }
 
             const fractionOfLap = trackLength === 0 || lapData.m_lapDistance < 0 ? 0 : (lapData.m_lapDistance / trackLength).toFixed(6);
@@ -91,7 +90,6 @@ class F1 extends AbstractClient {
                     bestDeltaData.clear();
                     bestDeltaData = new Map(currentDeltaData);
                     bestLapTime = lapData.m_currentLapTime;
-                    console.log("NEW RECORD");
                 }
                 currentDeltaData.clear();
             }
