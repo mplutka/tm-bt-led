@@ -57,7 +57,7 @@
 
 ## Version 2.2.1
 
-  * Reset device between games
+  * General: Reset device between games
 
 ## Version 2.3.0
 
@@ -67,28 +67,33 @@
 
 ## Version 2.3.1
 
-  * Support for longer mode messages. Will scroll if longer than 4 characters
+  * General: Support for longer mode messages. Will scroll if longer than 4 characters
 
 ## Version 2.4.0
 
-  * Added support for Project Cars 2, Project Cars 3 & Automobilista 2 (use UDP format "Project Cars 2")
+  * Project Cars 2, Project Cars 3 & Automobilista 2: Added support (use UDP format "Project Cars 2")
 
 ## Version 2.5.0
 
-  * Added support for Forza Motorsport 7 and Forza Horizon 4 (please see README for network settings)
+  * Forza Motorsport 7 and Forza Horizon 4: Added support (please see README for network settings)
 
 ## Version 2.6.0
 
-  * Added support for rFactor2 (rFactor2SharedMemoryMapPlugin64.dll needs to be copied to rF2 plugin folder beforehand)
+  * rFactor2: Added basic support (rFactor2SharedMemoryMapPlugin64.dll needs to be copied to rF2 plugin folder beforehand)
 
 ## Version 2.6.1
 
-  * Added some more rFactor2 time and flag data
+  * rFactor2: Added some more time and flag data
 
 ## Version 2.7.0
 
-  * Added Raceroom support and added tutorial for use of prebuilt version
+  * Raceroom: Added support 
+  * General: Added tutorial for use of prebuilt version
 
 ## Version 2.7.1
 
-  * Added Delta timings for F1
+  * F1: Added Delta timings for F1
+
+## Version 2.7.2
+
+  * F1: Realistic DRS indication and rev lights for modern F1 cars
