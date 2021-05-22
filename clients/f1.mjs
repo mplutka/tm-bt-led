@@ -45,6 +45,7 @@ class F1 extends AbstractClient {
         let currentDeltaData = new Map();
         let totalLaps = 60;
         let trackLength = 0;
+        let modernCar = false;
         // https://f1-2019-telemetry.readthedocs.io/en/latest/telemetry-specification.html
         /*client.on(PACKETS.event, console.log);
         client.on(PACKETS.motion, console.log);
@@ -67,6 +68,7 @@ class F1 extends AbstractClient {
         this.client.on(PACKETS.session, d => {
           totalLaps = d.m_totalLaps;
           trackLength = d.m_trackLength || 0;
+          modernCar = d.m_formula === 0;
         });
 
         this.client.on(PACKETS.lapData, d => {
@@ -133,6 +135,7 @@ class F1 extends AbstractClient {
         });
 
         let drsOn = false;
+        let drsAvailable = false;
 
         let ersDeployMode = null;
         const ersDeployModes = ["NONE", "LOW ","MEDIUM", "HIGH", "OVERTAKE", "HOTLAP"];
@@ -168,13 +171,7 @@ class F1 extends AbstractClient {
                 frontBrakeBias = carStatus.m_frontBrakeBias;
             }            
 
-            if (!drsOn && !this.tmBtLed.isFlashingYellow) { // Yellow flag and drs on overrides drs allowed
-                if (carStatus.m_drsAllowed === 1) {
-                    this.tmBtLed.setFlashingRightYellow(true);
-                } else if (!drsOn) {
-                    this.tmBtLed.setFlashingRightYellow(false);
-                }
-            }
+            drsAvailable = carStatus.m_drsAllowed === 1;
 
             switch(carStatus.m_vehicleFiaFlags) {
                 case 2:
@@ -222,19 +219,24 @@ class F1 extends AbstractClient {
             const carTelemetry = d.m_carTelemetryData[myIndex];
             this.tmBtLed.setGear(carTelemetry.m_gear);
         
-            if (!this.tmBtLed.isFlashingYellow) { // Yellow flag overrides drs
-                if (carTelemetry.m_drs === 1) {
-                    drsOn = true;
-                    this.tmBtLed.setFlashingRightYellow(false);
-                    this.tmBtLed.setRightYellow(true);
-                } else if (!this.tmBtLed.isFlashingRightYellow) {
-                    drsOn = false;
-                    this.tmBtLed.setRightYellow(false);
+            drsOn = carTelemetry.m_drs === 1;
+            if (!this.tmBtLed.revLightsFlashing) {
+                if (drsOn) {
+                    this.tmBtLed.setRevLightsGreen(4);
+                } else if (drsAvailable) {
+                    this.tmBtLed.setRevLightsGreen(2);
+                } else {
+                    this.tmBtLed.setRevLightsGreen(0);
                 }
             }
             
             if (this.tmBtLed.revLightsFlashing !== 1) { // No override because of pit limiter
-                this.tmBtLed.setRevLights(carTelemetry.m_revLightsPercent);
+                if (modernCar) {
+                    this.tmBtLed.setRevLightsWithoutGreen(carTelemetry.m_revLightsPercent, 25);
+                } else {
+                    this.tmBtLed.setRevLights(carTelemetry.m_revLightsPercent);
+                }
+
             }
 
             switch (this.currentLeftMode) {
