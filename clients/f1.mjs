@@ -43,6 +43,7 @@ class F1 extends AbstractClient {
     startClient = () =>  {     
         let bestDeltaData = new Map();
         let currentDeltaData = new Map();
+        let bestLapTime = 0; // Best Lap of current session, not of all time
         let totalLaps = 60;
         let trackLength = 0;
         let modernCar = false;
@@ -76,13 +77,21 @@ class F1 extends AbstractClient {
             const myIndex = d.m_header.m_playerCarIndex;
             const lapData = d.m_lapData[myIndex];
 
+            // Reset on session change
+            if (lapData.m_lapDistance < 0 && (bestLapTime > 0 || bestDeltaData.size > 0)) {
+                bestDeltaData.clear();
+                currentDeltaData.clear();
+                bestLapTime = 0;
+                console.log("RESET");
+            }
+
             const fractionOfLap = trackLength === 0 || lapData.m_lapDistance < 0 ? 0 : (lapData.m_lapDistance / trackLength).toFixed(6);
-            if (fractionOfLap >= 0.99 && currentDeltaData.size > 100) {
-                if (!lapData.m_bestLapTime && bestDeltaData.size > 0) {
-                    bestDeltaData.clear();
-                } else if (lapData.m_currentLapInvalid !== 1 && lapData.m_bestLapTime > 0 && (lapData.m_currentLapTime <= lapData.m_bestLapTime || !bestDeltaData.size)) {
+            if (fractionOfLap >= 0.997 && currentDeltaData.size > 1000) {
+                if (lapData.m_currentLapInvalid !== 1 && (lapData.m_currentLapTime <= bestLapTime || !bestLapTime)) {
                     bestDeltaData.clear();
                     bestDeltaData = new Map(currentDeltaData);
+                    bestLapTime = lapData.m_currentLapTime;
+                    console.log("NEW RECORD");
                 }
                 currentDeltaData.clear();
             }
@@ -101,6 +110,8 @@ class F1 extends AbstractClient {
                 }
             }
             currentDeltaData.set(fractionOfLap, lapData.m_currentLapTime);
+
+            console.log(delta, lapData.m_lapDistance, fractionOfLap, currentDeltaData.size, bestDeltaData.size, lapData.m_currentLapTime, lapData.m_lastLapTime, bestLapTime);
 
             switch (this.currentRightMode) {
                 default:                             
