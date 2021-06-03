@@ -1,7 +1,7 @@
    {
     "targets": [
       {
-        "target_name": "raceroom",
+        "target_name": "r3e",
         "sources": [ 
           "./source/r3e.cpp"
         ],
