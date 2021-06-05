@@ -97,3 +97,7 @@
 ## Version 2.7.2
 
   * F1: Realistic DRS indication and rev lights for modern F1 cars
+
+## Version 2.7.3
+
+  * RACEROOM: Bugfix
