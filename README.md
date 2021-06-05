@@ -62,7 +62,7 @@ Others might work too, but again: No guarantee.
   
 ## Run prebuilt application (recommended)
 
-1. Download version [2.7.2](https://github.com/mplutka/tm-bt-led/releases/download/2.7.2/2.7.2.zip) and extract in empty folder
+1. Download version [2.7.3](https://github.com/mplutka/tm-bt-led/releases/download/2.7.3/2.7.3.zip) and extract in empty folder
 2. Run `setup.bat` to detect your device and dump it's data to a file for faster reconnects (necessary)
 3. (Optional) You can start `test.bat` to run demo mode.
 4. Proceed with "Launch" section of this tutorial
