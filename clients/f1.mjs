@@ -109,8 +109,6 @@ class F1 extends AbstractClient {
             }
             currentDeltaData.set(fractionOfLap, lapData.m_currentLapTime);
 
-            console.log(delta, lapData.m_lapDistance, fractionOfLap, currentDeltaData.size, bestDeltaData.size, lapData.m_currentLapTime, lapData.m_lastLapTime, bestLapTime);
-
             switch (this.currentRightMode) {
                 default:                             
                 case 0:
