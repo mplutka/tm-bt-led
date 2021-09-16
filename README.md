@@ -20,7 +20,7 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 
 ## Currently supported games
 
-* F1 2019, F1 2020 (f1.bat)
+* F1 2019-21 (f1.bat)
 * Assetto Corsa, Assetto Corsa Competizione (assetto.bat)
 * iRacing (iracing.bat)
 * Dirt 3, Dirt 4, Dirt Rally, Dirt Rally 2 (dirt.bat)
@@ -35,7 +35,7 @@ Either you use _template.mjs and create your own game file or get in touch with 
 
 ## Recommended Bluetooth chipsets/sticks known to be working
 
-* CSR 8510 A10 based devices (USB VID: 0x0a12, USB PID: 0x0001)
+* Certain CSR 8510 A10 based devices (USB VID: 0x0a12, USB PID: 0x0001, e.g. TP-Link UB400 seems to work fine)
 * Realtek Bluetooth 8761B (USB VID: 0x0bda, USB PID: 0x8771, e.g. MPOW Bluetooth 5.0 stick)
 * Intel Wireless Bluetooth 8265 (USB VID: 0x8087, USB PID: 0x0a2b)
 
@@ -58,7 +58,7 @@ Others might work too, but again: No guarantee.
 	d. Visual Studio 2019 Community with C++ Desktop Development feature enabled for install (!)
 
 5. [Zadig](https://zadig.akeo.ie/)
-6. USB stick (I'm using a CSR8510 A10 based one which performs very good, my ASUS BT400 didn't work very well) or chipset that provides Bluetooth LE with supported chipset! [List of supported devices](https://github.com/abandonware/node-bluetooth-hci-socket#windows)
+6. USB stick or chipset that provides Bluetooth LE with supported chipset! [List of supported devices](https://github.com/abandonware/node-bluetooth-hci-socket#windows)
   
 ## Run prebuilt application (recommended)
 
