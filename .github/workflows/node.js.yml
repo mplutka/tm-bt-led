@@ -40,6 +40,7 @@ jobs:
           clients/
           node_modules/
           AssettoCorsaSharedMemory/build/Release
+          ETS2SharedMemory/build/Release
           rF2SharedMemory/build/Release
           r3e-api/build/Release
           *.bat
