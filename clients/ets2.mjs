@@ -7,11 +7,11 @@
  * Copyright (c) 2021 Markus Plutka
  */
 
-import { ets2 } from "../lib/ets2SharedMemory.js";
+import { scs } from "../lib/scsSharedMemory.js";
 import AbstractClient from '../lib/abstractClient.mjs';
 
 const leftModes = ["SPEED", "RPM", "FUEL", "WATERTEMP", "OILTEMP", "OILPRESS", "AIRPRESS", "BRAKETEMP"];
-const rightModes = ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"];
+const rightModes = ["DISTANCE", "TIME", "SPEED LIMIT", "CRUISE CONT", "AVG CONSUM", "RANGE"];
 
 class EuroTruckSimulator2 extends AbstractClient {
     data = {};
@@ -33,7 +33,7 @@ class EuroTruckSimulator2 extends AbstractClient {
       });
       this.setModes(leftModes, rightModes);
 
-      ets2.initMaps();
+      scs.initMaps();
     }
 
     startClient = () =>  {
@@ -48,12 +48,12 @@ class EuroTruckSimulator2 extends AbstractClient {
             clearInterval(this.refreshInterval);
             this.refreshInterval = null;
         }
-        ets2.cleanup();
+        scs.cleanup();
     }
 
     updateValues = () => {
 
-        const data = ets2.getData();
+        const data = scs.getData();
         
         if (data && Object.keys(data).length) {
           this.data = data;
@@ -160,44 +160,40 @@ class EuroTruckSimulator2 extends AbstractClient {
             this.tmBtLed.setTemperature(this.data.waterTemperature, false);
             break;  
           case 4:
-            this.tmBtLed.setFloat(this.data.oilTemperature, false);
+            this.tmBtLed.setTemperature(this.data.oilTemperature, false);
             break;                   
           case 5:
-            this.tmBtLed.setTemperature(this.data.oilPressure, false);
+            this.tmBtLed.setFloat(this.data.oilPressure, false);
             break;
           case 6:
-            this.tmBtLed.setTemperature(this.data.airPressure, false);
+            this.tmBtLed.setFloat(this.data.airPressure, false);
             break;
-          case 6:
+          case 7:
             this.tmBtLed.setTemperature(this.data.brakeTemperature, false);
             break;            
         }
 
-     /*   switch (this.currentRightMode) {        
+        switch (this.currentRightMode) {        
           default:
           case 0:
-            this.tmBtLed.setTime(this.data.lap_time_current_self < 0 ? 0 : this.data.lap_time_current_self * 1000, true);
+            this.tmBtLed.setFloat(this.data.routeDistance / 1000, true);
             break;      
           case 1:
-            this.tmBtLed.setDiffTime(this.data.time_delta_best_self * 1000 * 1000, true);
+            this.tmBtLed.setTime(this.data.routeTime / 60 * 1000, true); // in ms
             break;
           case 2:
-            this.tmBtLed.setTime((this.data.lap_time_previous_self < 0 ? 0 : this.data.lap_time_previous_self) * 1000, true);
+            this.tmBtLed.setSpeed(this.data.speedLimit >= 0 ? this.data.speedLimit * 3.6 : 0, true);
             break; 
           case 3:
-            this.tmBtLed.setTime((this.data.lap_time_best_self < 0 ? 0 : this.data.lap_time_best_self) * 1000, true);
+            this.tmBtLed.setSpeed(this.data.cruiseControlSpeed, true);
             break;   
           case 4:
-            this.tmBtLed.setInt(this.data.position, true);
+            this.tmBtLed.setFloat(this.data.fuelAvgConsumption, true);
             break;
           case 5:
-            this.tmBtLed.setInt(this.data.completed_laps + 1, true);
+            this.tmBtLed.setFloat(this.data.fuelRange / 1000, true);
             break;          
-          case 6:
-            this.tmBtLed.setInt(this.data.number_of_laps < 0 ? 0 : (this.data.number_of_laps - this.data.completed_laps), true);
-            break;
-        }*/
-       
+        }
     };
 }
 

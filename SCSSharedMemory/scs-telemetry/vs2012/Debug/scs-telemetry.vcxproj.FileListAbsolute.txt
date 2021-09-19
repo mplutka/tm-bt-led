@@ -1,0 +1,2 @@
+D:\Downloads\scs-sdk-plugin-master\scs-telemetry\vs2012\Debug\scs-telemetry.dll
+D:\Downloads\scs-sdk-plugin-master\scs-telemetry\vs2012\Debug\scs-telemetry.pdb
