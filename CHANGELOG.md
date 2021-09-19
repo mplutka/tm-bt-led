@@ -101,3 +101,8 @@
 ## Version 2.7.3
 
   * RACEROOM: Bugfix
+
+## Version 2.8.0
+
+  * F1: Added support for F1 2021
+  * Euro Truck Simulator 2, American Truck Simulator: Added support

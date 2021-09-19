@@ -4,7 +4,7 @@
   "license": "MIT",
   "name": "tm-bt-led",
   "description": "A library for accessing the Thrustmaster BT LED peripheral on Windows/PC",
-  "version": "2.7.3",
+  "version": "2.8.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/mplutka/tm-bt-led.git"
@@ -17,6 +17,7 @@
     "Thrustmaster BT LED PC",
     "TM BT LED PC F1 2019",
     "TM BT LED PC F1 2020",
+    "TM BT LED PC F1 2021",
     "TM BT LED ACC",
     "TM BT LED iRacing",
     "TM BT LED Dirt Rally",
@@ -26,7 +27,9 @@
     "TM BT LED Forza Motorsport 7",
     "TM BT LED Forza Horizon 4",
     "TM BT LED rFactor 2",
-    "TM BT LED Raceroom"
+    "TM BT LED Raceroom",
+    "TM BT LED Euro Truck Simulator 2",
+    "TM BT LED American Truck Simulator"
   ],
   "main": "./lib/test.mjs",
   "engines": {
@@ -39,7 +42,6 @@
   "dependencies": {
     "binary-parser": "^1.8.0",
     "convert-units": "^2.3.4",
-    "f1-telemetry-client": "^0.1.18",
     "lodash": "^4.17.21",
     "noble": "https://github.com/mplutka/noble.git",
     "node-addon-api": "^3.1.0",
@@ -51,9 +53,10 @@
   },
   "optionalDependencies": {},
   "devDependencies": {
+    "f1-telemetry-client": "git+https://github.com/mplutka/f1-telemetry-client.git",
     "node-gyp": "^7.1.2"
   },
   "scripts": {
-    "build": "node-gyp rebuild -C AssettoCorsaSharedMemory && node-gyp rebuild -C rF2SharedMemory && node-gyp rebuild -C r3e-api"
+    "build": "node-gyp rebuild -C AssettoCorsaSharedMemory && node-gyp rebuild -C rF2SharedMemory && node-gyp rebuild -C r3e-api && node-gyp rebuild -C ETS2SharedMemory"
   }
 }
