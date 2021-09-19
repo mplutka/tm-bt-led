@@ -28,7 +28,8 @@
     "TM BT LED Forza Horizon 4",
     "TM BT LED rFactor 2",
     "TM BT LED Raceroom",
-    "TM BT LED Euro Truck Simulator 2"
+    "TM BT LED Euro Truck Simulator 2",
+    "TM BT LED American Truck Simulator"
   ],
   "main": "./lib/test.mjs",
   "engines": {
