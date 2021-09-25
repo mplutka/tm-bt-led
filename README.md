@@ -126,8 +126,11 @@ Forza Motorsport 7:	https://www.pocketplayground.net/rs-dash-fm7
 
 ### Data plugin for rFactor2
 
-Download rF2 Shared Memory Plugin here: http://www.mediafire.com/file/qir5xkb7fqbqa2s/rf2_sm_tools_3.7.14.2.zip/file
-Extract and copy "rFactor2SharedMemoryMapPlugin64.dll" into rF2 plugins folder and activate the plugin in the game
+Copy "rF2SharedMemory/plugin/rFactor2SharedMemoryMapPlugin64.dll" into rF2 plugins folder and activate the plugin in the game.
+
+### Data plugin for Euro Truck Simulator 2/American Truck Simulator
+
+Copy "SCSSharedMemory/plugin/scs-telemetry.dll" into "<GAME_DIR>/bin/win_x64/plugins". Create the plugins folder if needed.
 
 ### SPECIAL THANKS
 
