@@ -108,9 +108,20 @@ Napi::Object scs::GetData(const Napi::CallbackInfo& info) {
     ret.Set("oilPressure", Napi::Number::New(env, map_buffer->truck_f.oilPressure));
     ret.Set("oilTemperature", Napi::Number::New(env, map_buffer->truck_f.oilTemperature));
     ret.Set("waterTemperature", Napi::Number::New(env, map_buffer->truck_f.waterTemperature));
-    
+
+    ret.Set("cruiseControl", Napi::Boolean::New(env, map_buffer->truck_b.cruiseControl));
+    ret.Set("lightsBeamHigh", Napi::Boolean::New(env, map_buffer->truck_b.lightsBeamHigh));
     ret.Set("blinkerLeftOn", Napi::Boolean::New(env, map_buffer->truck_b.blinkerLeftOn));   
-    ret.Set("blinkerRightOn", Napi::Boolean::New(env, map_buffer->truck_b.blinkerRightOn));      
+    ret.Set("blinkerRightOn", Napi::Boolean::New(env, map_buffer->truck_b.blinkerRightOn));     
+    ret.Set("airPressureWarning", Napi::Boolean::New(env, map_buffer->truck_b.airPressureWarning));  
+    ret.Set("airPressureEmergency", Napi::Boolean::New(env, map_buffer->truck_b.airPressureEmergency));  
+    ret.Set("fuelWarning", Napi::Boolean::New(env, map_buffer->truck_b.fuelWarning));  
+    ret.Set("adblueWarning", Napi::Boolean::New(env, map_buffer->truck_b.adblueWarning));  
+    ret.Set("oilPressureWarning", Napi::Boolean::New(env, map_buffer->truck_b.oilPressureWarning));
+    ret.Set("waterTemperatureWarning", Napi::Boolean::New(env, map_buffer->truck_b.waterTemperatureWarning)); 
+    ret.Set("batteryVoltageWarning", Napi::Boolean::New(env, map_buffer->truck_b.batteryVoltageWarning)); 
+
+       
 
     ret.Set("fuelAvgConsumption", Napi::Number::New(env, map_buffer->truck_f.fuelAvgConsumption));
     ret.Set("fuelRange", Napi::Number::New(env, map_buffer->truck_f.fuelRange));

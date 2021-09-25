@@ -83,68 +83,47 @@ class EuroTruckSimulator2 extends AbstractClient {
           this.tmBtLed.setGear(Math.abs(this.data.gearDashboard));
         }
 
+        // Left LEDs
         if (this.data.blinkerLeftOn) {
           this.tmBtLed.setLeftYellow(true);
         } else {
           this.tmBtLed.setLeftYellow(false);
         }
+        const warningIndicators = ["airPressureWarning", "airPressureEmergency",
+          "fuelWarning", "adblueWarning",
+          "oilPressureWarning", "waterTemperatureWarning", "batteryVoltageWarning"];
+        if (!warningIndicators.every(indicator => this.data[indicator])) {
+          this.tmBtLed.setLeftRed(false);
+        } else {
+          this.tmBtLed.setLeftRed(true);
+        }
 
+        if (this.data.lightsBeamHigh) {
+          this.tmBtLed.setLeftBlue(true);
+        } else {
+          this.tmBtLed.setLeftBlue(false);
+        }
+
+        // Right LEDs
         if (this.data.blinkerRightOn) {
           this.tmBtLed.setRightYellow(true);
         } else {
           this.tmBtLed.setRightYellow(false);
         }
 
-        // RevLights & PitLimiter
-       /* if (this.data.pit_limiter === 1) {
-          this.tmBtLed.setRevLightsFlashing(1);
+        if (this.data.speedLimit > 0 && this.data.speed > this.data.speedLimit * 1.03) {
+          this.tmBtLed.setRightRed(true);
         } else {
-          this.tmBtLed.setRevLightsFlashing(0);
-        }
-        
-        if (this.tmBtLed.revLightsFlashing !== 1) {
-          let rpmPercent = this.data.engine_rpm / this.data.max_engine_rpm * 100;
-          if (rpmPercent < 50) {
-            rpmPercent = 0;
-          } else {
-            rpmPercent = (rpmPercent - 50) / 50 * 100;
-          }
-
-          this.tmBtLed.setRevLights(rpmPercent >= 98 ? 100 : rpmPercent);
-        }
-*/
-        /*if (physics.isEngineRunning === 1) {
-          this.tmBtLed.setGearDot(true);
-        } else {
-          this.tmBtLed.setGearDot(false);
-        }*/
-
-        // Flags
-        /*
-        if (this.data.yellowFlag > 0) {
-          this.tmBtLed.setFlashingYellow(true);
-        } else {
-          if (this.tmBtLed.isFlashingYellow) {
-            this.tmBtLed.setFlashingYellow(false);
-          }
+          this.tmBtLed.setRightRed(false);
         }
 
-        if (this.data.blueFlag > 0) {
-          this.tmBtLed.setFlashingBlue(true);
+        if (this.data.cruiseControl) {
+          this.tmBtLed.setRightBlue(true);
         } else {
-          if (this.tmBtLed.isFlashingBlue) {
-            this.tmBtLed.setFlashingBlue(false);
-          }
+          this.tmBtLed.setRightBlue(false);
         }
 
-        if (this.data.blackFlag > 0 || this.data.blackWhiteFlag) {
-          this.tmBtLed.setFlashingRed(true);
-        } else {
-          if (this.tmBtLed.isFlashingRed) {
-            this.tmBtLed.setFlashingRed(false);
-          }
-        }        
-*/
+
         switch (this.currentLeftMode) {
           default:
           case 0:
@@ -154,7 +133,7 @@ class EuroTruckSimulator2 extends AbstractClient {
             this.tmBtLed.setRpm(this.data.engine_rpm, false);
             break;
           case 2:
-            this.tmBtLed.setFloat(this.data.fuel, false);
+            this.tmBtLed.setInt(this.data.fuel, false);
             break;
           case 3:
             this.tmBtLed.setTemperature(this.data.waterTemperature, false);
@@ -185,7 +164,7 @@ class EuroTruckSimulator2 extends AbstractClient {
             this.tmBtLed.setSpeed(this.data.speedLimit >= 0 ? this.data.speedLimit * 3.6 : 0, true);
             break; 
           case 3:
-            this.tmBtLed.setSpeed(this.data.cruiseControlSpeed, true);
+            this.tmBtLed.setSpeed(this.data.cruiseControlSpeed * 3.6, true);
             break;   
           case 4:
             this.tmBtLed.setFloat(this.data.fuelAvgConsumption, true);
