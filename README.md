@@ -25,7 +25,7 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 * iRacing (iracing.bat)
 * Dirt 3, Dirt 4, Dirt Rally, Dirt Rally 2 (dirt.bat)
 * Project Cars 2, Project Cars 3, Automobilista 2 (pcars2.bat)
-* Forza Motorsport 7, Forza Horizon 4 (forza.bat)
+* Forza Motorsport 7, Forza Horizon 4, Forza Horizon 5 (forza.bat)
 * rFactor2 (rF2.bat)
 * Raceroom (raceroom.bat)
 * Euro Truck Simulator 2, American Truck Simulator (ets2.bat)
@@ -51,7 +51,7 @@ Others might work too, but again: No guarantee.
 
 	a. [NodeJS](https://nodejs.org/de/download/) (I'm using 14.15.3 LTS)
 
-	For manual installation:
+	Only for manual installation if prebuilt application isn't working (!):
 	b. Git
 		
 	c. Python3 (get it from Windows Store)
@@ -60,10 +60,10 @@ Others might work too, but again: No guarantee.
 
 5. [Zadig](https://zadig.akeo.ie/)
 6. USB stick or chipset that provides Bluetooth LE with supported chipset! [List of supported devices](https://github.com/abandonware/node-bluetooth-hci-socket#windows)
-  
+
 ## Run prebuilt application (recommended)
 
-1. Download version [2.8.0](https://github.com/mplutka/tm-bt-led/releases/download/2.8.0/2.8.0.zip) and extract in empty folder
+1. Download version [2.9.0](https://github.com/mplutka/tm-bt-led/releases/download/2.9.0/2.9.0.zip) and extract in empty folder
 2. Run `setup.bat` to detect your device and dump it's data to a file for faster reconnects (necessary)
 3. (Optional) You can start `test.bat` to run demo mode.
 4. Proceed with "Launch" section of this tutorial
@@ -118,11 +118,15 @@ Stability has been improved with Version 2.0. After the initial connection the s
 
 If you can't get it to run without crashes, you could add `--interval xxx` after the batch files to try out other refresh intervals (e.g. `assetto.bat --interval 50`). Please note that the given interval must be a multiple of 1.25 (15, 30, 50, 125). Also try out another USB port on your PC as this might help as well.
 
-### Network settings for FORZA
+### Network settings for Forza Horizon 4 and Forza Motorsport 7
 
 Please follow these tutorials and set port to 20127. Also make sure that you disable network isolation (checknetisolation command) as mentioned.
 Forza Horizon 4:	https://github.com/zackdevine/FH4RP
 Forza Motorsport 7:	https://www.pocketplayground.net/rs-dash-fm7
+
+### Network settings for Forza Horizon 5
+
+Please enable "DATA OUT" in the "HUD AND GAMEPLAY" settings and set "DATA OUT IP ADDRESS" to 127.0.0.1 AND "DATA OUT IP PORT" to 20127.
 
 ### Data plugin for rFactor2
 
