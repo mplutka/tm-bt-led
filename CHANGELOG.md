@@ -106,3 +106,7 @@
 
   * F1: Added support for F1 2021
   * Euro Truck Simulator 2, American Truck Simulator: Added support
+
+## Version 2.9.0
+
+  * Forza Horizon 5: Added support for Forza Horizon 5
