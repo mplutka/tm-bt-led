@@ -63,7 +63,7 @@ Others might work too, but again: No guarantee.
 
 ## Run prebuilt application (recommended)
 
-1. Download version [2.9.0](https://github.com/mplutka/tm-bt-led/releases/download/2.9.0/2.9.0.zip) and extract in empty folder
+1. Download version [2.10.0](https://github.com/mplutka/tm-bt-led/releases/download/2.10.0/2.10.0.zip) and extract in empty folder
 2. Run `setup.bat` to detect your device and dump it's data to a file for faster reconnects (necessary)
 3. (Optional) You can start `test.bat` to run demo mode.
 4. Proceed with "Launch" section of this tutorial
@@ -101,7 +101,7 @@ Here is a little video showing the device in action: [Youtube](https://www.youtu
  
 ### Localization
 
-The script tries to read your OS's locale to automatically switch to MPH/F/LB if "en-us" is selected. To can force measurement units by adding `--imperial` or `--metric` after the game batch file (e.g. assetto.bat --metric).
+The script tries to read your OS's locale to automatically switch to MPH/F/LB if "en-us" is selected. To can force measurement units by running `run_imperial.bat` or `run_metric.bat` or by adding `--imperial` or `--metric` after the game batch file (e.g. assetto.bat --metric).
 
 ### Bluetooth USB driver
 

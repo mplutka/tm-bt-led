@@ -110,3 +110,7 @@
 ## Version 2.9.0
 
   * Forza Horizon 5: Added support for Forza Horizon 5
+
+## Version 2.10.0
+
+  * Force metric or imperial units with separate launchers
