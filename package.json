@@ -48,7 +48,7 @@
     "node-addon-api": "^3.1.0",
     "node-bitarray": "^0.1.0",
     "node-irsdk": "https://github.com/sabifa/node-irsdk.git",
-    "os-locale": "^6.0.1",
+    "os-locale": "^5.0.0",
     "process-list": "^2.0.0",
     "yargs": "^16.2.0"
   },
