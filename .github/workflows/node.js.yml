@@ -35,8 +35,7 @@ jobs:
       with:
         name: release
         path: |
-          build/
-          package*.json
+          build/*
 
      
           
