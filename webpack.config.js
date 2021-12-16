@@ -3,6 +3,9 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
 const nodeExternals = require('webpack-node-externals');
 const webpack = require('webpack');
+const PACKAGE = require('./package.json');
+const version = PACKAGE.version;
+const outputDir = "./TmBTLed-" + version;
 const generalConfig = {
   watchOptions: {
     aggregateTimeout: 600,
@@ -11,7 +14,7 @@ const generalConfig = {
   plugins: [
     new CleanWebpackPlugin({
       cleanStaleWebpackAssets: false,
-      cleanOnceBeforeBuildPatterns: [path.resolve(__dirname, './build')],
+      cleanOnceBeforeBuildPatterns: [path.resolve(__dirname, outputDir)],
     }),
     new webpack.optimize.LimitChunkCountPlugin({
       maxChunks: 1
@@ -57,7 +60,7 @@ const nodeConfig = {
     // allowlist: ['bindings', "process-list"]
   })],
   output: {
-    path: path.resolve(__dirname, './build/lib'),
+    path: path.resolve(__dirname, outputDir + '/lib'),
     filename: '[name].js',
     libraryTarget: 'umd',
     libraryExport: 'default',

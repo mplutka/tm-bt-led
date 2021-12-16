@@ -35,7 +35,7 @@ jobs:
       with:
         name: release
         path: |
-          build/*
+          TmBTLed-*/
 
      
           
