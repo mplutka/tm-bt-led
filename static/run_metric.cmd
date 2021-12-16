@@ -1,2 +1,2 @@
 @echo off
-node lib\launcher.mjs --metric %*
+node lib\launcher.js --metric %*

@@ -1,2 +1,2 @@
 @echo off
-node lib\launcher.mjs %*
+node lib\launcher.js %*

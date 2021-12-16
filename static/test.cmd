@@ -1,2 +1,2 @@
 @echo off
-node lib\test.mjs %*
+node lib\test.js %*

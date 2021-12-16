@@ -1,2 +1,2 @@
 @echo off
-node lib\launcher.mjs --game f1 %*
+node lib\launcher.js --game f1 %*

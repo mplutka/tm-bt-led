@@ -1,2 +1,2 @@
 @echo off
-node lib\launcher.mjs --imperial %*
+node lib\launcher.js --imperial %*

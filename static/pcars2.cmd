@@ -1,2 +1,2 @@
 @echo off
-node lib\launcher.mjs --game projectcars2 %*
+node lib\launcher.js --game projectcars2 %*

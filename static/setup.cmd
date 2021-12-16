@@ -1,2 +1,2 @@
 @echo off
-node lib\setup.mjs  %*
+node lib\setup.js  %*

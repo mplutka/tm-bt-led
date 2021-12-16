@@ -1,2 +1,2 @@
 @echo off
-node lib\launcher.mjs --game forza %*
+node lib\launcher.js --game forza %*

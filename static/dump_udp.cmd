@@ -1,3 +1,3 @@
 @echo off
-node lib\launcher.mjs --game dump_udp %*
+node lib\launcher.js --game dump_udp %*
 

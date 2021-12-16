@@ -1,2 +1,2 @@
 @echo off
-node lib\launcher.mjs --game raceroom %*
+node lib\launcher.js --game raceroom %*

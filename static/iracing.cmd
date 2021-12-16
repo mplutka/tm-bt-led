@@ -1,2 +1,2 @@
 @echo off
-node lib\launcher.mjs --game iracing %*
+node lib\launcher.js --game iracing %*

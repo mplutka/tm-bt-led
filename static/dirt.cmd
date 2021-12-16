@@ -1,2 +1,2 @@
 @echo off
-node lib\launcher.mjs --game dirt %*
+node lib\launcher.js --game dirt %*
