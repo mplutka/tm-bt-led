@@ -7,8 +7,6 @@
  * Copyright (c) 2021 Markus Plutka
  */
 
-import "core-js/stable";
-import "regenerator-runtime/runtime";
 import { snapshot } from "process-list";
 import TmBTLed from "./tmBTLed.mjs";
 import yargs from "yargs";

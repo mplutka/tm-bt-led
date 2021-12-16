@@ -62,6 +62,46 @@ class Forza extends AbstractClient {
         // Set RevLights as percentage
         this.tmBtLed.setRevLights(Math.ceil(data["currentEngineRpm"] / data["engineMaxRpm"] * 100));
 
+        // Set brake pressure
+        const brake = data["brake"];
+        if (brake > 200) {
+            this.tmBtLed.setLeftBlue(true);
+            this.tmBtLed.setLeftRed(true);
+            this.tmBtLed.setLeftYellow(true);
+        } else if (brake > 100) {
+            this.tmBtLed.setLeftBlue(false);
+            this.tmBtLed.setLeftRed(true);
+            this.tmBtLed.setLeftYellow(true);
+        } else if (brake > 0) {
+            this.tmBtLed.setLeftBlue(false);
+            this.tmBtLed.setLeftRed(false);
+            this.tmBtLed.setLeftYellow(true);
+        } else {
+            this.tmBtLed.setLeftBlue(false);
+            this.tmBtLed.setLeftRed(false);
+            this.tmBtLed.setLeftYellow(false);
+        }
+
+        // Set accel pressure
+        const accel = data["accel"];
+        if (accel > 200) {
+            this.tmBtLed.setRightBlue(true);
+            this.tmBtLed.setRightRed(true);
+            this.tmBtLed.setRightYellow(true);
+        } else if (accel > 100) {
+            this.tmBtLed.setRightBlue(false);
+            this.tmBtLed.setRightRed(true);
+            this.tmBtLed.setRightYellow(true);
+        } else if (accel > 0) {
+            this.tmBtLed.setRightBlue(false);
+            this.tmBtLed.setRightRed(false);
+            this.tmBtLed.setRightYellow(true);
+        } else {
+            this.tmBtLed.setRightBlue(false);
+            this.tmBtLed.setRightRed(false);
+            this.tmBtLed.setRightYellow(false);
+        }
+
         // Set left display according to left modes array and currentLeftMode array index
         switch (this.currentLeftMode) {
             default:       

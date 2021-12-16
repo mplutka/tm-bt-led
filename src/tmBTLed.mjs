@@ -7,6 +7,8 @@
  * Copyright (c) 2021 Markus Plutka
  */
 
+import "core-js/stable";
+import "regenerator-runtime/runtime";
 import noble from '@abandonware/noble';
 import fs from "fs";
 import BitArray from "node-bitarray";
@@ -1312,9 +1314,9 @@ class TmBTLed {
         this.setFlashingBlue(shouldFlash);
         this.setFlashingYellow(shouldFlash);
         this.setFlashingRed(shouldFlash);
-        this.setFlashingRightRed(shouldFlash);
-        this.setFlashingLeftYellow(shouldFlash);
-        this.setFlashingRightYellow(shouldFlash);
+        //this.setFlashingRightRed(shouldFlash);
+        //this.setFlashingLeftYellow(shouldFlash);
+        //this.setFlashingRightYellow(shouldFlash);
     }
 
     setAllColors = (on) => {
