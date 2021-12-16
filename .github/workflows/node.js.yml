@@ -25,10 +25,10 @@ jobs:
       uses: actions/setup-node@v2
       with:
         node-version: ${{ matrix.node-version }}
-    - run: npm uninstall @abandonware/noble && npm install https://github.com/mplutka/noble
-    - run: npm uninstall node-irsdk && npm install https://github.com/sabifa/node-irsdk
-    - run: npm uninstall f1-telemetry-client && npm install https://github.com/mplutka/f1-telemetry-client
-    - run: npm install @babel/core && npm ci && npm run build && npm run pack
+    #- run: npm uninstall @abandonware/noble && npm install https://github.com/mplutka/noble
+    #- run: npm uninstall node-irsdk && npm install https://github.com/sabifa/node-irsdk
+    #- run: npm uninstall f1-telemetry-client && npm install https://github.com/mplutka/f1-telemetry-client
+    - run: npm ci && npm run build && npm run pack
 
     - name: Archive production artifacts
       uses: actions/upload-artifact@v2
