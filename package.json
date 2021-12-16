@@ -41,7 +41,7 @@
   ],
   "gypfile": true,
   "dependencies": {
-    "@abandonware/noble": "github:mplutka/noble",
+    "@abandonware/noble": "git+https://github.com/mplutka/noble.git",
     "binary-parser": "^1.8.0",
     "core-js": "^3.20.0",
     "lodash": "^4.17.21",
