@@ -25,30 +25,14 @@ jobs:
       uses: actions/setup-node@v2
       with:
         node-version: ${{ matrix.node-version }}
-    - run: npm install os-locale@latest && npm install https://github.com/mplutka/noble && npm ci && npm run build 
-
-    - run: npm uninstall node-gyp node-addon-api readline-promise
-    
-    - run: rm install.bat
+    - run: npm ci && npm run build && npm run pack
 
     - name: Archive production artifacts
       uses: actions/upload-artifact@v2
       with:
         name: release
         path: |
-          lib/
-          clients/
-          node_modules/
-          AssettoCorsaSharedMemory/build/Release
-          SCSSharedMemory/build/Release
-          SCSSharedMemory/plugin
-          rF2SharedMemory/build/Release
-          rF2SharedMemory/plugin
-          r3e-api/build/Release
-          *.bat
-          *.json
-          *.md
-          *.dump
+          build/
 
      
           

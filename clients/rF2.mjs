@@ -7,8 +7,8 @@
  * Copyright (c) 2021 Markus Plutka
  */
 
-import { rF2SharedMemory } from "../lib/rF2SharedMemory.js";
-import AbstractClient from '../lib/abstractClient.mjs';
+import { rF2SharedMemory } from "../src/rF2SharedMemory.js";
+import AbstractClient from '../src/abstractClient.mjs';
 
 const leftModes = ["SPEED", "RPM", "FUEL", "TYRETEMP", "TYREPRESS", "BRAKETEMP", "OILTEMP"];
 const rightModes = ["LAPTIME", /*"DELTA",*/ "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"];

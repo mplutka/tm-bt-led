@@ -7,8 +7,8 @@
  * Copyright (c) 2021 Markus Plutka
  */
 
-import { AssettoCorsaSharedMemory } from "../lib/assettoCorsaSharedMemory.js";
-import AbstractClient from '../lib/abstractClient.mjs';
+import { AssettoCorsaSharedMemory } from "../src/assettoCorsaSharedMemory.js";
+import AbstractClient from '../src/abstractClient.mjs';
 
 const leftModes = ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP"];
 const rightModes = ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "PRED LAP", "POSITION", "LAP", "LAPS LEFT"];

@@ -8,8 +8,8 @@
  */
 
 // Includes tmBtLed library, client functions and the udp listener
-import { UdpListener } from '../lib/udpListener.js';
-import AbstractClient from '../lib/abstractClient.mjs';
+import { UdpListener } from '../src/udpListener.js';
+import AbstractClient from '../src/abstractClient.mjs';
 
 const leftModes   = ["SPEED", "RPM", "BRAKETEMP"];   // Mode titles for left display
 const rightModes  = ["LAPTIME", "POSITION"];          // Mode titles for right display

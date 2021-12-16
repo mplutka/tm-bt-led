@@ -8,7 +8,7 @@
  */
 
 import irsdk from 'node-irsdk';
-import AbstractClient from '../lib/abstractClient.mjs';
+import AbstractClient from '../src/abstractClient.mjs';
 
 const leftModes = ["SPEED", "RPM", "FUEL", "TYRETEMP", "OILTEMP", "WATERTEMP"];
 const rightModes = ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"];

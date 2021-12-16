@@ -7,9 +7,9 @@
  * Copyright (c) 2021 Markus Plutka
  */
 
-import AbstractClient from '../lib/abstractClient.mjs';
-import { UdpListener } from '../lib/udpListener.js';
-import UdpParser from '../lib/pcars2-udp/udp-parser.js';
+import AbstractClient from '../src/abstractClient.mjs';
+import { UdpListener } from '../src/udpListener.js';
+import UdpParser from '../src/pcars2-udp/udp-parser.js';
 
 const leftModes = ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "OILTEMP"];
 const rightModes = ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"];
@@ -38,7 +38,7 @@ class ProjectCars2 extends AbstractClient {
         });
         this.setModes(leftModes, rightModes);
 
-        this.parser = new UdpParser('./lib/pcars2-udp/SMS_UDP_Definitions.hpp');
+        this.parser = new UdpParser('./src/pcars2-udp/SMS_UDP_Definitions.hpp');
 
         this.client = new UdpListener({ port: this.parser.port(), bigintEnabled: true });
         this.client.on("data", this.parser.pushBuffer.bind(this.parser));

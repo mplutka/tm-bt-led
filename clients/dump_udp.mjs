@@ -7,8 +7,8 @@
  * Copyright (c) 2021 Markus Plutka
  */
 
-import { UdpListener } from '../lib/udpListener.js';
-import AbstractClient from '../lib/abstractClient.mjs';
+import { UdpListener } from '../src/udpListener.js';
+import AbstractClient from '../src/abstractClient.mjs';
 import fs from "fs";
 
 import yargs from "yargs";

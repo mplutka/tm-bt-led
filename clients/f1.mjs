@@ -8,7 +8,7 @@
  */
 
 import { F1TelemetryClient, constants } from 'f1-telemetry-client';
-import AbstractClient from '../lib/abstractClient.mjs';
+import AbstractClient from '../src/abstractClient.mjs';
 const { PACKETS } = constants;
 
 const leftModes = ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "ENGINETEMP", "ERSLEVEL"];

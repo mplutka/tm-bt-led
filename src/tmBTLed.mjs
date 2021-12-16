@@ -7,10 +7,12 @@
  * Copyright (c) 2021 Markus Plutka
  */
 
-import noble from 'noble';
+import noble from '@abandonware/noble';
 import fs from "fs";
 import BitArray from "node-bitarray";
-import convert from 'convert-units';
+import speed from 'convert-units/lib/definitions/speed.js';
+import mass from 'convert-units/lib/definitions/mass.js';
+import temperature from 'convert-units/lib/definitions/temperature.js';
 import osLocale from 'os-locale';
 
 import Debug from "debug";
@@ -644,7 +646,7 @@ class TmBTLed {
       }
 
       if (!this.metric) {
-        value = convert(value).from("C").to("F");    
+        value = temperature(value).from("C").to("F");    
       }
 
       if (value >= 1000) {
@@ -662,7 +664,7 @@ class TmBTLed {
       }
 
       if (!this.metric) {
-        value = convert(value).from("kg").to("lb").toFixed(1);
+        value = mass(value).from("kg").to("lb").toFixed(1);
       } else {
         value = value.toFixed(1);
       }
@@ -693,7 +695,7 @@ class TmBTLed {
         value = 0;
       }
       if (!this.metric) {
-        value = convert(value).from("km/h").to("m/h").toFixed(0);
+        value = speed(value).from("km/h").to("m/h").toFixed(0);
       } else {
         value = value.toFixed(0);
       }

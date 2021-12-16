@@ -7,7 +7,7 @@
  * Copyright (c) 2021 Markus Plutka
  */
 
-import noble from 'noble';
+import noble from '@abandonware/noble';
 import fs from "fs";
 
 class TmBTLedDiscover {

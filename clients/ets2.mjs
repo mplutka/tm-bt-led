@@ -7,8 +7,8 @@
  * Copyright (c) 2021 Markus Plutka
  */
 
-import { scs } from "../lib/scsSharedMemory.js";
-import AbstractClient from '../lib/abstractClient.mjs';
+import { scs } from "../src/scsSharedMemory.js";
+import AbstractClient from '../src/abstractClient.mjs';
 
 const leftModes = ["SPEED", "RPM", "FUEL", "WATERTEMP", "OILTEMP", "OILPRESS", "AIRPRESS", "BRAKETEMP"];
 const rightModes = ["DISTANCE", "TIME", "SPEED LIMIT", "CRUISE CONT", "AVG CONSUM", "RANGE"];
