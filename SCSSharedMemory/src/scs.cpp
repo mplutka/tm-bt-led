@@ -59,7 +59,6 @@ int map_init()
 
     if (map_handle == NULL)
     {
-        wprintf_s(L"Failed to open mapping");
         return 1;
     }
 
@@ -83,9 +82,7 @@ Napi::Number scs::InitMaps(const Napi::CallbackInfo& info)
 {
 	Napi::Env env = info.Env();
 
-	map_init();
-
-	return Napi::Number::New(env, 0);
+	return Napi::Number::New(env, map_init());
 }
 
 Napi::Object scs::GetData(const Napi::CallbackInfo& info) {

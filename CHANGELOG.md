@@ -118,3 +118,7 @@
 ## Version 3.0.0
 
   * Introduced new packager. No need to install nodejs anymore. :-)
+
+## Version 3.0.1
+
+  * Euro Truck Simulator 2, American Truck Simulator: Fixed plugin init

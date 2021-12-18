@@ -16,7 +16,9 @@ const rightModes = ["DISTANCE", "TIME", "SPEED LIMIT", "CRUISE CONT", "AVG CONSU
 class EuroTruckSimulator2 extends AbstractClient {
     data = {};
     data = {};
+    initInterval = null;
     refreshInterval = null;
+    initDone = false;
 
     constructor(tmBtLed) {
       if (!tmBtLed) {
@@ -33,18 +35,31 @@ class EuroTruckSimulator2 extends AbstractClient {
       });
       this.setModes(leftModes, rightModes);
 
-      scs.initMaps();
+      this.initInterval = setInterval(() => {
+        let initRet = scs.initMaps();
+        if (initRet === 0) {
+          this.initDone = true;
+          console.log("Plugin loaded successfully");
+          clearInterval(this.initInterval);
+          this.initInterval = null;
+        }
+      }, 3000);
     }
 
     startClient = () =>  {
         this.refreshInterval = setInterval(() => {
+          if (this.initDone) {
             this.updateValues();
+          }
         }, 1000 / 30); // 30 Hz
     }
 
     stopClient = () => {
+        if (this.initInterval) {
+            clearInterval(this.initInterval);
+            this.initInterval = null;
+        }
         if (this.refreshInterval) {
-          console.log("Stopping interval")
             clearInterval(this.refreshInterval);
             this.refreshInterval = null;
         }
