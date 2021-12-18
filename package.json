@@ -32,43 +32,47 @@
     "TM BT LED Euro Truck Simulator 2",
     "TM BT LED American Truck Simulator"
   ],
-  "main": "./src/test.mjs",
+  "main": "./lib/test.js",
   "engines": {
     "node": ">=6"
   },
   "os": [
     "win32"
   ],
+  "bin": "lib/launcher.js",
   "gypfile": true,
   "dependencies": {
     "@abandonware/noble": "git+https://github.com/mplutka/noble.git",
-    "@babel/core": "^7.16.5",
     "binary-parser": "^1.8.0",
-    "core-js": "^3.20.0",
+    "convert-units": "^2.3.4",
     "f1-telemetry-client": "git+https://github.com/mplutka/f1-telemetry-client.git",
     "lodash": "^4.17.21",
     "node-addon-api": "^3.1.0",
     "node-bitarray": "^0.1.0",
     "node-irsdk": "git+https://github.com/mplutka/node-irsdk.git",
+    "node-processlist": "^1.0.2",
     "os-locale": "^5.0.0",
-    "process-list": "^2.0.0",
-    "regenerator-runtime": "^0.13.9",
+    "pkg": "^5.5.1",
     "yargs": "^16.2.0"
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.16.5",
-    "babel-loader": "^8.2.3",
-    "clean-webpack-plugin": "^4.0.0",
-    "convert-units": "^2.3.4",
-    "copy-webpack-plugin": "^9.1.0",
-    "node-loader": "^2.0.0",
-    "path": "^0.12.7",
-    "webpack": "^5.65.0",
-    "webpack-cli": "^4.9.1",
-    "webpack-node-externals": "^3.0.0"
+  },
+  "pkg": {
+    "scripts": "clients/*.js",
+    "assets": [
+      "AssettoCorsaSharedMemory/build/Release/AssettoCorsaSharedMemory.node",
+      "SCSSharedMemory/build/Release/scs.node",
+      "node_modules/node-irsdk/build/Release/IrSdkNodeBindings.node",
+      "r3e-api/build/Release/r3e.node",
+      "rF2SharedMemory/build/Release/rF2SharedMemory.node"
+    ],
+    "targets": [
+      "node14-win"
+    ],
+    "outputPath": "dist"
   },
   "scripts": {
-    "pack": "webpack --mode=production",
+    "pack": "pkg . --no-native-build -C GZip",
     "build": "node-gyp rebuild -C AssettoCorsaSharedMemory && node-gyp rebuild -C rF2SharedMemory && node-gyp rebuild -C r3e-api && node-gyp rebuild -C SCSSharedMemory"
   }
 }

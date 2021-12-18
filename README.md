@@ -31,7 +31,7 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 * Euro Truck Simulator 2, American Truck Simulator (ets2.bat)
 
 If you would like to add a game that uses udp port 20777 to the list, you can use `dump_udp.bat` to create a dumpfile with recorded telemetry data.
-Either you use _template.mjs and create your own game file or get in touch with me by creating an issue here on Github and attach the dump.
+Either you use _template.js and create your own game file or get in touch with me by creating an issue here on Github and attach the dump.
 
 
 ## Recommended Bluetooth chipsets/sticks known to be working
