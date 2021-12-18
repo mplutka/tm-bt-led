@@ -114,3 +114,7 @@
 ## Version 2.10.0
 
   * Force metric or imperial units with separate launchers
+
+## Version 3.0.0
+
+  * Introduced new packager. No need to install nodejs anymore. :-)
