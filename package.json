@@ -61,7 +61,7 @@
       "clients/*.js"
     ],
     "targets": [
-      "node14-win"
+      "node16-win"
     ],
     "outputPath": "dist"
   },
