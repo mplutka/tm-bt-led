@@ -18,17 +18,17 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 
 ## Currently supported games 
 
-* F1 2019-21 (f1.cmd)
-* Assetto Corsa, Assetto Corsa Competizione (assetto.cmd)
-* iRacing (iracing.cmd)
-* Dirt 3, Dirt 4, Dirt Rally, Dirt Rally 2 (dirt.cmd)
-* Project Cars 2, Project Cars 3, Automobilista 2 (pcars2.cmd)
-* Forza Motorsport 7, Forza Horizon 4, Forza Horizon 5 (forza.cmd)
-* rFactor2 (rF2.cmd)
-* Raceroom (raceroom.cmd)
-* Euro Truck Simulator 2, American Truck Simulator (ets2.cmd) 
+* F1 2019-21 (f1.bat)
+* Assetto Corsa, Assetto Corsa Competizione (assetto.bat)
+* iRacing (iracing.bat)
+* Dirt 3, Dirt 4, Dirt Rally, Dirt Rally 2 (dirt.bat)
+* Project Cars 2, Project Cars 3, Automobilista 2 (pcars2.bat)
+* Forza Motorsport 7, Forza Horizon 4, Forza Horizon 5 (forza.bat)
+* rFactor2 (rF2.bat)
+* Raceroom (raceroom.bat)
+* Euro Truck Simulator 2, American Truck Simulator (ets2.bat) 
 
-If you would like to add a game that uses udp port 20777 to the list, you can use `dump_udp.cmd` to create a dumpfile with recorded telemetry data.
+If you would like to add a game that uses udp port 20777 to the list, you can use `dump_udp.bat` to create a dumpfile with recorded telemetry data.
 
 Either you use _template.js and create your own game file or get in touch with me by creating an issue here on Github and attach the dump.
  
@@ -58,18 +58,18 @@ If you wish to go back to the stock drivers, simply do an automatic driver updat
 
 ### Step 2. Download and setup connector
 1. Download current version [here](https://github.com/mplutka/tm-bt-led/releases/download/3.0.1/3.0.1.zip) and extract the files into an empty folder.
-2. Run `setup.cmd` to detect your device and write its data to a file for faster reconnects (necessary).
-3. (Optional) You can start `test.cmd` to run demo mode.
+2. Run `setup.bat` to detect your device and write its data to a file for faster reconnects (necessary).
+3. (Optional) You can start `test.bat` to run demo mode.
 
 ### Step 3. Launch 
-1. Launch `run.cmd` (recommended, see below) or use the provided game files.
+1. Launch `run.bat` (recommended, see below) or use the provided game files.
 2. Press both upper buttons on the TM BT and let it connect when prompted to do so. It shouldn't be paired to your PC or any other device before doing this!
 3. If it is not picking up any devices ("Discovering devices" or "Starting scan..." never shows up), try restarting the script. If still no success, also try to unplug and replug the USB stick and start over.
 4. It should say "Waiting for data..." if all went well.
 5. Start the game itself and enjoy.
 
 ### More on "Auto detect mode"
-`run.cmd` automatically listens for the launch of any supported game, switches to performance mode (higher refresh rates) and steps down to power save mode after you exit the game. Keep it running in the background to automatically switch between supported games without the need to stop/start the shortcut batch files.
+`run.bat` automatically listens for the launch of any supported game, switches to performance mode (higher refresh rates) and steps down to power save mode after you exit the game. Keep it running in the background to automatically switch between supported games without the need to stop/start the shortcut batch files.
 
 If you encounter false detections or any other problems, please let me know.
 
@@ -80,12 +80,12 @@ Here is a little video showing the device in action: [Youtube](https://www.youtu
 ## Important notes
 ### Localization
 
-The script tries to read your OS's locale to automatically switch to MPH/F/LB if "en-us" is selected. To can force measurement units by running `run_imperial.cmd` or `run_metric.cmd` or by adding `--imperial` or `--metric` after the game batch file (e.g. assetto.cmd --metric).
+The script tries to read your OS's locale to automatically switch to MPH/F/LB if "en-us" is selected. To can force measurement units by running `run_imperial.bat` or `run_metric.bat` or by adding `--imperial` or `--metric` after the game batch file (e.g. assetto.bat --metric).
 
 ### Instability
 Stability has been improved with Version 2.0. After the initial connection the script tries to negotiate a connection interval of 17.5 ms which should give you a nice 60 Hz refresh rate. If your device freezes or USB errors are thrown in the command line window, try to kill the script and restart the TM BT LED and unplug/plug the usb stick.
 
-If you can't get it to run without crashes, you could add `--interval xxx` after the batch files to try out other refresh intervals (e.g. `assetto.cmd --interval 50`). Please note that the given interval must be a multiple of 1.25 (15, 30, 50, 125). Also try out another USB port on your PC as this might help as well.
+If you can't get it to run without crashes, you could add `--interval xxx` after the batch files to try out other refresh intervals (e.g. `assetto.bat --interval 50`). Please note that the given interval must be a multiple of 1.25 (15, 30, 50, 125). Also try out another USB port on your PC as this might help as well.
 
 ## Game specific settings
 ### Network settings for Forza Horizon 4 and Forza Motorsport 7
