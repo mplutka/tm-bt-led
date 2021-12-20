@@ -122,3 +122,7 @@
 ## Version 3.0.1
 
   * Euro Truck Simulator 2, American Truck Simulator: Fixed plugin init
+
+## Version 3.0.2
+
+  * Fixed unit conversion
