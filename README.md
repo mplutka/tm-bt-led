@@ -57,7 +57,7 @@ If you need the Windows bluetooth stack for your headset, keyboard, you need an 
 If you wish to go back to the stock drivers, simply do an automatic driver update in the device manager.
 
 ### Step 2. Download and setup connector
-1. Download current version [here](https://github.com/mplutka/tm-bt-led/releases/download/3.0.1/3.0.1.zip) and extract the files into an empty folder.
+1. Download current version [here](https://github.com/mplutka/tm-bt-led/releases/download/3.0.2/3.0.2.zip) and extract the files into an empty folder.
 2. Run `setup.bat` to detect your device and write its data to a file for faster reconnects (necessary).
 3. (Optional) You can start `test.bat` to run demo mode.
 
