@@ -105,3 +105,4 @@ Copy "SCSSharedMemory/plugin/scs-telemetry.dll" into "<GAME_DIR>/bin/win_x64/plu
 
 ## SPECIAL THANKS
 Thank you, Dave Cook aka cooknn, for your great support, testing and precious feedback!
+Also thanks to Calvin from https://clvnhd.com/ for your testing and feedback support.
