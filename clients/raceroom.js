@@ -19,6 +19,8 @@ const defaultConfig = {
 
 class Raceroom extends AbstractClient {
     data = {};
+    initDone = false;
+    initInterval = null;
     refreshInterval = null;
 
     config;
@@ -68,16 +70,32 @@ class Raceroom extends AbstractClient {
       });
       this.setModes(this.config?.leftModes, this.config?.rightModes);
 
-      r3e.initMaps();
+      this.initInterval = setInterval(() => {
+        let initRet = r3e.initMaps();
+        if (initRet === 0) {
+          console.log("Found mapping");
+          this.initDone = true;
+          clearInterval(this.initInterval);
+          this.initInterval = null;
+        }
+      }, 3000);
+
+
     }
 
     startClient = () =>  {
         this.refreshInterval = setInterval(() => {
+          if (this.initDone) {
             this.updateValues();
+          }
         }, 1000 / 60); // 60 Hz
     }
 
     stopClient = () => {
+        if (this.initInterval) {
+          clearInterval(this.initInterval);
+          this.initInterval = null;
+        }
         if (this.refreshInterval) {
           console.log("Stopping interval")
             clearInterval(this.refreshInterval);
@@ -178,14 +196,14 @@ class Raceroom extends AbstractClient {
     };
 
     showTyrePress = (onRight) => {
-      this.tmBtLed.setTemperature(this.data.engine_oil_temp, onRight);
+      this.tmBtLed.setTemperature(this.data.tirePress, onRight);
     };
 
     showBrakeTemp = (onRight) => {
       this.tmBtLed.setTemperature(this.data.brakeTemp, onRight);
     };
     showOilTemp = (onRight) => {
-        this.tmBtLed.setTemperature(this.telemetry.sOilTempCelsius, onRight);
+        this.tmBtLed.setTemperature(this.data.engine_oil_temp, onRight);
     };    
     showCurrentLap = (onRight) => {
       this.tmBtLed.setTime(this.data.lap_time_current_self < 0 ? 0 : this.data.lap_time_current_self * 1000, onRight);

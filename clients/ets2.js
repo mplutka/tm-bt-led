@@ -19,10 +19,9 @@ const defaultConfig = {
 
 class EuroTruckSimulator2 extends AbstractClient {
     data = {};
-    data = {};
+    initDone = false;
     initInterval = null;
     refreshInterval = null;
-    initDone = false;
 
     config;
     modeMapping;
@@ -73,8 +72,8 @@ class EuroTruckSimulator2 extends AbstractClient {
       this.initInterval = setInterval(() => {
         let initRet = scs.initMaps();
         if (initRet === 0) {
+          console.log("Found mapping");
           this.initDone = true;
-          console.log("Plugin loaded successfully");
           clearInterval(this.initInterval);
           this.initInterval = null;
         }
