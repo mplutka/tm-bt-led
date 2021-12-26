@@ -73,6 +73,10 @@ If you wish to go back to the stock drivers, simply do an automatic driver updat
 
 If you encounter false detections or any other problems, please let me know.
 
+## Customization
+You can change the order and type of data displayed on the left and right display (and sometimes the used UDP port) by editing the corresponding 
+`xxx.config.js` file in the same order as `tm-bt-led.exe`.
+
 ## Video
 
 Here is a little video showing the device in action: [Youtube](https://www.youtube.com/watch?v=gbmkHltH9ts)

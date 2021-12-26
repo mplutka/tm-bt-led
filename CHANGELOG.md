@@ -126,3 +126,7 @@
 ## Version 3.0.2
 
   * Fixed unit conversion
+
+## Version 3.1.0
+
+  * Customization for left and right display with all games

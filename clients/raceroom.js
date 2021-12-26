@@ -9,14 +9,20 @@
 
 const r3e = require("../r3e-api/build/Release/r3e.node");
 const AbstractClient = require('../lib/abstractClient.js');
+const path = require('path');
 
-const leftModes = ["SPEED", "RPM", "FUEL", "TYRETEMP", "TYREPRESS", "BRAKETEMP", "OILTEMP"];
-const rightModes = ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"];
+const loadableConfigName = "raceroom.config.js";
+const defaultConfig = {
+  leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "TYREPRESS", "BRAKETEMP", "OILTEMP"],
+  rightModes: ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"]
+};
 
 class Raceroom extends AbstractClient {
     data = {};
-    data = {};
     refreshInterval = null;
+
+    config;
+    modeMapping;
 
     constructor(tmBtLed) {
       if (!tmBtLed) {
@@ -24,6 +30,35 @@ class Raceroom extends AbstractClient {
       }
 
       super(tmBtLed);    
+                
+      this.modeMapping = {
+        "SPEED": this.showSpeed,
+        "RPM": this.showRpm,
+        "FUEL": this.showFuel,
+        "TYRETEMP": this.showTyreTemp,
+        "TYREPRESS": this.showTyrePress,
+        "BRAKETEMP": this.showBrakeTemp,
+        "OILTEMP": this.showOilTemp,
+
+        "LAPTIME": this.showCurrentLap,
+        "DELTA": this.showDelta,
+        "LAST LAP": this.showLastLap,
+        "BEST LAP": this.showBestLap,
+        "POSITION": this.showPosition,
+        "LAP": this.showLapNumber,
+        "LAPS LEFT": this.showLapsLeft
+      };
+
+      try {
+          this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
+          if (this.config?.leftModes && this.config?.rightModes) {
+              console.log("Found custom config");
+          } else {
+              throw "No custom config";
+          }
+      } catch (e) {
+          this.config = defaultConfig;
+      }
 
       this.setCallbacks({
           onLeftPreviousMode: this.leftPreviousMode,
@@ -31,7 +66,7 @@ class Raceroom extends AbstractClient {
           onRightPreviousMode: this.rightPreviousMode,
           onRightNextMode: this.rightNextMode
       });
-      this.setModes(leftModes, rightModes);
+      this.setModes(this.config?.leftModes, this.config?.rightModes);
 
       r3e.initMaps();
     }
@@ -58,8 +93,6 @@ class Raceroom extends AbstractClient {
         if (data && Object.keys(data).length) {
           this.data = data;
         }
-
-        this.rightModes = rightModes;
 
         this.tmBtLed.setGear(this.data.gear);
 
@@ -112,57 +145,69 @@ class Raceroom extends AbstractClient {
           }
         }        
 
-        switch (this.currentLeftMode) {
-          default:
-          case 0:
-            this.tmBtLed.setSpeed(this.data.car_speed, false);
-            break;          
-          case 1:
-            this.tmBtLed.setRpm(this.data.engine_rpm, false);
-            break;
-          case 2:
-            this.tmBtLed.setFloat(this.data.fuel_left, false);
-            break;
-          case 3:
-            this.tmBtLed.setTemperature(this.data.tireTemp, false);
-            break;  
-          case 4:
-            this.tmBtLed.setFloat(this.data.tirePress / 100, false);
-            break;                   
-          case 5:
-            this.tmBtLed.setTemperature(this.data.brakeTemp, false);
-            break;
-          case 6:
-            this.tmBtLed.setTemperature(this.data.engine_oil_temp, false);
-            break;
+        // Set left display according to left modes array and currentLeftMode array index
+        if (this.currentLeftMode <= this.leftModes.length) {
+          const leftDataProcessor = this.modeMapping[this.leftModes[this.currentLeftMode]];
+          if (typeof leftDataProcessor === "function") {
+              leftDataProcessor(false);
+          }
         }
 
-        switch (this.currentRightMode) {        
-          default:
-          case 0:
-            this.tmBtLed.setTime(this.data.lap_time_current_self < 0 ? 0 : this.data.lap_time_current_self * 1000, true);
-            break;      
-          case 1:
-            this.tmBtLed.setDiffTime(this.data.time_delta_best_self * 1000 * 1000, true);
-            break;
-          case 2:
-            this.tmBtLed.setTime((this.data.lap_time_previous_self < 0 ? 0 : this.data.lap_time_previous_self) * 1000, true);
-            break; 
-          case 3:
-            this.tmBtLed.setTime((this.data.lap_time_best_self < 0 ? 0 : this.data.lap_time_best_self) * 1000, true);
-            break;   
-          case 4:
-            this.tmBtLed.setInt(this.data.position, true);
-            break;
-          case 5:
-            this.tmBtLed.setInt(this.data.completed_laps + 1, true);
-            break;          
-          case 6:
-            this.tmBtLed.setInt(this.data.number_of_laps < 0 ? 0 : (this.data.number_of_laps - this.data.completed_laps), true);
-            break;
-        }
-       
+        // Set right display according to right modes array and currentRightMode array index
+        // Second boolean parameter (true) in setter displays value in right display
+        if (this.currentRightMode <= this.rightModes.length) {
+            const rightDataProcessor = this.modeMapping[this.rightModes[this.currentRightMode]];
+            if (typeof rightDataProcessor === "function") {
+                rightDataProcessor(true);
+            }
+        }        
     };
+
+    showSpeed = (onRight) => {
+      this.tmBtLed.setSpeed(this.data.car_speed, onRight);
+    };
+
+    showRpm = (onRight) => {
+      this.tmBtLed.setRpm(this.data.engine_rpm, onRight);
+    };
+    showFuel = (onRight) => {
+      this.tmBtLed.setFloat(this.data.fuel_left, onRight);
+    };
+    showTyreTemp = (onRight) => {
+      this.tmBtLed.setTemperature(this.data.tireTemp, onRight);
+    };
+
+    showTyrePress = (onRight) => {
+      this.tmBtLed.setTemperature(this.data.engine_oil_temp, onRight);
+    };
+
+    showBrakeTemp = (onRight) => {
+      this.tmBtLed.setTemperature(this.data.brakeTemp, onRight);
+    };
+    showOilTemp = (onRight) => {
+        this.tmBtLed.setTemperature(this.telemetry.sOilTempCelsius, onRight);
+    };    
+    showCurrentLap = (onRight) => {
+      this.tmBtLed.setTime(this.data.lap_time_current_self < 0 ? 0 : this.data.lap_time_current_self * 1000, onRight);
+    };
+    showDelta = (onRight) => {
+      this.tmBtLed.setDiffTime(this.data.time_delta_best_self * 1000 * 1000, onRight);
+    };
+    showLastLap = (onRight) => {
+      this.tmBtLed.setTime((this.data.lap_time_previous_self < 0 ? 0 : this.data.lap_time_previous_self) * 1000, onRight);
+    };
+    showBestLap = (onRight) => {
+      this.tmBtLed.setTime((this.data.lap_time_best_self < 0 ? 0 : this.data.lap_time_best_self) * 1000, onRight);
+    };
+    showPosition = (onRight) => {
+      this.tmBtLed.setInt(this.data.position, onRight);
+    };
+    showLapNumber = (onRight) => {
+      this.tmBtLed.setInt(this.data.completed_laps + 1, onRight);
+    };
+    showLapsLeft = (onRight) => {
+      this.tmBtLed.setInt(this.data.number_of_laps < 0 ? 0 : (this.data.number_of_laps - this.data.completed_laps), onRight);
+    };    
 }
 
 module.exports = Raceroom;
