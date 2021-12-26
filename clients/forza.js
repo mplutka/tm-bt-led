@@ -9,13 +9,19 @@
 
 const UdpListener = require('../lib/udpListener.js');
 const AbstractClient = require('../lib/abstractClient.js');
+const path = require('path');
 
-const leftModes   = ["SPEED", "RPM", "FUEL", "TYRETEMP"];                   // Mode titles for left display
-const rightModes  = ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP"];  // Mode titles for right display
+const loadableConfigName = "forza.config.js";
+const defaultConfig = {
+    port: 20127,
+    leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP"],
+    rightModes: ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP"]
+};
 
 class Forza extends AbstractClient {
-   
-    port = 20127;       // UDP port the client should listen on for telemetry data 
+
+    modeMapping;
+    config;
 
     // https://www.pocketplayground.net/rs-dash-fm7
     // https://github.com/zackdevine/FH4RP
@@ -26,15 +32,38 @@ class Forza extends AbstractClient {
 
         super(tmBtLed);    
         
+        this.modeMapping = {
+            "SPEED": this.showSpeed,
+            "RPM": this.showRpm,
+            "FUEL": this.showFuel,
+            "TYRETEMP": this.showTyreTemp,
+            "LAPTIME": this.showCurrentLap,
+            "LAST LAP": this.showLastLap,
+            "BEST LAP": this.showBestLap,
+            "POSITION": this.showPosition,
+            "LAP": this.showLapNumber
+        };
+
+        try {
+            this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
+            if (this.config?.port && this.config?.leftModes && this.config?.rightModes) {
+                console.log("Found custom config");
+            } else {
+                throw "No custom config";
+            }
+        } catch (e) {
+            this.config = defaultConfig;
+        }
+
         this.setCallbacks({
             onLeftPreviousMode: this.leftPreviousMode,
             onLeftNextMode: this.leftNextMode,
             onRightPreviousMode: this.rightPreviousMode,
             onRightNextMode: this.rightNextMode
         });
-        this.setModes(leftModes, rightModes);
+        this.setModes(this.config.leftModes, this.config.rightModes);
 
-        this.client = new UdpListener({ port: this.port, bigintEnabled: true });
+        this.client = new UdpListener({ port: this.config.port, bigintEnabled: true });
         this.client.on("data", this.parseData);
     }
 
@@ -103,54 +132,69 @@ class Forza extends AbstractClient {
         }
 
         // Set left display according to left modes array and currentLeftMode array index
-        switch (this.currentLeftMode) {
-            default:       
-            case 0: // SPD
-              // Set current speed, expects kmh (converted to mph automatically)
-              this.tmBtLed.setSpeed(data["speed"] * 3.6);
-              break;
-            case 1: // RPM
-              // Set current rpm as absolute number
-              this.tmBtLed.setRpm(data["currentEngineRpm"]);
-              break;  
-            case 2: // FUEL
-              this.tmBtLed.setFloat(data["fuel"] * 100); // Percent
-              break;                
-            case 3: // TYRETEMP
-              // Game provides brake temperature for each tyre. Calculate average here...
-              let tyreTemps = (data["tireTempFrontLeft"] + data["tireTempFrontRight"] + data["tireTempRearLeft"] + data["tireTempRearRight"]) / 4;
-              // Set current temperature (brakes), expects Celsius (converted to Fahrenheit automatically
-              tyreTemps = (tyreTemps - 32) * (5 / 9);
-              this.tmBtLed.setTemperature(tyreTemps);
-              break;                                                                                             
+        if (this.currentLeftMode <= this.leftModes.length) {
+            const leftDataProcessor = this.modeMapping[this.leftModes[this.currentLeftMode]];
+            if (typeof leftDataProcessor === "function") {
+                leftDataProcessor(data, false);
+            }
         }
 
         // Set right display according to right modes array and currentRightMode array index
         // Second boolean parameter (true) in setter displays value in right display
-        switch (this.currentRightMode) {
-            default:   
-            case 0: // CLAP
-                // Sets current lap time, expects milliseconds
-                this.tmBtLed.setTime(data["currentLap"] * 1000, true);
-                break;
-            case 1: // LLAP
-                // Sets last lap time, expects milliseconds
-                this.tmBtLed.setTime(data["lastLap"] * 1000, true);
-                break;      
-            case 2: // BEST
-                // Sets best lap time, expects milliseconds
-                this.tmBtLed.setTime(data["bestLap"] * 1000, true);
-                break;                  
-            case 3: // POS
-                // Sets current position, expects number
-                this.tmBtLed.setInt(data["racePosition"], true);
-                break;               
-            case 4: // LAP
-                // Sets current lap, expects number
-                this.tmBtLed.setInt(data["lapNumber"], true);
-                break;
+        if (this.currentRightMode <= this.rightModes.length) {
+            const rightDataProcessor = this.modeMapping[this.rightModes[this.currentRightMode]];
+            if (typeof rightDataProcessor === "function") {
+                rightDataProcessor(data, true);
+            }
         }
     }
+
+    showSpeed = (data, onRight = false) => {
+        // Set current speed, expects kmh (converted to mph automatically)
+        this.tmBtLed.setSpeed(data["speed"] * 3.6, onRight);
+    }
+
+    showRpm = (data, onRight = false) => {
+        // Set current rpm as absolute number
+        this.tmBtLed.setRpm(data["currentEngineRpm"], onRight);
+    };
+
+    showFuel = (data, onRight = false) => {
+        this.tmBtLed.setFloat(data["fuel"] * 100, onRight); // Percent
+    };
+
+    showTyreTemp = (data, onRight = false) => {
+        // Game provides brake temperature for each tyre. Calculate average here...
+        let tyreTemps = (data["tireTempFrontLeft"] + data["tireTempFrontRight"] + data["tireTempRearLeft"] + data["tireTempRearRight"]) / 4;
+        // Set current temperature (brakes), expects Celsius (converted to Fahrenheit automatically
+        tyreTemps = (tyreTemps - 32) * (5 / 9);
+        this.tmBtLed.setTemperature(tyreTemps, onRight);
+    };
+
+    showCurrentLap = (data, onRight) => {
+        // Sets current lap time, expects milliseconds
+        this.tmBtLed.setTime(data["currentLap"] * 1000, onRight);
+    };
+
+    showLastLap = (data, onRight) => {
+        // Sets last lap time, expects milliseconds
+        this.tmBtLed.setTime(data["lastLap"] * 1000, onRight);
+    };
+
+    showBestLap = (data, onRight) => {
+        // Sets best lap time, expects milliseconds
+        this.tmBtLed.setTime(data["bestLap"] * 1000, onRight);
+    };
+
+    showPosition = (data, onRight) => {
+        // Sets current position, expects number
+        this.tmBtLed.setInt(data["racePosition"], onRight);
+    };
+
+    showLapNumber = (data, onRight) => {
+        // Sets current lap, expects number
+        this.tmBtLed.setInt(data["lapNumber"], onRight);
+    };
 
     /**
      * Transforms raw udp packet data as UInt8Array and returns game specific structured data

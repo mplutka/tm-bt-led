@@ -57,7 +57,7 @@ If you need the Windows bluetooth stack for your headset, keyboard, you need an 
 If you wish to go back to the stock drivers, simply do an automatic driver update in the device manager.
 
 ### Step 2. Download and setup connector
-1. Download current version [here](https://github.com/mplutka/tm-bt-led/releases/download/3.0.2/3.0.2.zip) and extract the files into an empty folder.
+1. Download current version [here](https://github.com/mplutka/tm-bt-led/releases/download/3.1.0/3.1.0.zip) and extract the files into an empty folder.
 2. Run `setup.bat` to detect your device and write its data to a file for faster reconnects (necessary).
 3. (Optional) You can start `test.bat` to run demo mode.
 
@@ -72,6 +72,10 @@ If you wish to go back to the stock drivers, simply do an automatic driver updat
 `run.bat` automatically listens for the launch of any supported game, switches to performance mode (higher refresh rates) and steps down to power save mode after you exit the game. Keep it running in the background to automatically switch between supported games without the need to stop/start the shortcut batch files.
 
 If you encounter false detections or any other problems, please let me know.
+
+## Customization
+You can change the order and type of data displayed on the left and right display (and sometimes the used UDP port) by editing the corresponding 
+`xxx.config.js` file in the same order as `tm-bt-led.exe`.
 
 ## Video
 

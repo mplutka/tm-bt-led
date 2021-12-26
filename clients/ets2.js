@@ -9,23 +9,57 @@
 
 const scs = require("../SCSSharedMemory/build/Release/scs.node");
 const AbstractClient = require('../lib/abstractClient.js');
+const path = require('path');
 
-const leftModes = ["SPEED", "RPM", "FUEL", "WATERTEMP", "OILTEMP", "OILPRESS", "AIRPRESS", "BRAKETEMP"];
-const rightModes = ["DISTANCE", "TIME", "SPEED LIMIT", "CRUISE CONT", "AVG CONSUM", "RANGE"];
+const loadableConfigName = "ets2.config.js";
+const defaultConfig = {
+    leftModes: ["SPEED", "RPM", "FUEL", "WATERTEMP", "OILTEMP", "OILPRESS", "AIRPRESS", "BRAKETEMP"],
+    rightModes: ["DISTANCE", "TIME", "SPEED LIMIT", "CRUISE CONT", "AVG CONSUM", "RANGE"]
+};
 
 class EuroTruckSimulator2 extends AbstractClient {
     data = {};
-    data = {};
+    initDone = false;
     initInterval = null;
     refreshInterval = null;
-    initDone = false;
+
+    config;
+    modeMapping;
 
     constructor(tmBtLed) {
       if (!tmBtLed) {
           throw "No TM BT Led lib found.";
       }
 
-      super(tmBtLed);    
+      super(tmBtLed);  
+      
+      this.modeMapping = {
+        "SPEED": this.showSpeed,
+        "RPM": this.showRpm,
+        "FUEL": this.showFuel,
+        "WATERTEMP": this.showWaterTemp,
+        "OILTEMP": this.showOilTemp,
+        "OILPRESS": this.showOilPress,
+        "AIRPRESS": this.showAirPress,
+        "BRAKETEMP": this.showBrakeTemp,
+        "DISTANCE": this.showDistance,
+        "TIME": this.showTime,
+        "SPEED LIMIT": this.showSpeedLimit,
+        "CRUISE CONT": this.showCruiseControl,
+        "AVG CONSUM": this.showAvgConsumption,
+        "RANGE": this.showRange
+      };
+
+      try {
+          this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
+          if (this.config?.leftModes && this.config?.rightModes) {
+              console.log("Found custom config");
+          } else {
+              throw "No custom config";
+          }
+      } catch (e) {
+          this.config = defaultConfig;
+      }
 
       this.setCallbacks({
           onLeftPreviousMode: this.leftPreviousMode,
@@ -33,13 +67,13 @@ class EuroTruckSimulator2 extends AbstractClient {
           onRightPreviousMode: this.rightPreviousMode,
           onRightNextMode: this.rightNextMode
       });
-      this.setModes(leftModes, rightModes);
+      this.setModes(this.config?.leftModes, this.config?.rightModes);
 
       this.initInterval = setInterval(() => {
         let initRet = scs.initMaps();
         if (initRet === 0) {
+          console.log("Found mapping");
           this.initDone = true;
-          console.log("Plugin loaded successfully");
           clearInterval(this.initInterval);
           this.initInterval = null;
         }
@@ -73,8 +107,6 @@ class EuroTruckSimulator2 extends AbstractClient {
         if (data && Object.keys(data).length) {
           this.data = data;
         }
-
-        this.rightModes = rightModes;
 
         let rpmPercent = this.data.engine_rpm / this.data.max_engine_rpm * 100;
         if (rpmPercent < 50) {
@@ -138,57 +170,79 @@ class EuroTruckSimulator2 extends AbstractClient {
           this.tmBtLed.setRightBlue(false);
         }
 
-
-        switch (this.currentLeftMode) {
-          default:
-          case 0:
-            this.tmBtLed.setSpeed(this.data.speed * 3.6, false);
-            break;          
-          case 1:
-            this.tmBtLed.setRpm(this.data.engine_rpm, false);
-            break;
-          case 2:
-            this.tmBtLed.setInt(this.data.fuel, false);
-            break;
-          case 3:
-            this.tmBtLed.setTemperature(this.data.waterTemperature, false);
-            break;  
-          case 4:
-            this.tmBtLed.setTemperature(this.data.oilTemperature, false);
-            break;                   
-          case 5:
-            this.tmBtLed.setFloat(this.data.oilPressure, false);
-            break;
-          case 6:
-            this.tmBtLed.setFloat(this.data.airPressure, false);
-            break;
-          case 7:
-            this.tmBtLed.setTemperature(this.data.brakeTemperature, false);
-            break;            
+        // Set left display according to left modes array and currentLeftMode array index
+        if (this.currentLeftMode <= this.leftModes.length) {
+          const leftDataProcessor = this.modeMapping[this.leftModes[this.currentLeftMode]];
+          if (typeof leftDataProcessor === "function") {
+              leftDataProcessor(false);
+          }
         }
 
-        switch (this.currentRightMode) {        
-          default:
-          case 0:
-            this.tmBtLed.setFloat(this.data.routeDistance / 1000, true);
-            break;      
-          case 1:
-            this.tmBtLed.setTime(this.data.routeTime / 60 * 1000, true); // in ms
-            break;
-          case 2:
-            this.tmBtLed.setSpeed(this.data.speedLimit >= 0 ? this.data.speedLimit * 3.6 : 0, true);
-            break; 
-          case 3:
-            this.tmBtLed.setSpeed(this.data.cruiseControlSpeed * 3.6, true);
-            break;   
-          case 4:
-            this.tmBtLed.setFloat(this.data.fuelAvgConsumption, true);
-            break;
-          case 5:
-            this.tmBtLed.setFloat(this.data.fuelRange / 1000, true);
-            break;          
+        // Set right display according to right modes array and currentRightMode array index
+        // Second boolean parameter (true) in setter displays value in right display
+        if (this.currentRightMode <= this.rightModes.length) {
+            const rightDataProcessor = this.modeMapping[this.rightModes[this.currentRightMode]];
+            if (typeof rightDataProcessor === "function") {
+                rightDataProcessor(true);
+            }
         }
     };
+
+    showSpeed = (onRight) => {
+      this.tmBtLed.setSpeed(this.data.speed * 3.6, onRight);
+    }
+    
+    showRpm = (onRight) => {
+      this.tmBtLed.setRpm(this.data.engine_rpm, onRight);
+    }
+
+    showFuel = (onRight) => {
+      this.tmBtLed.setInt(this.data.fuel, onRight);
+    }
+    
+    showWaterTemp = (onRight) => {
+      this.tmBtLed.setTemperature(this.data.waterTemperature, onRight);
+    }
+
+    showOilTemp = (onRight) => {
+      this.tmBtLed.setTemperature(this.data.oilTemperature, onRight);
+    }
+
+    showOilPress = (onRight) => {
+      this.tmBtLed.setFloat(this.data.oilPressure, onRight);
+    }
+
+    showAirPress = (onRight) => {
+      this.tmBtLed.setFloat(this.data.airPressure, onRight);
+    }
+
+    showBrakeTemp = (onRight) => {
+      this.tmBtLed.setTemperature(this.data.brakeTemperature, onRight);
+    }
+
+    showDistance = (onRight) => {
+      this.tmBtLed.setFloat(this.data.routeDistance / 1000, onRight);
+    }
+
+    showTime = (onRight) => {
+      this.tmBtLed.setTime(this.data.routeTime / 60 * 1000, onRight); // in ms
+    }
+
+    showSpeedLimit = (onRight) => {
+      this.tmBtLed.setSpeed(this.data.speedLimit >= 0 ? this.data.speedLimit * 3.6 : 0, onRight);
+    }
+
+    showCruiseControl = (onRight) => {
+      this.tmBtLed.setSpeed(this.data.cruiseControlSpeed * 3.6, onRight);
+    }
+
+    showAvgConsumption = (onRight) => {
+      this.tmBtLed.setFloat(this.data.fuelAvgConsumption, onRight);
+    }
+
+    showRange = (onRight) => {
+      this.tmBtLed.setFloat(this.data.fuelRange / 1000, onRight);
+    }
 }
 
 module.exports = EuroTruckSimulator2;

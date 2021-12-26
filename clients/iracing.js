@@ -7,13 +7,19 @@
  * Copyright (c) 2021 Markus Plutka
  */
 
-const irsdk = require('node-irsdk/build/Release/IrSdkNodeBindings.node');
+const irsdk = require('node-irsdk');
 const AbstractClient = require('../lib/abstractClient.js');
+const path = require('path');
 
-const leftModes = ["SPEED", "RPM", "FUEL", "TYRETEMP", "OILTEMP", "WATERTEMP"];
-const rightModes = ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"];
+const loadableConfigName = "iracing.config.js";
+const defaultConfig = {
+  leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "OILTEMP", "WATERTEMP"],
+  rightModes: ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"]
+};
 
 class iRacing extends AbstractClient {
+    config;
+    modeMapping;
 
     constructor(tmBtLed) {
         if (!tmBtLed) {
@@ -22,13 +28,41 @@ class iRacing extends AbstractClient {
 
         super(tmBtLed);    
         
+        this.modeMapping = {
+          "SPEED": this.showSpeed,
+          "RPM": this.showRpm,
+          "FUEL": this.showFuel,
+          "TYRETEMP": this.showTyreTemp,
+          "OILTEMP": this.showOilTemp,
+          "WATERTEMP": this.showWaterTemp,
+
+          "LAPTIME": this.showCurrentLap,
+          "DELTA": this.showDelta,
+          "LAST LAP": this.showLastLap,
+          "BEST LAP": this.showBestLap,
+          "POSITION": this.showPosition,
+          "LAP": this.showLapNumber,
+          "LAPS LEFT": this.showLapsLeft
+        };
+  
+        try {
+            this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
+            if (this.config?.leftModes && this.config?.rightModes) {
+                console.log("Found custom config");
+            } else {
+                throw "No custom config";
+            }
+        } catch (e) {
+            this.config = defaultConfig;
+        }
+
         this.setCallbacks({
             onLeftPreviousMode: this.leftPreviousMode,
             onLeftNextMode: this.leftNextMode,
             onRightPreviousMode: this.rightPreviousMode,
             onRightNextMode: this.rightNextMode
         });
-        this.setModes(leftModes, rightModes);
+        this.setModes(this.config?.leftModes, this.config?.rightModes);
 
         irsdk.init({
           telemetryUpdateInterval: 1000 / 60,
@@ -75,59 +109,22 @@ class iRacing extends AbstractClient {
             this.tmBtLed.setFlashingBlue(false);
           }
 
-          switch (this.currentLeftMode) {
-            default:
-            case 0:
-              this.tmBtLed.setSpeed(telemetry.Speed * 3.6, false);
-              break;      
-            case 1:
-              this.tmBtLed.setRpm(telemetry.RPM, false);
-              break;                        
-            case 2:
-              this.tmBtLed.setWeight(telemetry.FuelLevel, false);
-              break;
-            case 3:
-              if (!telemetry.RFtempCM) {
-                this.tmBtLed.setTemperature(0, false);  
-              } else {
-                let temps = telemetry.LFtempCM + telemetry.RFtempCM + telemetry.LRtempCM + telemetry.RRtempCM;
-                let temp = temps / 4;
-                this.tmBtLed.setTemperature(temp, false);
-              }
-              break;               
-            case 4:
-              this.tmBtLed.setTemperature(telemetry.OilTemp, false);
-              break;               
-            case 5:
-              this.tmBtLed.setTemperature(telemetry.WaterTemp, false);
-              break;                                                                                   
+          // Set left display according to left modes array and currentLeftMode array index
+          if (this.currentLeftMode <= this.leftModes.length) {
+            const leftDataProcessor = this.modeMapping[this.leftModes[this.currentLeftMode]];
+            if (typeof leftDataProcessor === "function") {
+                leftDataProcessor(telemetry, false);
+            }
           }
 
-          switch (this.currentRightMode) {       
-            default:
-            case 0:
-              this.tmBtLed.setTime(telemetry.LapCurrentLapTime * 1000, true);
-              break;
-            case 1:
-              this.tmBtLed.setDiffTime(telemetry.LapDeltaToBestLap * 1000, true);
-              break;  
-            case 2:
-              this.tmBtLed.setTime(telemetry.LapLastLapTime < 0 ? 0 : telemetry.LapLastLapTime * 1000, true);
-              break;                   
-            case 3:
-              this.tmBtLed.setTime(telemetry.LapBestLapTime * 1000, true);
-              break;          
-            case 4:
-              this.tmBtLed.setInt(telemetry.PlayerCarPosition, true);
-              break;
-            case 5:
-              this.tmBtLed.setInt(telemetry.Lap, true);
-              break;                
-            case 6:
-              this.tmBtLed.setInt(telemetry.SessionLapsRemain > 9999 ? 0 : telemetry.SessionLapsRemain, true);
-              break; 
-          }     
-
+          // Set right display according to right modes array and currentRightMode array index
+          // Second boolean parameter (true) in setter displays value in right display
+          if (this.currentRightMode <= this.rightModes.length) {
+              const rightDataProcessor = this.modeMapping[this.rightModes[this.currentRightMode]];
+              if (typeof rightDataProcessor === "function") {
+                  rightDataProcessor(telemetry, true);
+              }
+          }
         });
         
         this.client.on('SessionInfo', function (data) {
@@ -136,8 +133,68 @@ class iRacing extends AbstractClient {
             maxRpm = session.DriverInfo.DriverCarSLBlinkRPM;
           }
         })
-
     }
+
+    showSpeed = (telemetry, onRight) => {
+      this.tmBtLed.setSpeed(telemetry.Speed * 3.6, onRight);
+    };
+
+    showRpm = (telemetry, onRight) => {
+      this.tmBtLed.setRpm(telemetry.RPM, onRight);
+    };
+
+    showFuel = (telemetry, onRight) => {
+      this.tmBtLed.setWeight(telemetry.FuelLevel, onRight);
+    };
+
+    showTyreTemp = (telemetry, onRight) => {
+      if (!telemetry.RFtempCM) {
+        this.tmBtLed.setTemperature(0, onRight);  
+      } else {
+        let temps = telemetry.LFtempCM + telemetry.RFtempCM + telemetry.LRtempCM + telemetry.RRtempCM;
+        let temp = temps / 4;
+        this.tmBtLed.setTemperature(temp, onRight);
+      }
+    };
+
+    showOilTemp = (telemetry, onRight) => {
+      this.tmBtLed.setTemperature(telemetry.OilTemp, onRight);
+    };
+
+    showWaterTemp = (telemetry, onRight) => {
+      this.tmBtLed.setTemperature(telemetry.WaterTemp, onRight);
+    };
+
+    showCurrentLap = (telemetry, onRight) => {
+      this.tmBtLed.setTime(telemetry.LapCurrentLapTime * 1000, onRight);
+    };
+
+    showDelta = (telemetry, onRight) => {
+      this.tmBtLed.setDiffTime(telemetry.LapDeltaToBestLap * 1000, onRight);
+    };
+
+    showLastLap = (telemetry, onRight) => {
+      this.tmBtLed.setTime(telemetry.LapLastLapTime < 0 ? 0 : telemetry.LapLastLapTime * 1000, onRight);
+    };
+
+    showBestLap = (telemetry, onRight) => {
+      this.tmBtLed.setTime(telemetry.LapBestLapTime * 1000, onRight);
+    };
+
+    showPosition = (telemetry, onRight) => {
+      this.tmBtLed.setInt(telemetry.PlayerCarPosition, onRight);
+    };
+
+    showLapNumber = (telemetry, onRight) => {
+      this.tmBtLed.setInt(telemetry.Lap, onRight);
+    };
+
+    showLapsLeft = (telemetry, onRight) => {
+      this.tmBtLed.setInt(telemetry.SessionLapsRemain > 9999 ? 0 : telemetry.SessionLapsRemain, onRight);
+    };
+
+
+
 }
 
 module.exports = iRacing;

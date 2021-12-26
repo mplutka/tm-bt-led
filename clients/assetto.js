@@ -9,17 +9,28 @@
 
 const AssettoCorsaSharedMemory = require("../AssettoCorsaSharedMemory/build/Release/AssettoCorsaSharedMemory.node");
 const AbstractClient = require('../lib/abstractClient.js');
+const path = require('path');
 
-const leftModes = ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP"];
-const rightModes = ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "PRED LAP", "POSITION", "LAP", "LAPS LEFT"];
+const loadableConfigName = "assetto.config.js";
+const defaultConfig = {
+  leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP"],
+  rightModesAcc: ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "PRED LAP", "POSITION", "LAP", "LAPS LEFT"],
+  rightModesAssetto: ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"]
+};
 
-const rightModesAssetto = ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"];
 
 // SM Version 1.7
 class ACC extends AbstractClient {
     maxRpm = 0;
     isACC = true;
     refreshInterval = null;
+
+    config;
+    modeMapping;
+
+    physics;
+    graphics;
+    statics;
 
     constructor(tmBtLed) {
       if (!tmBtLed) {
@@ -28,13 +39,41 @@ class ACC extends AbstractClient {
 
       super(tmBtLed);    
 
+      this.modeMapping = {
+        "SPEED": this.showSpeed,
+        "RPM": this.showRpm,
+        "FUEL": this.showFuel,
+        "TYRETEMP": this.showTyreTemp,
+        "BRAKETEMP": this.showBrakeTemp,
+
+        "LAPTIME": this.showCurrentLap,
+        "DELTA": this.showDelta,
+        "LAST LAP": this.showLastLap,
+        "BEST LAP": this.showBestLap,
+        "PRED LAP": this.showPredLap,
+        "POSITION": this.showPosition,
+        "LAP": this.showLapNumber,
+        "LAPS LEFT": this.showLapsLeft
+      };
+
+      try {
+          this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
+          if (this.config?.leftModes && this.config?.rightModesAcc && this.config?.rightModesAssetto) {
+              console.log("Found custom config");
+          } else {
+              throw "No custom config";
+          }
+      } catch (e) {
+          this.config = defaultConfig;
+      }
+
       this.setCallbacks({
           onLeftPreviousMode: this.leftPreviousMode,
           onLeftNextMode: this.leftNextMode,
           onRightPreviousMode: this.rightPreviousMode,
           onRightNextMode: this.rightNextMode
       });
-      this.setModes(leftModes, rightModes);
+      this.setModes(this.config?.leftModes, this.config?.rightModesAcc);
 
       AssettoCorsaSharedMemory.initMaps();
     }
@@ -55,30 +94,29 @@ class ACC extends AbstractClient {
     }
 
     updateValues = () => {
-        const physics =  AssettoCorsaSharedMemory.getPhysics();
-        const statics =  AssettoCorsaSharedMemory.getStatics();
-        this.isACC = !(statics.smVersion < 1.8);
+        this.physics = AssettoCorsaSharedMemory.getPhysics();
+        this.statics = AssettoCorsaSharedMemory.getStatics();
+        this.isACC = !(this.statics.smVersion < 1.8);
 
-        let graphics = null;
         if (this.isACC) {
-          graphics = AssettoCorsaSharedMemory.getGraphicsACC();
-          this.rightModes = rightModes;
+          this.graphics = AssettoCorsaSharedMemory.getGraphicsACC();
+          this.rightModes = this.config?.rightModesAcc;
         } else {
-          graphics = AssettoCorsaSharedMemory.getGraphicsAssetto();
-          this.rightModes = rightModesAssetto;
+          this.graphics = AssettoCorsaSharedMemory.getGraphicsAssetto();
+          this.rightModes = this.config?.rightModesAssetto;
         }
 
-        this.tmBtLed.setGear(physics.gear - 1);
+        this.tmBtLed.setGear(this.physics.gear - 1);
 
         // RevLights & PitLimiter
-        if (physics.pitLimiterOn === 1 || graphics.isInPitLane || graphics.isInPit) {
+        if (this.physics.pitLimiterOn === 1 || this.graphics.isInPitLane || this.graphics.isInPit) {
           this.tmBtLed.setRevLightsFlashing(1);
         } else {
           this.tmBtLed.setRevLightsFlashing(0);
         }
         
         if (this.tmBtLed.revLightsFlashing !== 1) {
-          let rpmPercent = physics.rpms / statics.maxRpm * 100;
+          let rpmPercent = this.physics.rpms / this.statics.maxRpm * 100;
           if (rpmPercent < 50) {
             rpmPercent = 0;
           } else {
@@ -88,14 +126,14 @@ class ACC extends AbstractClient {
           this.tmBtLed.setRevLights(rpmPercent >= 98 ? 100 : rpmPercent);
         }
 
-        if (physics.isEngineRunning === 1) {
+        if (this.physics.isEngineRunning === 1) {
           this.tmBtLed.setGearDot(true);
         } else {
           this.tmBtLed.setGearDot(false);
         }
 
         // Flags
-        switch(graphics.flag) {
+        switch(this.graphics.flag) {
           case 1:
             this.tmBtLed.setFlashingBlue(true);
             break      
@@ -121,78 +159,65 @@ class ACC extends AbstractClient {
             break
         }
 
-        switch (this.currentLeftMode) {
-          default:
-          case 0:
-            this.tmBtLed.setSpeed(physics.speedKmh, false);
-            break;          
-          case 1:
-            this.tmBtLed.setRpm(physics.rpms, false);
-            break;
-          case 2:
-            this.tmBtLed.setWeight(physics.fuel, false);
-            break;
-          case 3:
-            this.tmBtLed.setTemperature(physics.tyreCoreTemperature, false);
-            break;  
-          case 4:
-            this.tmBtLed.setTemperature(physics.brakeTemp, false);
-            break;
+        // Set left display according to left modes array and currentLeftMode array index
+        if (this.currentLeftMode <= this.leftModes.length) {
+          const leftDataProcessor = this.modeMapping[this.leftModes[this.currentLeftMode]];
+          if (typeof leftDataProcessor === "function") {
+              leftDataProcessor(false);
+          }
         }
 
-        if (this.isACC) {
-          switch (this.currentRightMode) {        
-            default:
-            case 0:
-              this.tmBtLed.setTime(graphics.iCurrentTime, true);
-              break;      
-            case 1:
-              this.tmBtLed.setDiffTime(graphics.iDeltaLapTime, true);
-              break;     
-            case 2:
-              this.tmBtLed.setTime(graphics.iLastTime, true);
-              break; 
-            case 3:
-              this.tmBtLed.setTime(graphics.iBestTime, true);
-              break;   
-            case 4:
-              this.tmBtLed.setTime(graphics.iEstimatedLapTime, true);
-              break;                                  
-            case 5:
-              this.tmBtLed.setInt(graphics.position, true);
-              break;
-            case 6:
-              this.tmBtLed.setInt(graphics.completedLaps + 1, true);
-              break;          
-            case 7:
-              this.tmBtLed.setInt(graphics.numberOfLaps < 1000 ? (graphics.numberOfLaps - graphics.completedLaps) : 0, true);
-              break;
-          }
-        } else {
-          switch (this.currentRightMode) {        
-            default:
-            case 0:
-              this.tmBtLed.setTime(graphics.iCurrentTime, true);
-              break;      
-            case 1:
-              this.tmBtLed.setTime(graphics.iLastTime, true);
-              break; 
-            case 2:
-              this.tmBtLed.setTime(graphics.iBestTime, true);
-              break;   
-            case 3:
-              this.tmBtLed.setInt(graphics.position, true);
-              break;
-            case 4:
-              this.tmBtLed.setInt(graphics.completedLaps + 1, true);
-              break;          
-            case 5:
-              this.tmBtLed.setInt(graphics.numberOfLaps < 1000 ? (graphics.numberOfLaps - graphics.completedLaps) : 0, true);
-              break;
-          }   
+        // Set right display according to right modes array and currentRightMode array index
+        // Second boolean parameter (true) in setter displays value in right display
+        if (this.currentRightMode <= this.rightModes.length) {
+            const rightDataProcessor = this.modeMapping[this.rightModes[this.currentRightMode]];
+            if (typeof rightDataProcessor === "function") {
+                rightDataProcessor(true);
+            }
         }
-       
     };
+
+    showSpeed = (onRight) => {
+      this.tmBtLed.setSpeed(this.physics.speedKmh, onRight);
+    };
+
+    showRpm = (onRight) => {
+      this.tmBtLed.setRpm(this.physics.rpms, onRight);
+    };
+    showFuel = (onRight) => {
+      this.tmBtLed.setWeight(this.physics.fuel, onRight);
+    };
+    showTyreTemp = (onRight) => {
+      this.tmBtLed.setTemperature(this.physics.tyreCoreTemperature, onRight);
+    };
+    showBrakeTemp = (onRight) => {
+      this.tmBtLed.setTemperature(this.physics.brakeTemp, onRight);
+    };
+ 
+    showCurrentLap = (onRight) => {
+      this.tmBtLed.setTime(this.graphics.iCurrentTime, onRight);
+    };
+    showDelta = (onRight) => {
+      this.tmBtLed.setDiffTime(this.graphics.iDeltaLapTime, onRight);
+    };
+    showLastLap = (onRight) => {
+      this.tmBtLed.setTime(this.graphics.iLastTime, onRight);
+    };
+    showBestLap = (onRight) => {
+      this.tmBtLed.setTime(this.graphics.iBestTime, onRight);
+    };
+    showPredLap = (onRight) => {
+      this.tmBtLed.setTime(this.graphics.iEstimatedLapTime, onRight);
+    };
+    showPosition = (onRight) => {
+      this.tmBtLed.setInt(this.graphics.position, onRight);
+    };
+    showLapNumber = (onRight) => {
+      this.tmBtLed.setInt(this.graphics.completedLaps + 1, onRight);
+    };
+    showLapsLeft = (onRight) => {
+      this.tmBtLed.setInt(this.graphics.numberOfLaps < 1000 ? (this.graphics.numberOfLaps - this.graphics.completedLaps) : 0, onRight);
+    };    
 }
 
 module.exports = ACC;

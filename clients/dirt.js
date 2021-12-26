@@ -9,13 +9,19 @@
 
 const UdpListener = require('../lib/udpListener.js');
 const AbstractClient = require('../lib/abstractClient.js');
+const path = require('path');
 
-const leftModes   = ["SPEED", "RPM", "BRAKETEMP"];                   // Mode titles for left display
-const rightModes  = ["LAPTIME", "LAST LAP", "DISTANCE", "POSITION", "LAP", "LAPS LEFT"];  // Mode titles for right display
+const loadableConfigName = "dirt.config.js";
+const defaultConfig = {
+    port: 20777,
+    leftModes: ["SPEED", "RPM", "BRAKETEMP"],
+    rightModes: ["LAPTIME", "LAST LAP", "DISTANCE", "POSITION", "LAP", "LAPS LEFT"]
+};
 
 class DirtRally extends AbstractClient {
    
-    port = 20777;       // UDP port the client should listen on for telemetry data 
+    config;
+    modeMapping;
 
     // Telemetry structure according to documentation
     keys = [
@@ -93,6 +99,30 @@ class DirtRally extends AbstractClient {
         }
 
         super(tmBtLed);    
+
+        this.modeMapping = {
+            "SPEED": this.showSpeed,
+            "RPM": this.showRpm,
+            "FUEL": this.showFuel,
+            "BRAKETEMP": this.showBrakeTemp,
+            "LAPTIME": this.showCurrentLap,
+            "LAST LAP": this.showLastLap,
+            "DISTANCE": this.showDistance,
+            "POSITION": this.showPosition,
+            "LAP": this.showLapNumber,
+            "LAPS LEFT": this.showLapsLeft,
+        };
+
+        try {
+            this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
+            if (this.config?.port && this.config?.leftModes && this.config?.rightModes) {
+                console.log("Found custom config");
+            } else {
+                throw "No custom config";
+            }
+        } catch (e) {
+            this.config = defaultConfig;
+        }
         
         this.setCallbacks({
             onLeftPreviousMode: this.leftPreviousMode,
@@ -100,9 +130,9 @@ class DirtRally extends AbstractClient {
             onRightPreviousMode: this.rightPreviousMode,
             onRightNextMode: this.rightNextMode
         });
-        this.setModes(leftModes, rightModes);
+        this.setModes(this.config.leftModes, this.config.rightModes);
 
-        this.client = new UdpListener({ port: this.port, bigintEnabled: true });
+        this.client = new UdpListener({ port: this.config.port, bigintEnabled: true });
         this.client.on("data", this.parseData);
     }
 
@@ -129,55 +159,72 @@ class DirtRally extends AbstractClient {
         this.tmBtLed.setRevLights(Math.ceil((data["engine_rate"] * 10) / (data["max_rpm"] * 10) * 100));
 
         // Set left display according to left modes array and currentLeftMode array index
-        switch (this.currentLeftMode) {
-            default:       
-            case 0: // SPD
-              // Set current speed, expects kmh (converted to mph automatically)
-              this.tmBtLed.setSpeed(data["speed"] * 3.6);
-              break;
-            case 1: // RPM
-              // Set current rpm as absolute number
-              this.tmBtLed.setRpm(data["engine_rate"] * 10);
-              break;  
-            case 2: // BRKT
-              // Game provides brake temperature for each tyre. Calculate average here...
-              const brakeTemps = data["brake_temp_bl"] + data["brake_temp_br"] + data["brake_temp_fl"] + data["brake_temp_fr"];
-              // Set current temperature (brakes), expects Celsius (converted to Fahrenheit automatically
-              this.tmBtLed.setTemperature(brakeTemps / 4);
-              break;                                                                                             
+        if (this.currentLeftMode <= this.leftModes.length) {
+            const leftDataProcessor = this.modeMapping[this.leftModes[this.currentLeftMode]];
+            if (typeof leftDataProcessor === "function") {
+                leftDataProcessor(data, false);
+            }
         }
 
         // Set right display according to right modes array and currentRightMode array index
         // Second boolean parameter (true) in setter displays value in right display
-        switch (this.currentRightMode) {
-            default:   
-            case 0: // CLAP
-                // Sets current lap time, expects milliseconds
-                this.tmBtLed.setTime(data["lap_time"] * 1000, true);
-                break;
-            case 1: // LLAP
-                // Sets last lap time, expects milliseconds
-                this.tmBtLed.setTime(data["last_lap_time"] * 1000, true);
-                break;      
-            case 2: // DIST
-                // Sets distance left in metres
-                const dist = data["track_length"] - data["lap_distance"];
-                this.tmBtLed.setInt(dist > 0 ? dist : 0, true);
-                break;                   
-            case 3: // POS
-                // Sets current position, expects number
-                this.tmBtLed.setInt(data["race_position"], true);
-                break;               
-            case 4: // LAP
-                // Sets current lap, expects number
-                this.tmBtLed.setInt(data["lap"], true);
-                break;
-            case 5: // LEFT
-                // Sets remaining laps, expects numner
-                this.tmBtLed.setInt(data["total_laps"] - data["laps_completed"], true);
-                break;
+        if (this.currentRightMode <= this.rightModes.length) {
+            const rightDataProcessor = this.modeMapping[this.rightModes[this.currentRightMode]];
+            if (typeof rightDataProcessor === "function") {
+                rightDataProcessor(data, true);
+            }
         }
     }
+
+    showCurrentLap = (data, onRight) => {
+        // Sets current lap time, expects milliseconds
+        this.tmBtLed.setTime(data["lap_time"] * 1000, onRight);
+    };
+
+    showLastLap = (data, onRight) => {
+        // Sets last lap time, expects milliseconds
+        this.tmBtLed.setTime(data["last_lap_time"] * 1000, onRight);
+    }
+
+    showDistance = (data, onRight) => {
+        // Sets distance left in metres
+        const dist = data["track_length"] - data["lap_distance"];
+        this.tmBtLed.setInt(dist > 0 ? dist : 0, onRight);
+    };
+
+    showPosition = (data, onRight) => {
+        // Sets current position, expects number
+        this.tmBtLed.setInt(data["race_position"], onRight);
+    };
+
+    showLapNumber = (data, onRight) => {
+        // Sets current lap, expects number
+        this.tmBtLed.setInt(data["lap"], onRight);
+    };
+
+    showLapsLeft = (data, onRight) => {
+        // Sets remaining laps, expects numner
+        this.tmBtLed.setInt(data["total_laps"] - data["laps_completed"], onRight);
+    };
+
+    showSpeed = (data, onRight) => {
+        // Set current speed, expects kmh (converted to mph automatically)
+        this.tmBtLed.setSpeed(data["speed"] * 3.6, onRight);
+    };
+
+    showRpm = (data, onRight) => {
+        // Set current rpm as absolute number
+        this.tmBtLed.setRpm(data["engine_rate"] * 10, onRight);
+    };
+
+    showBrakeTemp = (data, onRight) => {
+        // Game provides brake temperature for each tyre. Calculate average here...
+        const brakeTemps = data["brake_temp_bl"] + data["brake_temp_br"] + data["brake_temp_fl"] + data["brake_temp_fr"];
+        // Set current temperature (brakes), expects Celsius (converted to Fahrenheit automatically
+        this.tmBtLed.setTemperature(brakeTemps / 4, onRight);
+    };
+
+
 
     /**
      * Transforms raw udp packet data as UInt8Array and returns game specific structured data

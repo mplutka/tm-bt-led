@@ -7,15 +7,20 @@
  * Copyright (c) 2021 Markus Plutka
  */
 
-const { F1TelemetryClient, constants } = require('f1-telemetry-client');
+const { F1TelemetryClient, constants } = require('@racehub-io/f1-telemetry-client');
 const AbstractClient = require('../lib/abstractClient.js');
 const { PACKETS } = constants;
+const path = require('path');
 
-const leftModes = ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "ENGINETEMP", "ERSLEVEL"];
-const rightModes = ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"];
+const loadableConfigName = "f1.config.js";
+const defaultConfig = {
+    port: 20777,
+    leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "ENGINETEMP", "ERSLEVEL"],
+    rightModes: ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"]
+};
 
 class F1 extends AbstractClient {
-    port = 20777;       // UDP port the client should listen on for telemetry data
+    config;
 
     constructor(tmBtLed) {
         if (!tmBtLed) {
@@ -24,16 +29,26 @@ class F1 extends AbstractClient {
 
         super(tmBtLed);    
 
-        
+        try {
+            this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
+            if (this.config?.port && this.config?.leftModes && this.config?.rightModes) {
+                console.log("Found custom config");
+            } else {
+                throw "No custom config";
+            }
+        } catch (e) {
+            this.config = defaultConfig;
+        }  
+
         this.setCallbacks({
             onLeftPreviousMode: this.leftPreviousMode,
             onLeftNextMode: this.leftNextMode,
             onRightPreviousMode: this.rightPreviousMode,
             onRightNextMode: this.rightNextMode
         });
-        this.setModes(leftModes, rightModes);
+        this.setModes(this.config?.leftModes, this.config?.rightModes);
 
-        this.client = new F1TelemetryClient({ port: this.port, bigintEnabled: true });
+        this.client = new F1TelemetryClient({ port: this.config?.port, bigintEnabled: true });
     }
 
     stopClient = () => {
@@ -47,6 +62,83 @@ class F1 extends AbstractClient {
         let totalLaps = 60;
         let trackLength = 0;
         let modernCar = false;
+        let lapData;
+        let carStatus;
+        let carTelemetry;
+        let delta;       
+
+        const showSpeed = (onRight) => {
+            this.tmBtLed.setSpeed(carTelemetry.m_speed, onRight);
+        };
+    
+        const showRpm = (onRight) => {
+            this.tmBtLed.setRpm(carTelemetry.m_engineRPM, onRight);
+        };
+    
+        const showTyreTemp = (onRight) => {
+            this.tmBtLed.setTemperature((carTelemetry.m_tyresSurfaceTemperature.reduce((a, b) => a + b, 0) / carTelemetry.m_tyresSurfaceTemperature.length) || 0, onRight);
+        };
+    
+        const showBrakeTemp = (onRight) => {
+            this.tmBtLed.setTemperature((carTelemetry.m_brakesTemperature.reduce((a, b) => a + b, 0) / carTelemetry.m_brakesTemperature.length) || 0, onRight);
+        };
+    
+        const showEngineTemp = (onRight) => {
+            this.tmBtLed.setTemperature(carTelemetry.m_engineTemperature, onRight);
+        };
+    
+        const showFuel = (onRight) => {
+            this.tmBtLed.setWeight(carStatus.m_fuelInTank, onRight);
+        };
+    
+        const showErsLevel = (onRight) => {
+            this.tmBtLed.setInt(carStatus.m_ersStoreEnergy, onRight);
+        };
+    
+        const showCurrentLap = (onRight) => {
+            this.tmBtLed.setTime(lapData.m_currentLapTime * 1000, onRight);
+        };
+    
+        const showDelta = (onRight) => {
+            this.tmBtLed.setDiffTime(delta !== null ? delta * 1000 : null, onRight);
+        };
+    
+        const showLastLap = (onRight) => {
+            this.tmBtLed.setTime(lapData.m_lastLapTime * 1000 , onRight);
+        };
+    
+        const showBestLap = (onRight) => {
+            this.tmBtLed.setTime(lapData.m_bestLapTime * 1000, onRight);
+        };
+    
+        const showPosition = (onRight) => {
+            this.tmBtLed.setInt(lapData.m_carPosition, onRight);
+        };
+    
+        const showLapNumber = (onRight) => {
+            this.tmBtLed.setInt(lapData.m_currentLapNum, onRight);
+        };
+    
+        const showLapsLeft = (onRight) => {
+            this.tmBtLed.setInt(totalLaps - lapData.m_currentLapNum, onRight);
+        };
+        
+        const modeMapping = {
+            "SPEED": showSpeed,
+            "RPM": showRpm,
+            "FUEL": showFuel,
+            "TYRETEMP": showTyreTemp,
+            "BRAKETEMP": showBrakeTemp,
+            "ENGINETEMP": showEngineTemp,
+            "ERSLEVEL": showErsLevel,
+            "LAPTIME": showCurrentLap,
+            "DELTA": showDelta,
+            "LAST LAP": showLastLap,
+            "BEST LAP": showBestLap,
+            "POSITION": showPosition,
+            "LAP": showLapNumber,
+            "LAPS LEFT": showLapsLeft,
+        };
         // https://f1-2019-telemetry.readthedocs.io/en/latest/telemetry-specification.html
         /*client.on(PACKETS.event, console.log);
         client.on(PACKETS.motion, console.log);
@@ -75,7 +167,7 @@ class F1 extends AbstractClient {
         this.client.on(PACKETS.lapData, d => {
             this.tmBtLed.setRightTimeSpacer(false);
             const myIndex = d.m_header.m_playerCarIndex;
-            const lapData = d.m_lapData[myIndex];
+            lapData = d.m_lapData[myIndex];
 
             // Reset on session change
             if (lapData.m_lapDistance < 0 && (bestLapTime > 0 || bestDeltaData.size > 0)) {
@@ -94,7 +186,7 @@ class F1 extends AbstractClient {
                 currentDeltaData.clear();
             }
 
-            let delta = null;
+            delta = null;
             if (bestDeltaData.size) {
                 let bestTimeForFraction = null;
                 bestDeltaData.forEach((bestTime, bestFraction) => {
@@ -108,33 +200,6 @@ class F1 extends AbstractClient {
                 }
             }
             currentDeltaData.set(fractionOfLap, lapData.m_currentLapTime);
-
-            // console.log(delta, lapData.m_lapDistance, fractionOfLap, currentDeltaData.size, bestDeltaData.size, lapData.m_currentLapTime, lapData.m_lastLapTime, bestLapTime);
-
-            switch (this.currentRightMode) {
-                default:                             
-                case 0:
-                  this.tmBtLed.setTime(lapData.m_currentLapTime * 1000, true);
-                  break;
-                case 1:
-                  this.tmBtLed.setDiffTime(delta !== null ? delta * 1000 : null, true);
-                  break;                     
-                case 2:
-                  this.tmBtLed.setTime(lapData.m_lastLapTime * 1000 , true);
-                  break;   
-                case 3:
-                  this.tmBtLed.setTime(lapData.m_bestLapTime * 1000, true);
-                  break;                        
-                case 4:
-                  this.tmBtLed.setInt(lapData.m_carPosition, true);
-                  break;               
-                case 5:
-                  this.tmBtLed.setInt(lapData.m_currentLapNum, true);
-                  break;
-                case 6:
-                  this.tmBtLed.setInt(totalLaps - lapData.m_currentLapNum, true);
-                  break; 
-            }
 
             if (lapData.m_currentLapInvalid === 1) {
                 this.tmBtLed.setFlashingRightRed(true);
@@ -156,8 +221,7 @@ class F1 extends AbstractClient {
 
         this.client.on(PACKETS.carStatus, d => {
             const myIndex = d.m_header.m_playerCarIndex;
-            const carStatus = d.m_carStatusData[myIndex];
-
+            carStatus = d.m_carStatusData[myIndex];
 
             if (carStatus.m_ersDeployMode !== ersDeployMode) {
                 if (ersDeployMode >= 0) {
@@ -212,20 +276,11 @@ class F1 extends AbstractClient {
             } else {
                 this.tmBtLed.setRevLightsFlashing(0);
             }
-
-            switch (this.currentLeftMode) {
-                case 2:
-                    this.tmBtLed.setWeight(carStatus.m_fuelInTank, false);
-                    break;           
-                case 6:
-                    this.tmBtLed.setInt(carStatus.m_ersStoreEnergy, false);
-                    break;                                                     
-            }
         });
 
         this.client.on(PACKETS.carTelemetry, d => {
             const myIndex = d.m_header.m_playerCarIndex;
-            const carTelemetry = d.m_carTelemetryData[myIndex];
+            carTelemetry = d.m_carTelemetryData[myIndex];
             this.tmBtLed.setGear(carTelemetry.m_gear);
         
             drsOn = carTelemetry.m_drs === 1;
@@ -248,28 +303,23 @@ class F1 extends AbstractClient {
 
             }
 
-            switch (this.currentLeftMode) {
-                default:
-                case 0:
-                  this.tmBtLed.setSpeed(carTelemetry.m_speed, false);
-                  break;
-                case 1:
-                  this.tmBtLed.setRpm(carTelemetry.m_engineRPM, false);
-                  break;  
-                case 3:
-                  this.tmBtLed.setTemperature((carTelemetry.m_tyresSurfaceTemperature.reduce((a, b) => a + b, 0) / carTelemetry.m_tyresSurfaceTemperature.length) || 0, false);
-                  break; 
-                case 4:
-                  this.tmBtLed.setTemperature((carTelemetry.m_brakesTemperature.reduce((a, b) => a + b, 0) / carTelemetry.m_brakesTemperature.length) || 0, false);
-                  break;                                                           
-                case 5:
-                  this.tmBtLed.setTemperature(carTelemetry.m_engineTemperature, false);
-                  break; 
-                                                                                           
+            if (this.currentLeftMode <= this.leftModes.length) {
+                const leftDataProcessor = modeMapping[this.leftModes[this.currentLeftMode]];
+                if (typeof leftDataProcessor === "function") {
+                    leftDataProcessor(false);
+                }
+            }
+
+            if (this.currentRightMode <= this.rightModes.length) {
+                const rightDataProcessor = modeMapping[this.rightModes[this.currentRightMode]];
+                if (typeof rightDataProcessor === "function") {
+                    rightDataProcessor(true);
+                }
             }
         });
+
         this.client.start();
-    }
+    };
 }
 
 module.exports = F1;

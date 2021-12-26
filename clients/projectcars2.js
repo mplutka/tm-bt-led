@@ -10,18 +10,26 @@
 const AbstractClient = require('../lib/abstractClient.js');
 const UdpListener = require('../lib/udpListener.js');
 const UdpParser = require('../lib/pcars2-udp/udp-parser.js');
+const path = require('path');
 
-const leftModes = ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "OILTEMP"];
-const rightModes = ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"];
+const loadableConfigName = "pcars2.config.js";
+const defaultConfig = {
+  leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "OILTEMP"],
+  rightModes: ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"]
+};
 
 class ProjectCars2 extends AbstractClient {
-    //port = 20777;       // UDP port the client should listen on for telemetry data 
-
     parser;
     numLaps = 0;
     localIndex = null;
     lastLap = 0;
     bestLap = 0;
+
+    config;
+    modeMapping;
+
+    telemetry;
+    timings;
 
     constructor(tmBtLed) {
         if (!tmBtLed) {
@@ -29,16 +37,43 @@ class ProjectCars2 extends AbstractClient {
         }
 
         super(tmBtLed);    
-        
+                
+        this.modeMapping = {
+            "SPEED": this.showSpeed,
+            "RPM": this.showRpm,
+            "FUEL": this.showFuel,
+            "TYRETEMP": this.showTyreTemp,
+            "BRAKETEMP": this.showBrakeTemp,
+            "OILTEMP": this.showOilTemp,
+
+            "LAPTIME": this.showCurrentLap,
+            "LAST LAP": this.showLastLap,
+            "BEST LAP": this.showBestLap,
+            "POSITION": this.showPosition,
+            "LAP": this.showLapNumber,
+            "LAPS LEFT": this.showLapsLeft
+        };
+
+        try {
+            this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
+            if (this.config?.leftModes && this.config?.rightModes) {
+                console.log("Found custom config");
+            } else {
+                throw "No custom config";
+            }
+        } catch (e) {
+            this.config = defaultConfig;
+        }
+
         this.setCallbacks({
             onLeftPreviousMode: this.leftPreviousMode,
             onLeftNextMode: this.leftNextMode,
             onRightPreviousMode: this.rightPreviousMode,
             onRightNextMode: this.rightNextMode
         });
-        this.setModes(leftModes, rightModes);
+        this.setModes(this.config?.leftModes, this.config?.rightModes);
 
-        this.parser = new UdpParser('./src/pcars2-udp/SMS_UDP_Definitions.hpp');
+        this.parser = new UdpParser(path.join(__dirname, '../lib/pcars2-udp/SMS_UDP_Definitions.hpp'));
 
         this.client = new UdpListener({ port: this.parser.port(), bigintEnabled: true });
         this.client.on("data", this.parser.pushBuffer.bind(this.parser));
@@ -58,12 +93,12 @@ class ProjectCars2 extends AbstractClient {
     }
 
     parseTelemetryData = (telemetry) => {
-
-        const gear = telemetry.sGearNumGears & 15;
+        this.telemetry = telemetry;
+        const gear = this.telemetry.sGearNumGears & 15;
         this.tmBtLed.setGear(gear === 15 ? -1 : gear);
 
         // Set RevLights as percentage
-        let rpmPercent = telemetry.sRpm / telemetry.sMaxRpm * 100;
+        let rpmPercent = this.telemetry.sRpm / this.telemetry.sMaxRpm * 100;
         if (rpmPercent < 60) {
             rpmPercent = 0;
         } else {
@@ -72,42 +107,22 @@ class ProjectCars2 extends AbstractClient {
         this.tmBtLed.setRevLights(rpmPercent);
 
         // Set left display according to left modes array and currentLeftMode array index
-        switch (this.currentLeftMode) {
-            default:       
-            case 0: // SPD
-              this.tmBtLed.setSpeed(telemetry.sSpeed * 3.6);
-              break;
-            case 1: // RPM
-              this.tmBtLed.setRpm(telemetry.sRpm);
-              break;
-            case 2: // FUEL
-              this.tmBtLed.setFloat(telemetry.sFuelLevel * telemetry.sFuelCapacity);
-              break;                  
-            case 3: // TYRT
-              const tyreTemps = telemetry.sTyreTemp[0] + telemetry.sTyreTemp[1] + telemetry.sTyreTemp[2] + telemetry.sTyreTemp[3];
-              this.tmBtLed.setTemperature(tyreTemps / 4);
-              break;                 
-            case 4: // BRKT
-              const brakeTemps = telemetry.sBrakeTempCelsius[0] + telemetry.sBrakeTempCelsius[1] + telemetry.sBrakeTempCelsius[2] + telemetry.sBrakeTempCelsius[3];
-              this.tmBtLed.setTemperature(brakeTemps / 4);
-              break;   
-            case 5: // OILT
-              this.tmBtLed.setTemperature(telemetry.sOilTempCelsius);
-              break;                 
+        if (this.currentLeftMode <= this.leftModes.length) {
+        const leftDataProcessor = this.modeMapping[this.leftModes[this.currentLeftMode]];
+        if (typeof leftDataProcessor === "function") {
+            leftDataProcessor(false);
+        }
         }
 
-        switch (this.currentRightMode) {
-            case 1: // LLAP
-                // Sets last lap time, expects milliseconds
-                this.tmBtLed.setTime(this.lastLap, true);
-                break;
-            case 2: // BLAP
-                // Sets last lap time, expects milliseconds
-                this.tmBtLed.setTime(this.bestLap, true);
-                break;                                        
-        } 
+        // Set right display according to right modes array and currentRightMode array index
+        // Second boolean parameter (true) in setter displays value in right display
+        if (this.currentRightMode <= this.rightModes.length) {
+            const rightDataProcessor = this.modeMapping[this.rightModes[this.currentRightMode]];
+            if (typeof rightDataProcessor === "function") {
+                rightDataProcessor(true);
+            }
+        }
     }
-
 
     parseTimingsStatsData = (timeStatsData) => {
         if (this.localIndex === null) {
@@ -131,9 +146,9 @@ class ProjectCars2 extends AbstractClient {
 
     parseTimeData = (participantsData) => {
         this.localIndex = participantsData.sLocalParticipantIndex;
-        const timings = participantsData.sPartcipants[this.localIndex];
+        this.timings = participantsData.sPartcipants[this.localIndex];
 
-        switch (timings.sHighestFlag) {
+        switch (this.timings.sHighestFlag) {
             case 0:
             case 1:
             default:
@@ -176,30 +191,77 @@ class ProjectCars2 extends AbstractClient {
                 }                
                 break;                
         }
+    }  
+    
+    showSpeed = (onRight) => {
+        if (!this.telemetry) {
+            return;
+        }
+        this.tmBtLed.setSpeed(this.telemetry.sSpeed * 3.6, onRight);
+    };
 
-
-        // Set right display according to right modes array and currentRightMode array index
-        // Second boolean parameter (true) in setter displays value in right display
-        switch (this.currentRightMode) {
-            case 0: // CLAP
-                // Sets current lap time, expects milliseconds
-                this.tmBtLed.setTime(timings.sCurrentTime >= 0 ? timings.sCurrentTime * 1000 : 0, true);
-                break;
-            case 3: // POS
-                // Sets current position, expects number
-                this.tmBtLed.setInt(timings.sRacePosition % 128, true);
-                break;               
-            case 4: // LAP
-                // Sets current lap, expects number
-                this.tmBtLed.setInt(timings.sCurrentLap, true);
-                break;
-            case 5: // LEFT
-                // Sets remaining laps, expects numner
-                this.tmBtLed.setInt(this.numLaps > 0 ? this.numLaps - timings.sCurrentLap : 0, true);
-                break;
-        } 
-
-    }     
+    showRpm = (onRight) => {
+        if (!this.telemetry) {
+            return;
+        }
+        this.tmBtLed.setRpm(this.telemetry.sRpm, onRight);
+    };
+    showFuel = (onRight) => {
+        if (!this.telemetry) {
+            return;
+        }
+        this.tmBtLed.setFloat(this.telemetry.sFuelLevel * this.telemetry.sFuelCapacity, onRight);
+    };
+    showTyreTemp = (onRight) => {
+        if (!this.telemetry) {
+            return;
+        }
+        const tyreTemps = this.telemetry.sTyreTemp[0] + this.telemetry.sTyreTemp[1] + this.telemetry.sTyreTemp[2] + this.telemetry.sTyreTemp[3];
+        this.tmBtLed.setTemperature(tyreTemps / 4, onRight);
+    };
+    showBrakeTemp = (onRight) => {
+        if (!this.telemetry) {
+            return;
+        }
+        const brakeTemps = this.telemetry.sBrakeTempCelsius[0] + this.telemetry.sBrakeTempCelsius[1] + this.telemetry.sBrakeTempCelsius[2] + this.telemetry.sBrakeTempCelsius[3];
+        this.tmBtLed.setTemperature(brakeTemps / 4, onRight);
+    };
+    showOilTemp = (onRight) => {
+        if (!this.telemetry) {
+            return;
+        }
+        this.tmBtLed.setTemperature(this.telemetry.sOilTempCelsius, onRight);
+    };    
+    showCurrentLap = (onRight) => {
+        if (!this.timings) {
+            return;
+        }
+        this.tmBtLed.setTime(this.timings.sCurrentTime >= 0 ? this.timings.sCurrentTime * 1000 : 0, onRight);
+    };
+    showLastLap = (onRight) => {
+        this.tmBtLed.setTime(this.lastLap, onRight);
+    };
+    showBestLap = (onRight) => {
+        this.tmBtLed.setTime(this.bestLap, onRight);
+    };
+    showPosition = (onRight) => {
+        if (!this.timings) {
+            return;
+        }
+        this.tmBtLed.setInt(this.timings.sRacePosition % 128, onRight);
+    };
+    showLapNumber = (onRight) => {
+        if (!this.timings) {
+            return;
+        }
+        this.tmBtLed.setInt(this.timings.sCurrentLap, onRight);
+    };
+    showLapsLeft = (onRight) => {
+        if (!this.timings) {
+            return;
+        }
+        this.tmBtLed.setInt(this.numLaps > 0 ? this.numLaps - this.timings.sCurrentLap : 0, onRight);
+    };
 }
 
 module.exports = ProjectCars2;

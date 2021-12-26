@@ -9,14 +9,21 @@
 
 const rF2SharedMemory = require("../rF2SharedMemory/build/Release/rF2SharedMemory.node");
 const AbstractClient = require('../lib/abstractClient.js');
+const path = require('path');
 
-const leftModes = ["SPEED", "RPM", "FUEL", "TYRETEMP", "TYREPRESS", "BRAKETEMP", "OILTEMP"];
-const rightModes = ["LAPTIME", /*"DELTA",*/ "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"];
+const loadableConfigName = "rf2.config.js";
+const defaultConfig = {
+  leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "TYREPRESS", "BRAKETEMP", "OILTEMP"],
+  rightModes: ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"]
+};
 
 class rF2 extends AbstractClient {
     scoring = {};
     telemetry = {};
     refreshInterval = null;
+
+    config;
+    modeMapping;
 
     constructor(tmBtLed) {
       if (!tmBtLed) {
@@ -24,6 +31,34 @@ class rF2 extends AbstractClient {
       }
 
       super(tmBtLed);    
+             
+      this.modeMapping = {
+        "SPEED": this.showSpeed,
+        "RPM": this.showRpm,
+        "FUEL": this.showFuel,
+        "TYRETEMP": this.showTyreTemp,
+        "TYREPRESS": this.showTyrePress,
+        "BRAKETEMP": this.showBrakeTemp,
+        "OILTEMP": this.showOilTemp,
+
+        "LAPTIME": this.showCurrentLap,
+        "LAST LAP": this.showLastLap,
+        "BEST LAP": this.showBestLap,
+        "POSITION": this.showPosition,
+        "LAP": this.showLapNumber,
+        "LAPS LEFT": this.showLapsLeft
+      };
+
+      try {
+          this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
+          if (this.config?.leftModes && this.config?.rightModes) {
+              console.log("Found custom config");
+          } else {
+              throw "No custom config";
+          }
+      } catch (e) {
+          this.config = defaultConfig;
+      }
 
       this.setCallbacks({
           onLeftPreviousMode: this.leftPreviousMode,
@@ -31,7 +66,7 @@ class rF2 extends AbstractClient {
           onRightPreviousMode: this.rightPreviousMode,
           onRightNextMode: this.rightNextMode
       });
-      this.setModes(leftModes, rightModes);
+      this.setModes(this.config?.leftModes, this.config?.rightModes);
 
       rF2SharedMemory.init();
     }
@@ -63,8 +98,6 @@ class rF2 extends AbstractClient {
         if (scoring && Object.keys(scoring).length) {
           this.scoring = scoring;
         }
-
-        this.rightModes = rightModes;
 
         this.tmBtLed.setGear(this.telemetry.mGear);
 
@@ -137,59 +170,69 @@ class rF2 extends AbstractClient {
             }*/
             this.tmBtLed.setFlashingYellow(true);
             break;
-        }        
-
-        switch (this.currentLeftMode) {
-          default:
-          case 0:
-            this.tmBtLed.setSpeed(this.telemetry.mSpeed, false);
-            break;          
-          case 1:
-            this.tmBtLed.setRpm(this.telemetry.mEngineRPM, false);
-            break;
-          case 2:
-            this.tmBtLed.setFloat(this.telemetry.mFuel, false);
-            break;
-          case 3:
-            this.tmBtLed.setTemperature(this.telemetry.mTireTemp - 273.15, false);
-            break;  
-          case 4:
-            this.tmBtLed.setFloat(this.telemetry.mPressure / 100, false);
-            break;                   
-          case 5:
-            this.tmBtLed.setTemperature(this.telemetry.mBrakeTemp - 273.15, false);
-            break;
-          case 6:
-            this.tmBtLed.setTemperature(this.telemetry.mEngineOilTemp, false);
-            break;
+        }       
+ 
+        // Set left display according to left modes array and currentLeftMode array index
+        if (this.currentLeftMode <= this.leftModes.length) {
+          const leftDataProcessor = this.modeMapping[this.leftModes[this.currentLeftMode]];
+          if (typeof leftDataProcessor === "function") {
+              leftDataProcessor(false);
+          }
         }
 
-        switch (this.currentRightMode) {        
-          default:
-          case 0:
-            this.tmBtLed.setTime((this.scoring.mCurrentET - this.telemetry.mLapStartET) * 1000, true);
-            break;      
-          /*case 1:
-            this.tmBtLed.setDiffTime(this.telemetry.mDeltaTime * 1000 * 1000, true);
-            break;*/
-          case 1:
-            this.tmBtLed.setTime((this.scoring.mLastLapTime < 0 ? 0 : this.scoring.mLastLapTime) * 1000, true);
-            break; 
-          case 2:
-            this.tmBtLed.setTime((this.scoring.mBestLapTime < 0 ? 0 : this.scoring.mBestLapTime) * 1000, true);
-            break;   
-          case 3:
-            this.tmBtLed.setInt(this.scoring.mPlace, true);
-            break;
-          case 4:
-            this.tmBtLed.setInt(this.telemetry.mLapNumber, true);
-            break;          
-          case 5:
-            this.tmBtLed.setInt(this.scoring.mTotalLaps - this.telemetry.mLapNumber, true);
-            break;
-        }
-       
+        // Set right display according to right modes array and currentRightMode array index
+        // Second boolean parameter (true) in setter displays value in right display
+        if (this.currentRightMode <= this.rightModes.length) {
+            const rightDataProcessor = this.modeMapping[this.rightModes[this.currentRightMode]];
+            if (typeof rightDataProcessor === "function") {
+                rightDataProcessor(true);
+            }
+        }   
     };
+
+    showSpeed = (onRight) => {
+      this.tmBtLed.setSpeed(this.telemetry.mSpeed, onRight);
+    };
+
+    showRpm = (onRight) => {
+      this.tmBtLed.setRpm(this.telemetry.mEngineRPM, onRight);
+    };
+    showFuel = (onRight) => {
+      this.tmBtLed.setFloat(this.telemetry.mFuel, onRight);
+    };
+    showTyreTemp = (onRight) => {
+      this.tmBtLed.setTemperature(this.telemetry.mTireTemp - 273.15, onRight);
+    };
+
+    showTyrePress = (onRight) => {
+      this.tmBtLed.setFloat(this.telemetry.mPressure / 100, onRight);
+    };
+
+    showBrakeTemp = (onRight) => {
+      this.tmBtLed.setTemperature(this.telemetry.mBrakeTemp - 273.15, onRight);
+    };
+    showOilTemp = (onRight) => {
+      this.tmBtLed.setTemperature(this.telemetry.mEngineOilTemp, onRight);
+    };    
+
+    showCurrentLap = (onRight) => {
+      this.tmBtLed.setTime((this.scoring.mCurrentET - this.telemetry.mLapStartET) * 1000, onRight);
+    };
+    showLastLap = (onRight) => {
+      this.tmBtLed.setTime((this.scoring.mLastLapTime < 0 ? 0 : this.scoring.mLastLapTime) * 1000, onRight);
+    };
+    showBestLap = (onRight) => {
+      this.tmBtLed.setTime((this.scoring.mBestLapTime < 0 ? 0 : this.scoring.mBestLapTime) * 1000, onRight);
+    };
+    showPosition = (onRight) => {
+      this.tmBtLed.setInt(this.scoring.mPlace, onRight);
+    };
+    showLapNumber = (onRight) => {
+      this.tmBtLed.setInt(this.telemetry.mLapNumber, onRight);
+    };
+    showLapsLeft = (onRight) => {
+      this.tmBtLed.setInt(this.scoring.mTotalLaps - this.telemetry.mLapNumber, onRight);
+    };    
 }
 
 module.exports = rF2;
