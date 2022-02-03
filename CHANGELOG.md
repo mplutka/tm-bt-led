@@ -130,3 +130,7 @@
 ## Version 3.1.0
 
   * Customization for left and right display with all games
+
+## Version 3.1.1
+
+  * New modes available for ...
