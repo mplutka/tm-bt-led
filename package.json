@@ -52,7 +52,7 @@
     "node-irsdk": "git+https://github.com/mplutka/node-irsdk.git",
     "node-processlist": "^1.0.2",
     "os-locale": "^5.0.0",
-    "pkg": "git+https://github.com/mplutka/pkg.git#75890b574c57ebe5af6775b0bb37710494f60503",
+    "pkg": "^5.5.2",
     "yargs": "^16.2.0"
   },
   "devDependencies": {},
