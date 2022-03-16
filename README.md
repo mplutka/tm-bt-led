@@ -92,19 +92,23 @@ Stability has been improved with Version 2.0. After the initial connection the s
 If you can't get it to run without crashes, you could add `--interval xxx` after the batch files to try out other refresh intervals (e.g. `assetto.bat --interval 50`). Please note that the given interval must be a multiple of 1.25 (15, 30, 50, 125). Also try out another USB port on your PC as this might help as well.
 
 ## Game specific settings
-### Network settings for Forza Horizon 4 and Forza Motorsport 7
+### Forza Horizon 4 and Forza Motorsport 7
 Please follow these tutorials and set port to 20127. Also make sure that you disable network isolation (checknetisolation command) as mentioned.
 
 Forza Horizon 4: https://github.com/zackdevine/FH4RP
 Forza Motorsport 7: https://www.pocketplayground.net/rs-dash-fm7
 
-### Network settings for Forza Horizon 5
+### Forza Horizon 5
 Please enable "DATA OUT" in the "HUD AND GAMEPLAY" settings and set "DATA OUT IP ADDRESS" to 127.0.0.1 AND "DATA OUT IP PORT" to 20127.
 
-### Data plugin for rFactor2
+### DiRT Rally 1 & 2
+Enable UDP telemetry in Documents\My Games\DiRT Rally\hardware_settings_config.xml by editing the motion_platform node as shown here:
+https://c4z3q2x8.rocketcdn.me/wp/wp-content/uploads/2020/03/fanaleds_xml_after.jpg
+
+### rFactor2
 Copy "rF2SharedMemory/plugin/rFactor2SharedMemoryMapPlugin64.dll" into rF2 plugins folder and activate the plugin in the game.
 
-### Data plugin for Euro Truck Simulator 2/American Truck Simulator
+### Euro Truck Simulator 2/American Truck Simulator
 Copy "SCSSharedMemory/plugin/scs-telemetry.dll" into "<GAME_DIR>/bin/win_x64/plugins". Create the plugins folder if needed.
 
 ## SPECIAL THANKS
