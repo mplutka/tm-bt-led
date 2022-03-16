@@ -102,7 +102,7 @@ Forza Motorsport 7: https://www.pocketplayground.net/rs-dash-fm7
 Please enable "DATA OUT" in the "HUD AND GAMEPLAY" settings and set "DATA OUT IP ADDRESS" to 127.0.0.1 AND "DATA OUT IP PORT" to 20127.
 
 ### DiRT Rally 1 & 2
-Enable UDP telemetry in Documents\My Games\DiRT Rally\hardware_settings_config.xml by editing the motion_platform node as shown here:
+Enable UDP telemetry in Documents\My Games\DiRT Rally...\hardwaresettings\hardware_settings_config.xml by editing the motion_platform node as shown here:
 https://c4z3q2x8.rocketcdn.me/wp/wp-content/uploads/2020/03/fanaleds_xml_after.jpg
 
 ### rFactor2
