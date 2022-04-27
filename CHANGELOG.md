@@ -133,4 +133,8 @@
 
 ## Version 3.1.1
 
-  * New modes available for ...
+  * New modes available
+
+## Version 3.1.2
+
+* Fixed bundling
