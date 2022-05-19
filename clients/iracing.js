@@ -88,7 +88,15 @@ class iRacing extends AbstractClient {
             this.tmBtLed.setRevLightsFlashing(0);
           }
           if (this.tmBtLed.revLightsFlashing !== 1) { // No override because of pit limiter
-            this.tmBtLed.setRevLights(Math.ceil(telemetry.RPM / maxRpm * 100));
+            // this.tmBtLed.setRevLights(Math.ceil(telemetry.RPM / maxRpm * 100));
+            const rpmPercent = Math.ceil(telemetry.RPM / maxRpm * 100);
+            this.tmBtLed.setRevLights(rpmPercent * 66 / 100);
+            
+            if (rpmPercent >= 99) {
+              this.tmBtLed.setRevLightsBlue(5);
+            } else {
+              this.tmBtLed.setRevLightsBlue(0);
+            }
           }
           
           if(telemetry.SessionFlags.includes('Yellow')) {
