@@ -7,7 +7,8 @@
 const config = {
     port: 20777,
     leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "ENGINETEMP", "ERSLEVEL"],
-    rightModes: ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"]
+    rightModes: ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"],
+    blueRevLightsIndicateShift: false // for classic cars w/o drs only
 };
 
 module.exports = config;
