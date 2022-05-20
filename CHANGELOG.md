@@ -138,3 +138,7 @@
 ## Version 3.1.2
 
 * Fixed bundling
+
+## Version 3.1.3
+
+* Support for shift indication via blue rev lights. Available for F1 and iRacing with config option "blueRevLightsIndicateShift".

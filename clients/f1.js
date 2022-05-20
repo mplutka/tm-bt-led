@@ -298,9 +298,18 @@ class F1 extends AbstractClient {
                 if (modernCar) {
                     this.tmBtLed.setRevLightsWithoutGreen(carTelemetry.m_revLightsPercent, 25);
                 } else {
-                    this.tmBtLed.setRevLights(carTelemetry.m_revLightsPercent);
+                    if (this.config?.blueRevLightsIndicateShift) {
+                      this.tmBtLed.setRevLightsWithoutBlue(carTelemetry.m_revLightsPercent);
+        
+                      if (carTelemetry.m_revLightsPercent >= 99) {
+                        this.tmBtLed.setRevLightsBlueFlashing(true);
+                      } else {
+                        this.tmBtLed.setRevLightsBlueFlashing(false);
+                      }
+                    } else {
+                      this.tmBtLed.setRevLights(carTelemetry.m_revLightsPercent);
+                    }
                 }
-
             }
 
             if (this.currentLeftMode <= this.leftModes.length) {
