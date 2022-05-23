@@ -142,3 +142,7 @@
 ## Version 3.1.3
 
 * Support for shift indication via blue rev lights. Available for F1 and iRacing with config option "blueRevLightsIndicateShift".
+
+## Version 3.1.4
+
+* Support for shift indication via blue rev lights for Assetto. Added run_compat.bat

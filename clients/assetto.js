@@ -117,13 +117,24 @@ class ACC extends AbstractClient {
         
         if (this.tmBtLed.revLightsFlashing !== 1) {
           let rpmPercent = this.physics.rpms / this.statics.maxRpm * 100;
-          if (rpmPercent < 50) {
-            rpmPercent = 0;
-          } else {
-            rpmPercent = (rpmPercent - 50) / 50 * 100;
-          }
 
-          this.tmBtLed.setRevLights(rpmPercent >= 98 ? 100 : rpmPercent);
+          if (this.config?.blueRevLightsIndicateShift) {
+            this.tmBtLed.setRevLightsWithoutBlue(rpmPercent);
+
+            if (rpmPercent >= 99.5) {
+              this.tmBtLed.setRevLightsBlueFlashing(true);
+            } else {
+              this.tmBtLed.setRevLightsBlueFlashing(false);
+            }
+          } else {
+            if (rpmPercent < 50) {
+              rpmPercent = 0;
+            } else {
+              rpmPercent = (rpmPercent - 50) / 50 * 100;
+            }
+  
+            this.tmBtLed.setRevLights(rpmPercent >= 98 ? 100 : rpmPercent);
+          }
         }
 
         if (this.physics.isEngineRunning === 1) {
