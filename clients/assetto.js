@@ -121,7 +121,7 @@ class ACC extends AbstractClient {
           if (this.config?.blueRevLightsIndicateShift) {
             this.tmBtLed.setRevLightsWithoutBlue(rpmPercent);
 
-            if (rpmPercent >= 99.5) {
+            if (rpmPercent >= 99) {
               this.tmBtLed.setRevLightsBlueFlashing(true);
             } else {
               this.tmBtLed.setRevLightsBlueFlashing(false);
