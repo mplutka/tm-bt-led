@@ -4,7 +4,7 @@
   "license": "MIT",
   "name": "tm-bt-led",
   "description": "A library for accessing the Thrustmaster BT LED peripheral on Windows/PC",
-  "version": "3.1.4",
+  "version": "3.1.5",
   "repository": {
     "type": "git",
     "url": "https://github.com/mplutka/tm-bt-led.git"
@@ -42,7 +42,7 @@
   "bin": "lib/launcher.js",
   "gypfile": true,
   "dependencies": {
-    "@abandonware/noble": "git+https://github.com/mplutka/noble.git#9f60133c14aac072075184402120f3309fd13ac8",
+    "@abandonware/noble": "git+https://github.com/mplutka/noble.git",
     "@racehub-io/f1-telemetry-client": "^0.2.6",
     "binary-parser": "^1.8.0",
     "convert-units": "^2.3.4",
