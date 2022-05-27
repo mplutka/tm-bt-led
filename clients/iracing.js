@@ -89,7 +89,6 @@ class iRacing extends AbstractClient {
           }
           if (this.tmBtLed.revLightsFlashing !== 1) { // No override because of pit limiter
             const rpmPercent = Math.ceil(telemetry.RPM / maxRpm * 100);
-
             if (this.config?.blueRevLightsIndicateShift) {
               this.tmBtLed.setRevLightsWithoutBlue(rpmPercent);
 
@@ -141,8 +140,10 @@ class iRacing extends AbstractClient {
         
         this.client.on('SessionInfo', function (data) {
           const session = data.data;
-          if (session.DriverInfo.DriverCarSLBlinkRPM > 0) {
-            maxRpm = session.DriverInfo.DriverCarSLBlinkRPM;
+          if (this.config?.blueRevLightsIndicateShift && session.DriverInfo.DriverCarSLShiftRPM > 0) {
+            maxRpm = session.DriverInfo.DriverCarSLShiftRPM;
+          } else if (session.DriverInfo.DriverCarRedLine > 0) {
+            maxRpm = session.DriverInfo.DriverCarRedLine;
           }
         })
     }

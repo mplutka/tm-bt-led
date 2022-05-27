@@ -146,3 +146,7 @@
 ## Version 3.1.4
 
 * Support for shift indication via blue rev lights for Assetto. Added run_compat.bat
+
+## Version 3.1.5
+
+* Updated libraries. Fixes for iRacing RPM handling.
