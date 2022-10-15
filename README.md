@@ -12,7 +12,7 @@ Please note that **I can't provide any specific support** for your environment o
 
 I hope that I'm not hurting any copyrights or trademarks here. If so please tell me. Just wanted to help out the community. If you like it, feedback and donations are very welcome.  
 
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/paypalme/mplutka/5)
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/mplutka)
 
 **Please don't buy a Thrustmaster BT LED for this only to use it with your PC!** This method works now but could easily break because of future updates etc. I also don't recommend to do any firmware updates on the device if it works as intended. 
 
