@@ -42,18 +42,17 @@
   "bin": "lib/launcher.js",
   "gypfile": true,
   "dependencies": {
-    "@abandonware/noble": "git+https://github.com/mplutka/noble.git",
+    "@abandonware/noble": "git+https://github.com/mplutka/noble.git#c105c8ccab0f29848863bbe9332b598956bfef42",
     "@racehub-io/f1-telemetry-client": "^0.2.6",
-    "binary-parser": "^1.8.0",
+    "binary-parser": "^2.2.1",
     "convert-units": "^2.3.4",
     "lodash": "^4.17.21",
-    "node-addon-api": "^3.1.0",
+    "node-addon-api": "^5.1.0",
     "node-bitarray": "^0.1.0",
     "node-irsdk": "git+https://github.com/mplutka/node-irsdk.git",
     "node-processlist": "^1.0.2",
-    "os-locale": "^5.0.0",
-    "pkg": "^5.7.0",
-    "yargs": "^16.2.0"
+    "pkg": "^5.8.0",
+    "yargs": "^17.6.2"
   },
   "devDependencies": {},
   "pkg": {
