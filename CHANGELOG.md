@@ -154,3 +154,7 @@
 ## Version 3.1.6
 
 * Added fallback config item for missing MAX RPM data on DiRT3
+
+## Version 3.1.7
+
+* Support for GRID Legends
