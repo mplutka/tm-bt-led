@@ -4,7 +4,7 @@
   "license": "MIT",
   "name": "tm-bt-led",
   "description": "A library for accessing the Thrustmaster BT LED peripheral on Windows/PC",
-  "version": "3.1.5",
+  "version": "3.1.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/mplutka/tm-bt-led.git"
@@ -51,7 +51,7 @@
     "node-bitarray": "^0.1.0",
     "node-irsdk": "git+https://github.com/mplutka/node-irsdk.git",
     "node-processlist": "^1.0.2",
-    "pkg": "^5.8.0",
+    "pkg": "^5.8.1",
     "yargs": "^17.6.2"
   },
   "devDependencies": {},
@@ -65,6 +65,7 @@
     "outputPath": "dist"
   },
   "scripts": {
+    "start": "node lib/launcher.js",
     "pack": "pkg . -C GZip",
     "build": "node-gyp rebuild -C AssettoCorsaSharedMemory && node-gyp rebuild -C rF2SharedMemory && node-gyp rebuild -C r3e-api && node-gyp rebuild -C SCSSharedMemory"
   }
