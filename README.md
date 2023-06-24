@@ -16,6 +16,9 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 
 **Please don't buy a Thrustmaster BT LED for this only to use it with your PC!** This method works now but could easily break because of future updates etc. I also don't recommend to do any firmware updates on the device if it works as intended. 
 
+### Latest version
+[Download](https://github.com/mplutka/tm-bt-led/releases/download/v3.1.6/3.1.6.zip)
+
 ## Currently supported games 
 
 * F1 2019-21 (f1.bat)
@@ -57,7 +60,7 @@ If you need the Windows bluetooth stack for your headset, keyboard, you need an 
 If you wish to go back to the stock drivers, simply do an automatic driver update in the device manager.
 
 ### Step 2. Download and setup connector
-1. Download current version [here](https://github.com/mplutka/tm-bt-led/releases/download/v3.1.5/3.1.5.zip) and extract the files into an empty folder.
+1. Download current version [here](https://github.com/mplutka/tm-bt-led/releases/download/v3.1.6/3.1.6.zip) and extract the files into an empty folder.
 2. Run `setup.bat` to detect your device and write its data to a file for faster reconnects (necessary).
 3. (Optional) You can start `test.bat` to run demo mode.
 
