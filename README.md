@@ -105,6 +105,9 @@ Please enable "DATA OUT" in the "HUD AND GAMEPLAY" settings and set "DATA OUT IP
 Enable UDP telemetry in Documents\My Games\DiRT Rally...\hardwaresettings\hardware_settings_config.xml by editing the motion_platform node as shown here:
 https://c4z3q2x8.rocketcdn.me/wp/wp-content/uploads/2020/03/fanaleds_xml_after.jpg
 
+### DiRT 3
+UDP telemetry doesn't provide data for max rpm to calculate the current rpm percentage. You need to edit the actual value for your current car (default is 7500) in the custom config file (dirt.config.js).
+
 ### rFactor2
 Copy "rF2SharedMemory/plugin/rFactor2SharedMemoryMapPlugin64.dll" into rF2 plugins folder and activate the plugin in the game.
 

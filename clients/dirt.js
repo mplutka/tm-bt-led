@@ -15,7 +15,8 @@ const loadableConfigName = "dirt.config.js";
 const defaultConfig = {
     port: 20777,
     leftModes: ["SPEED", "RPM", "BRAKETEMP"],
-    rightModes: ["LAPTIME", "LAST LAP", "DISTANCE", "POSITION", "LAP", "LAPS LEFT"]
+    rightModes: ["LAPTIME", "LAST LAP", "DISTANCE", "POSITION", "LAP", "LAPS LEFT"],
+    fallbackMaxRpm: 7500
 };
 
 class DirtRally extends AbstractClient {
@@ -156,7 +157,8 @@ class DirtRally extends AbstractClient {
         this.tmBtLed.setGear(data["gear"] == 10 ? -1 : data["gear"]);
 
         // Set RevLights as percentage
-        this.tmBtLed.setRevLights(Math.ceil((data["engine_rate"] * 10) / (data["max_rpm"] * 10) * 100));
+        const maxRpm = data["max_rpm"] || (this.config.fallbackMaxRpm || 7500) / 10;
+        this.tmBtLed.setRevLights(Math.ceil((data["engine_rate"] * 10) / (maxRpm * 10) * 100));
 
         // Set left display according to left modes array and currentLeftMode array index
         if (this.currentLeftMode <= this.leftModes.length) {

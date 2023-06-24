@@ -150,3 +150,7 @@
 ## Version 3.1.5
 
 * Updated libraries. Fixes for iRacing RPM handling.
+
+## Version 3.1.6
+
+* Added fallback config item for missing MAX RPM data on DiRT3
