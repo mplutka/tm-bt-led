@@ -20,9 +20,9 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
     #- run: npm uninstall @abandonware/noble && npm install https://github.com/mplutka/noble
@@ -31,7 +31,7 @@ jobs:
     - run: npm install && npm run build && npm run pack
 
     - name: Archive production artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@4
       with:
         name: release
         path: |
