@@ -158,3 +158,7 @@
 ## Version 3.1.7
 
 * Support for GRID Legends
+
+## Version 3.1.8
+
+* Support for F1 2022, 2023 & 2024
