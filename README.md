@@ -36,7 +36,7 @@ If you would like to add a game that uses udp port 20777 to the list, you can us
 Either you use _template.js and create your own game file or get in touch with me by creating an issue here on Github and attach the dump.
  
 ## Recommended Bluetooth chipsets/sticks known to be working
-* Certain CSR 8510 A10 based devices (USB VID: 0x0a12, USB PID: 0x0001, e.g. TP-Link UB400 seems to work fine)
+* Certain CSR 8510 A10 based devices (USB VID: 0x0a12, USB PID: 0x0001) [This one works fine for me](https://amzn.to/3Y9a8Li)
 * Realtek Bluetooth 8761B (USB VID: 0x0bda, USB PID: 0x8771, e.g. MPOW Bluetooth 5.0 stick)
 * Intel Wireless Bluetooth 8265 (USB VID: 0x8087, USB PID: 0x0a2b)
 Others might work too, but again: No guarantee.  
