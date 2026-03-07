@@ -22,9 +22,6 @@ importers:
       '@racehub-io/f1-telemetry-client':
         specifier: ^0.2.12
         version: 0.2.12
-      '@yao-pkg/pkg':
-        specifier: ^6.14.1
-        version: 6.14.1(encoding@0.1.13)
       binary-parser:
         specifier: ^2.2.1
         version: 2.3.0
@@ -34,15 +31,9 @@ importers:
       lodash:
         specifier: ^4.17.21
         version: 4.17.23
-      node-addon-api:
-        specifier: ^5.1.0
-        version: 5.1.0
       node-bitarray:
         specifier: ^0.1.0
         version: 0.1.0
-      node-gyp:
-        specifier: ^12.2.0
-        version: 12.2.0
       node-irsdk:
         specifier: github:mplutka/node-irsdk
         version: https://codeload.github.com/mplutka/node-irsdk/tar.gz/132ef4037eca356539e6655ef1763e9c5e5e5ab0(patch_hash=6d3f24e1f1d2b02b82c3534919fe15d58fed0fa0c2f6e07341ee317e204e8624)
@@ -52,6 +43,16 @@ importers:
       yargs:
         specifier: ^18.0.0
         version: 18.0.0
+    devDependencies:
+      '@yao-pkg/pkg':
+        specifier: ^6.14.1
+        version: 6.14.1(encoding@0.1.13)
+      node-addon-api:
+        specifier: ^5.1.0
+        version: 5.1.0
+      node-gyp:
+        specifier: ^12.2.0
+        version: 12.2.0
 
 packages:
 
