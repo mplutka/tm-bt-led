@@ -20,7 +20,7 @@ importers:
         specifier: github:mplutka/noble.git#e1a2ff4a974d34f8e095c4586b7390c0c8de4370
         version: https://codeload.github.com/mplutka/noble/tar.gz/e1a2ff4a974d34f8e095c4586b7390c0c8de4370(encoding@0.1.13)
       '@racehub-io/f1-telemetry-client':
-        specifier: ^0.2.11
+        specifier: ^0.2.12
         version: 0.2.12
       binary-parser:
         specifier: ^2.2.1

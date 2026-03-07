@@ -52,7 +52,7 @@
   "gypfile": true,
   "dependencies": {
     "@abandonware/noble": "github:mplutka/noble.git#e1a2ff4a974d34f8e095c4586b7390c0c8de4370",
-    "@racehub-io/f1-telemetry-client": "^0.2.11",
+    "@racehub-io/f1-telemetry-client": "^0.2.12",
     "binary-parser": "^2.2.1",
     "convert-units": "^2.3.4",
     "lodash": "^4.17.21",
