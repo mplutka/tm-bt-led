@@ -1,0 +1,13 @@
+diff --git a/src/cpp/IrSdkNodeBindings.h b/src/cpp/IrSdkNodeBindings.h
+--- a/src/cpp/IrSdkNodeBindings.h
++++ b/src/cpp/IrSdkNodeBindings.h
+@@ -36,7 +36,8 @@
+   {
+     irsdk.startup();
+ 
+-    node::AtExit(cleanUp);
++    node::Environment* env = node::GetCurrentEnvironment(v8::Isolate::GetCurrent()->GetCurrentContext());
++    node::AtExit(env, cleanUp, nullptr);
+ 
+     NAN_EXPORT(target, start);
+     NAN_EXPORT(target, shutdown);

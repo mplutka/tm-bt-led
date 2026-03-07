@@ -1,0 +1,5 @@
+onlyBuiltDependencies:
+  - '@abandonware/bluetooth-hci-socket'
+  - '@abandonware/noble'
+  - node-irsdk
+  - usb

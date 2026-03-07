@@ -4,7 +4,7 @@
   "license": "MIT",
   "name": "tm-bt-led",
   "description": "A library for accessing the Thrustmaster BT LED peripheral on Windows/PC",
-  "version": "3.1.8",
+  "version": "3.2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/mplutka/tm-bt-led.git"
@@ -21,6 +21,7 @@
     "TM BT LED ACC",
     "TM BT LED iRacing",
     "TM BT LED Dirt Rally",
+    "TM BT LED Richard Burns Rally",
     "TM BT LED Project Cars 2",
     "TM BT LED Project Cars 3",
     "TM BT LED Automobilista 2",
@@ -34,7 +35,15 @@
   ],
   "main": "./lib/test.js",
   "engines": {
-    "node": ">=6"
+    "node": ">=14 <=20"
+  },
+  "pnpm": {
+    "overrides": {
+      "nan": "2.18.0"
+    },
+    "patchedDependencies": {
+      "node-irsdk@2.1.6": "patches/node-irsdk@2.1.6.patch"
+    }
   },
   "os": [
     "win32"
@@ -42,20 +51,19 @@
   "bin": "lib/launcher.js",
   "gypfile": true,
   "dependencies": {
-    "@abandonware/noble": "git+https://github.com/mplutka/noble.git",
+    "@abandonware/noble": "github:mplutka/noble.git#e1a2ff4a974d34f8e095c4586b7390c0c8de4370",
     "@racehub-io/f1-telemetry-client": "^0.2.11",
     "binary-parser": "^2.2.1",
     "convert-units": "^2.3.4",
-    "dgram": "^1.0.1",
     "lodash": "^4.17.21",
     "node-addon-api": "^5.1.0",
     "node-bitarray": "^0.1.0",
-    "node-irsdk": "git+https://github.com/mplutka/node-irsdk.git",
+    "node-gyp": "^12.2.0",
+    "node-irsdk": "github:mplutka/node-irsdk",
     "node-processlist": "^1.0.2",
     "pkg": "^5.8.1",
-    "yargs": "^17.6.2"
+    "yargs": "^18.0.0"
   },
-  "devDependencies": {},
   "pkg": {
     "scripts": [
       "clients/*.js"
