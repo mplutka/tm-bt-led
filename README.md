@@ -24,7 +24,7 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 * F1 2019-25 (f1.bat)
 * Assetto Corsa, Assetto Corsa Competizione (assetto.bat)
 * iRacing (iracing.bat)
-* Richard Burns Rally by Rallysimfans 
+* Richard Burns Rally by Rallysimfans (rbr.bat)
 * Dirt 3, Dirt 4, Dirt Rally, Dirt Rally 2 (dirt.bat)
 * Project Cars 2, Project Cars 3, Automobilista 2 (pcars2.bat)
 * Forza Motorsport 7, Forza Horizon 4, Forza Horizon 5 (forza.bat)

@@ -43,7 +43,14 @@
     },
     "patchedDependencies": {
       "node-irsdk@2.1.6": "patches/node-irsdk@2.1.6.patch"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@abandonware/bluetooth-hci-socket",
+      "@abandonware/noble",
+      "esbuild",
+      "node-irsdk",
+      "usb"
+    ]
   },
   "os": [
     "win32"
@@ -51,8 +58,9 @@
   "bin": "lib/launcher.js",
   "gypfile": true,
   "dependencies": {
-    "@abandonware/noble": "github:mplutka/noble.git#e1a2ff4a974d34f8e095c4586b7390c0c8de4370",
+    "@abandonware/noble": "github:mplutka/noble.git#6bdcff7ddd8e33e9130883cf1b6f5b9a3816e4b7",
     "@racehub-io/f1-telemetry-client": "^0.2.12",
+    "@yao-pkg/pkg": "^6.14.1",
     "binary-parser": "^2.2.1",
     "convert-units": "^2.3.4",
     "lodash": "^4.17.21",
@@ -68,10 +76,11 @@
       "clients/*.js"
     ],
     "targets": [
-      "node14-win"
+      "node20-win"
     ],
     "outputPath": "dist"
   },
+  "packageManager": "pnpm@10.30.3",
   "scripts": {
     "start": "node lib/launcher.js",
     "build": "node-gyp rebuild -C AssettoCorsaSharedMemory && node-gyp rebuild -C rF2SharedMemory && node-gyp rebuild -C r3e-api && node-gyp rebuild -C SCSSharedMemory",
