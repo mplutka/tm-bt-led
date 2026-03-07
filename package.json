@@ -46,6 +46,7 @@
     "@racehub-io/f1-telemetry-client": "^0.2.11",
     "binary-parser": "^2.2.1",
     "convert-units": "^2.3.4",
+    "dgram": "^1.0.1",
     "lodash": "^4.17.21",
     "node-addon-api": "^5.1.0",
     "node-bitarray": "^0.1.0",
@@ -68,6 +69,5 @@
     "start": "node lib/launcher.js",
     "build": "node-gyp rebuild -C AssettoCorsaSharedMemory && node-gyp rebuild -C rF2SharedMemory && node-gyp rebuild -C r3e-api && node-gyp rebuild -C SCSSharedMemory",
     "pack": "pkg . -C GZip"
-
   }
 }

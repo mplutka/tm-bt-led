@@ -6,6 +6,7 @@
 
 const config = {
     port: 20777,
+    forwardPorts: [20778, 29373],
     leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "ENGINETEMP", "ERSLEVEL"],
     rightModes: ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"],
     blueRevLightsIndicateShift: false // for classic cars w/o drs only

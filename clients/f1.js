@@ -11,13 +11,16 @@ const { F1TelemetryClient, constants } = require('@racehub-io/f1-telemetry-clien
 const AbstractClient = require('../lib/abstractClient.js');
 const { PACKETS } = constants;
 const path = require('path');
+const dgram = require('dgram');
 
 const loadableConfigName = "f1.config.js";
 const defaultConfig = {
     port: 20777,
+    forwardPorts: [20778, 29373],
     leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "ENGINETEMP", "ERSLEVEL"],
     rightModes: ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"]
 };
+
 
 class F1 extends AbstractClient {
     config;
@@ -31,7 +34,7 @@ class F1 extends AbstractClient {
 
         try {
             this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
-            if (this.config?.port && this.config?.leftModes && this.config?.rightModes) {
+            if (this.config?.forwardPorts[0] && this.config?.leftModes && this.config?.rightModes) {
                 console.log("Found custom config");
             } else {
                 throw "No custom config";
@@ -48,7 +51,40 @@ class F1 extends AbstractClient {
         });
         this.setModes(this.config?.leftModes, this.config?.rightModes);
 
-        this.client = new F1TelemetryClient({ port: this.config?.port, bigintEnabled: true });
+
+        
+const server = dgram.createSocket('udp4');
+
+server.on('error', (err) => {
+    console.error(`Server error:\n${err.stack}`);
+    server.close();
+  });
+  
+  server.on('message', (msg, rinfo) => {
+    console.log(`Received ${msg.length} bytes from ${rinfo.address}:${rinfo.port}`);
+  
+    // Forward the message to each port
+    defaultConfig.forwardPorts.forEach(port => {
+      server.send(msg, port, '0.0.0.0', (err) => {
+        if (err) {
+          console.error(`Error forwarding to port ${port}:`, err);
+        } else {
+          console.log(`Forwarded to 0.0.0.0:${port}`);
+        }
+      });
+    });
+  });
+  
+  server.on('listening', () => {
+    const address = server.address();
+    console.log(`UDP server listening on ${address.address}:${address.port}`);
+  });
+  
+  // Bind to listening port
+  server.bind(defaultConfig.port);
+
+
+        this.client = new F1TelemetryClient({ port: this.config?.forwardPorts[0], bigintEnabled: true });
     }
 
     stopClient = () => {
