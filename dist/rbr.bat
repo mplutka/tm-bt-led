@@ -1,2 +1,2 @@
 @echo off
-tm-bt-led.exe --game f1 %*
+tm-bt-led.exe --game rbr %*
