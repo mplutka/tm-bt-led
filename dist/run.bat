@@ -1,2 +1,3 @@
 @echo off
-tm-bt-led.exe --messagelights --message "CLVNHD LIKE COMMENT SUBSCRIBE SHARE" %*
+tm-bt-led.exe %*
+if %errorlevel% neq 0 pause

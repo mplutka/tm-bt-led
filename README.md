@@ -77,6 +77,82 @@ If you wish to go back to the stock drivers, simply do an automatic driver updat
 
 If you encounter false detections or any other problems, please let me know.
 
+## Command-Line Options
+
+Run `tm-bt-led.exe --help` for the full list. Common options:
+
+### Performance Tuning
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--fps=N` | Target FPS (auto-converts to valid BLE interval) | 60 |
+| `--interval=N` | Target interval in ms (rounds to nearest valid) | 16.25 |
+| `--queueDepth=N` | Max pending BLE writes (1-5, higher = more aggressive) | 2 |
+| `--legacyTimer` | Use setInterval instead of high-resolution timer | false |
+
+### Debugging
+
+| Option | Description |
+|--------|-------------|
+| `--debug` | Show detailed BLE stats every 2 seconds |
+| `--listFps` | Show all valid FPS/interval combinations and exit |
+
+### Display Settings
+
+| Option | Description |
+|--------|-------------|
+| `--metric` | Force metric units (km/h, kg, °C) |
+| `--imperial` | Force imperial units (mph, lb, °F) |
+| `--message="TEXT"` | Display scrolling message when no game running |
+| `--messagelights` | Enable all LEDs when no game running |
+
+### Mode Selection
+
+| Option | Description |
+|--------|-------------|
+| `--game=NAME` | Force specific game client (assetto, f1, iracing, etc.) |
+| `--test` | Run in test/demo mode |
+| `--setup` | Run device setup/pairing mode |
+
+### Valid FPS Values
+
+BLE connection intervals must be multiples of 1.25ms. Common presets:
+
+| FPS | Interval | Actual FPS | Notes |
+|-----|----------|------------|-------|
+| 60 | 16.25ms | 61.5 | Default, smooth gaming |
+| 50 | 20ms | 50.0 | Conservative |
+| 66 | 15ms | 66.7 | Higher refresh |
+| 80 | 12.5ms | 80.0 | Maximum (may be unstable) |
+| 40 | 25ms | 40.0 | Power save |
+
+Run `--listFps` to see all valid options.
+
+### Examples
+
+```batch
+:: Standard 60 FPS mode
+tm-bt-led.exe
+
+:: Higher refresh rate with deeper queue
+tm-bt-led.exe --fps=80 --queueDepth=3
+
+:: Debug mode to monitor performance
+tm-bt-led.exe --debug
+
+:: Conservative mode for stability
+tm-bt-led.exe --fps=40 --queueDepth=1
+
+:: Force specific game
+tm-bt-led.exe --game=assetto
+
+:: Show help
+tm-bt-led.exe --help
+
+:: Show valid FPS options
+tm-bt-led.exe --listFps
+```
+
 ## Customization
 You can change the order and type of data displayed on the left and right display (and sometimes the used UDP port) by editing the corresponding 
 `xxx.config.js` file in the same order as `tm-bt-led.exe`.
@@ -91,9 +167,17 @@ Here is a little video showing the device in action: [Youtube](https://www.youtu
 The script tries to read your OS's locale to automatically switch to MPH/F/LB if "en-us" is selected. To can force measurement units by running `run_imperial.bat` or `run_metric.bat` or by adding `--imperial` or `--metric` after the game batch file (e.g. assetto.bat --metric).
 
 ### Instability
-Stability has been improved with Version 2.0. After the initial connection the script tries to negotiate a connection interval of 17.5 ms which should give you a nice 60 Hz refresh rate. If your device freezes or USB errors are thrown in the command line window, try to kill the script and restart the TM BT LED and unplug/plug the usb stick.
+Stability has been improved with the high-resolution timer and write queue system. The default is 60 FPS (16.25ms interval). If your device freezes or USB errors occur:
 
-If you can't get it to run without crashes, you could add `--interval xxx` after the batch files to try out other refresh intervals (e.g. `assetto.bat --interval 50`). Please note that the given interval must be a multiple of 1.25 (15, 30, 50, 125). Also try out another USB port on your PC as this might help as well.
+1. **Try lower FPS**: `--fps=40` or `--fps=50`
+2. **Reduce queue depth**: `--queueDepth=1` (most conservative)
+3. **Use debug mode**: `--debug` to monitor for dropped writes or errors
+4. **Legacy timer**: `--legacyTimer` if high-res timer causes issues
+5. **Restart**: Kill the script, restart the TM BT LED, and unplug/replug the USB stick
+
+The system now includes automatic backoff when USB errors occur, which helps prevent disconnects.
+
+**Note**: BLE intervals must be multiples of 1.25ms. Run `--listFps` to see valid options.
 
 ## Game specific settings
 ### Forza Horizon 4 and Forza Motorsport 7
