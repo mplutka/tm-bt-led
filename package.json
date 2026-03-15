@@ -86,6 +86,6 @@
   "scripts": {
     "start": "node lib/launcher.js",
     "build": "node-gyp rebuild -C AssettoCorsaSharedMemory && node-gyp rebuild -C rF2SharedMemory && node-gyp rebuild -C r3e-api && node-gyp rebuild -C SCSSharedMemory",
-    "pack": "pkg . -C GZip"
+    "pack": "npx @yao-pkg/pkg . -C GZip"
   }
 }

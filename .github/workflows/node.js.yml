@@ -8,7 +8,6 @@ on:
 
 jobs:
   build:
-
     runs-on: windows-2019
 
     strategy:
@@ -17,6 +16,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
 
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
@@ -26,14 +27,22 @@ jobs:
     - name: Install pnpm
       uses: pnpm/action-setup@v4
       with:
-        version: 10.30.3
+        version: 10
 
-    - name: Install dependencies and build
-      run: pnpm install && pnpm run build && pnpm run pack
+    - name: Setup Windows Build Tools
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Build native modules
+      run: pnpm run build
+
+    - name: Package executable
+      run: pnpm run pack
 
     - name: Archive production artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: release
-        path: |
-          dist/*
+        name: tm-bt-led-${{ github.sha }}
+        path: dist/*
