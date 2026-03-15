@@ -9,15 +9,7 @@
 
 const UdpListener = require('../lib/udpListener.js');
 const AbstractClient = require('../lib/abstractClient.js');
-const path = require('path');
-
-const loadableConfigName = "dirt.config.js";
-const defaultConfig = {
-    port: 20777,
-    leftModes: ["SPEED", "RPM", "BRAKETEMP"],
-    rightModes: ["LAPTIME", "LAST LAP", "DISTANCE", "POSITION", "LAP", "LAPS LEFT"],
-    fallbackMaxRpm: 7500
-};
+const { getClientConfig } = require('../lib/configLoader.js');
 
 class DirtRally extends AbstractClient {
    
@@ -114,16 +106,7 @@ class DirtRally extends AbstractClient {
             "LAPS LEFT": this.showLapsLeft,
         };
 
-        try {
-            this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
-            if (this.config?.port && this.config?.leftModes && this.config?.rightModes) {
-                console.log("Found custom config");
-            } else {
-                throw "No custom config";
-            }
-        } catch (e) {
-            this.config = defaultConfig;
-        }
+        this.config = getClientConfig('dirt', 'dirt.config.js');
         
         this.setCallbacks({
             onLeftPreviousMode: this.leftPreviousMode,
@@ -133,7 +116,11 @@ class DirtRally extends AbstractClient {
         });
         this.setModes(this.config.leftModes, this.config.rightModes);
 
-        this.client = new UdpListener({ port: this.config.port, bigintEnabled: true });
+        this.client = new UdpListener({ 
+            port: this.config.port, 
+            forwardPorts: this.config.forwardPorts || [],
+            bigintEnabled: true 
+        });
         this.client.on("data", this.parseData);
     }
 

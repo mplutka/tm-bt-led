@@ -10,13 +10,8 @@
 const AbstractClient = require('../lib/abstractClient.js');
 const UdpListener = require('../lib/udpListener.js');
 const UdpParser = require('../lib/pcars2-udp/udp-parser.js');
+const { getClientConfig } = require('../lib/configLoader.js');
 const path = require('path');
-
-const loadableConfigName = "pcars2.config.js";
-const defaultConfig = {
-  leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "OILTEMP"],
-  rightModes: ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"]
-};
 
 class ProjectCars2 extends AbstractClient {
     parser;
@@ -54,16 +49,7 @@ class ProjectCars2 extends AbstractClient {
             "LAPS LEFT": this.showLapsLeft
         };
 
-        try {
-            this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
-            if (this.config?.leftModes && this.config?.rightModes) {
-                console.log("Found custom config");
-            } else {
-                throw "No custom config";
-            }
-        } catch (e) {
-            this.config = defaultConfig;
-        }
+        this.config = getClientConfig('projectcars2', 'pcars2.config.js');
 
         this.setCallbacks({
             onLeftPreviousMode: this.leftPreviousMode,
@@ -75,7 +61,11 @@ class ProjectCars2 extends AbstractClient {
 
         this.parser = new UdpParser(path.join(__dirname, '../lib/pcars2-udp/SMS_UDP_Definitions.hpp'));
 
-        this.client = new UdpListener({ port: this.parser.port(), bigintEnabled: true });
+        this.client = new UdpListener({ 
+            port: this.parser.port(), 
+            forwardPorts: this.config.forwardPorts || [],
+            bigintEnabled: true 
+        });
         this.client.on("data", this.parser.pushBuffer.bind(this.parser));
     }
 

@@ -155,7 +155,47 @@ tm-bt-led.exe --listFps
 
 ## Customization
 You can change the order and type of data displayed on the left and right display (and sometimes the used UDP port) by editing the corresponding 
-`xxx.config.js` file in the same order as `tm-bt-led.exe`.
+`xxx.config.js` file in the same folder as `tm-bt-led.exe`.
+
+## UDP Port Forwarding
+
+For UDP-based games (F1, Dirt, Forza, RBR, Project Cars 2/AMS2), you can forward telemetry data to additional applications or devices. This is useful when you want to use tm-bt-led alongside other telemetry consumers, such as:
+
+- **Software**: SimHub, CrewChief, or other dashboard apps
+- **Hardware**: Rumble motors, buttkickers, jet seats, or other haptic feedback devices that receive UDP telemetry
+
+### Configuration
+
+Edit the game's config file (e.g., `f1.config.js`) and add ports to the `forwardPorts` array:
+
+```javascript
+const config = {
+    port: 20777,                // Port to listen on (game sends UDP here)
+    forwardPorts: [29373],      // Forward to SimHub (or any other port)
+    // ... other settings
+};
+```
+
+You can forward to multiple ports:
+```javascript
+forwardPorts: [29373, 30000],   // Forward to SimHub AND another app
+```
+
+### Supported Games
+
+| Game | Default Port | Config File |
+|------|-------------|-------------|
+| F1 Series | 20777 | f1.config.js |
+| Dirt Series | 20777 | dirt.config.js |
+| Forza Series | 20127 | forza.config.js |
+| Richard Burns Rally | 6776 | rbr.config.js |
+| Project Cars 2/AMS2 | 5606 | pcars2.config.js |
+
+### Notes
+
+- The original port continues to work normally - data is duplicated to forward ports
+- Forward ports are local only (127.0.0.1)
+- Leave `forwardPorts: []` empty if you don't need forwarding (default)
 
 ## Video
 
@@ -180,6 +220,12 @@ The system now includes automatic backoff when USB errors occur, which helps pre
 **Note**: BLE intervals must be multiples of 1.25ms. Run `--listFps` to see valid options.
 
 ## Game specific settings
+
+### F1 2019-2025
+Enable UDP telemetry in the game settings. The telemetry is sent to port 20777 by default.
+
+**Important for F1 25:** You must set the **UDP Format** to **2024** or earlier in the game's telemetry settings. The 2025 format is not yet supported by the telemetry parser.
+
 ### Forza Horizon 4 and Forza Motorsport 7
 Please follow these tutorials and set port to 20127. Also make sure that you disable network isolation (checknetisolation command) as mentioned.
 

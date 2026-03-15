@@ -9,14 +9,7 @@
 
 const UdpListener = require('../lib/udpListener.js');
 const AbstractClient = require('../lib/abstractClient.js');
-const path = require('path');
-
-const loadableConfigName = "forza.config.js";
-const defaultConfig = {
-    port: 20127,
-    leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP"],
-    rightModes: ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP"]
-};
+const { getClientConfig } = require('../lib/configLoader.js');
 
 class Forza extends AbstractClient {
 
@@ -44,16 +37,7 @@ class Forza extends AbstractClient {
             "LAP": this.showLapNumber
         };
 
-        try {
-            this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
-            if (this.config?.port && this.config?.leftModes && this.config?.rightModes) {
-                console.log("Found custom config");
-            } else {
-                throw "No custom config";
-            }
-        } catch (e) {
-            this.config = defaultConfig;
-        }
+        this.config = getClientConfig('forza', 'forza.config.js');
 
         this.setCallbacks({
             onLeftPreviousMode: this.leftPreviousMode,
@@ -63,7 +47,11 @@ class Forza extends AbstractClient {
         });
         this.setModes(this.config.leftModes, this.config.rightModes);
 
-        this.client = new UdpListener({ port: this.config.port, bigintEnabled: true });
+        this.client = new UdpListener({ 
+            port: this.config.port, 
+            forwardPorts: this.config.forwardPorts || [],
+            bigintEnabled: true 
+        });
         this.client.on("data", this.parseData);
     }
 

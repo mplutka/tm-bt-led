@@ -10,15 +10,7 @@
 
 const { ACRemoteTelemetryClient } = require('ac-remote-telemetry-client');
 const AbstractClient = require('../lib/abstractClient.js');
-const path = require('path');
-
-const loadableConfigName = "assetto.config.js";
-const defaultConfig = {
-  leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP"],
-  rightModes: ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP"],
-  udpPort: 9996,
-  udpHost: "127.0.0.1"
-};
+const { getClientConfig } = require('../lib/configLoader.js');
 
 class AssettoUDP extends AbstractClient {
     maxRpm = 0;
@@ -52,16 +44,7 @@ class AssettoUDP extends AbstractClient {
         "LAP": this.showLapNumber
       };
 
-      try {
-          this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
-          if (this.config?.leftModes && this.config?.rightModes) {
-              console.log("Found custom config");
-          } else {
-              throw "No custom config";
-          }
-      } catch (e) {
-          this.config = defaultConfig;
-      }
+      this.config = getClientConfig('assetto-udp', 'assetto-udp.config.js');
 
       this.setCallbacks({
           onLeftPreviousMode: this.leftPreviousMode,
@@ -74,11 +57,11 @@ class AssettoUDP extends AbstractClient {
 
     startClient = () => {
         console.log("Starting Assetto Corsa UDP client...");
-        console.log(`Connecting to ${this.config.udpHost || defaultConfig.udpHost}:${this.config.udpPort || defaultConfig.udpPort}`);
+        console.log(`Connecting to ${this.config.udpHost}:${this.config.udpPort}`);
         
         this.client = new ACRemoteTelemetryClient({
-            port: this.config.udpPort || defaultConfig.udpPort,
-            host: this.config.udpHost || defaultConfig.udpHost
+            port: this.config.udpPort,
+            host: this.config.udpHost
         });
 
         this.client.on('HANDSHAKER_RESPONSE', (data) => {

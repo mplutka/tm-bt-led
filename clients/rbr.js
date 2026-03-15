@@ -9,15 +9,7 @@
 
 const UdpListener = require('../lib/udpListener.js');
 const AbstractClient = require('../lib/abstractClient.js');
-const path = require('path');
-
-const loadableConfigName = "rbr.config.js";
-const defaultConfig = {
-    port: 6776,
-    leftModes: ["SPEED", "RPM", "BRAKETEMP"],
-    rightModes: ["STAGE TIME", "DISTANCE", "PROGRESS"],
-    fallbackMaxRpm: 7500
-};
+const { getClientConfig } = require('../lib/configLoader.js');
 
 // RBR NGP TelemetryData struct byte offsets (packed, little-endian)
 const OFF = {
@@ -57,16 +49,7 @@ class RBRClient extends AbstractClient {
             "PROGRESS": this.showProgress
         };
 
-        try {
-            this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
-            if (this.config?.port && this.config?.leftModes && this.config?.rightModes) {
-                console.log("Found custom RBR config");
-            } else {
-                throw "No custom config";
-            }
-        } catch (e) {
-            this.config = defaultConfig;
-        }
+        this.config = getClientConfig('rbr', 'rbr.config.js');
 
         this.setCallbacks({
             onLeftPreviousMode: this.leftPreviousMode,
@@ -76,7 +59,11 @@ class RBRClient extends AbstractClient {
         });
         this.setModes(this.config.leftModes, this.config.rightModes);
 
-        this.client = new UdpListener({ port: this.config.port, bigintEnabled: true });
+        this.client = new UdpListener({ 
+            port: this.config.port, 
+            forwardPorts: this.config.forwardPorts || [],
+            bigintEnabled: true 
+        });
         this.client.on("data", this.parseData);
     }
 

@@ -1,0 +1,105 @@
+{
+    "_comment": "Global configuration for TM BT LED - Edit this file to customize settings for each game client",
+    
+    "global": {
+        "_note": "Global settings that apply to the application. Command line arguments override these.",
+        "debug": false,
+        "fps": 60,
+        "queueDepth": 2,
+        "imperial": false,
+        "message": ""
+    },
+
+    "f1": {
+        "_availableModes": ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "ENGINETEMP", "ERSLEVEL", "LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"],
+        "_note": "For F1 25, set UDP Format to '2024' in the game's telemetry settings!",
+        "executables": ["f1_2019.exe", "f1_2019_dx12.exe", "f1_2020.exe", "f1_2020_dx12.exe", "f1_2021_dx12.exe", "f1_2022_dx12.exe", "f1_23.exe", "f1_24.exe", "f1_25.exe"],
+        "port": 20777,
+        "internalPort": 20778,
+        "forwardPorts": [],
+        "leftModes": ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "ENGINETEMP", "ERSLEVEL"],
+        "rightModes": ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"],
+        "blueRevLightsIndicateShift": false
+    },
+
+    "dirt": {
+        "_availableModes": ["SPEED", "RPM", "BRAKETEMP", "LAPTIME", "LAST LAP", "DISTANCE", "POSITION", "LAP", "LAPS LEFT"],
+        "executables": ["dirt3_game.exe", "drt4.exe", "drt.exe", "dirtrally2.exe", "gridlegends.exe"],
+        "port": 20777,
+        "forwardPorts": [],
+        "leftModes": ["SPEED", "RPM", "BRAKETEMP"],
+        "rightModes": ["LAPTIME", "LAST LAP", "DISTANCE", "POSITION", "LAP", "LAPS LEFT"],
+        "fallbackMaxRpm": 7500
+    },
+
+    "forza": {
+        "_availableModes": ["SPEED", "RPM", "FUEL", "TYRETEMP", "LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP"],
+        "executables": ["forzamotorsport7.exe", "forzahorizon4.exe", "forzahorizon5.exe"],
+        "port": 20127,
+        "forwardPorts": [],
+        "leftModes": ["SPEED", "RPM", "FUEL", "TYRETEMP"],
+        "rightModes": ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP"]
+    },
+
+    "rbr": {
+        "_availableModes": ["SPEED", "RPM", "BRAKETEMP", "STAGE TIME", "DISTANCE", "PROGRESS"],
+        "executables": ["RichardBurnsRally_SSE.exe", "richardburnsrally.exe", "richardburnsrally_sse.exe", "rbr.exe"],
+        "port": 6776,
+        "forwardPorts": [],
+        "leftModes": ["SPEED", "RPM", "BRAKETEMP"],
+        "rightModes": ["STAGE TIME", "DISTANCE", "PROGRESS"],
+        "fallbackMaxRpm": 7500
+    },
+
+    "projectcars2": {
+        "_availableModes": ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "OILTEMP", "LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"],
+        "executables": ["ams2avx.exe", "ams2.exe", "pcars3.exe", "pcars3avx.exe", "pcars2.exe", "pcars2avx.exe"],
+        "forwardPorts": [],
+        "leftModes": ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "OILTEMP"],
+        "rightModes": ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"]
+    },
+
+    "assetto": {
+        "_availableModes": ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"],
+        "_accOnlyModes": ["DELTA", "PRED LAP"],
+        "_revLightsNote": "blueRevLightsIndicateShift: Blue LEDs flash at 99% RPM; flashingRevLightsIndicateShift: Blue LEDs flash above 90% RPM; flashAllLedsAtMaxRpm: ALL LEDs flash rapidly at 98%+ RPM",
+        "executables": ["acc.exe", "acr.exe", "assettocorsa.exe"],
+        "leftModes": ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP"],
+        "rightModesAcc": ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "PRED LAP", "POSITION", "LAP", "LAPS LEFT"],
+        "rightModesAssetto": ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"],
+        "blueRevLightsIndicateShift": false,
+        "flashingRevLightsIndicateShift": false,
+        "flashAllLedsAtMaxRpm": false,
+        "lowerLightsIndicateAbsAndTcAction": false
+    },
+
+    "assetto-udp": {
+        "_availableModes": ["SPEED", "RPM", "FUEL", "TYRETEMP", "LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP"],
+        "_udpNote": "Enable UDP telemetry in Assetto Corsa: Documents/Assetto Corsa/cfg/assetto_corsa.ini -> [REMOTE_TELEMETRY] -> ENABLED=1",
+        "_revLightsNote": "blueRevLightsIndicateShift: Blue LEDs flash at 99% RPM; flashingRevLightsIndicateShift: Blue LEDs flash above 90% RPM; flashAllLedsAtMaxRpm: ALL LEDs flash rapidly at 98%+ RPM",
+        "executables": [],
+        "leftModes": ["SPEED", "RPM", "FUEL", "TYRETEMP"],
+        "rightModes": ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP"],
+        "blueRevLightsIndicateShift": false,
+        "flashingRevLightsIndicateShift": false,
+        "flashAllLedsAtMaxRpm": false,
+        "udpPort": 9996,
+        "udpHost": "127.0.0.1"
+    },
+
+    "iracing": {
+        "executables": ["iRacingUI.exe", "iRacingSim64DX11.exe"]
+    },
+
+    "rF2": {
+        "executables": ["rFactor2.exe"]
+    },
+
+    "raceroom": {
+        "executables": ["RRRE.exe", "RRRE64.exe"]
+    },
+
+    "ets2": {
+        "executables": ["eurotrucks2.exe"]
+    }
+}

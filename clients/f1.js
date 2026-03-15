@@ -9,21 +9,14 @@
 
 const { F1TelemetryClient, constants } = require('@racehub-io/f1-telemetry-client');
 const AbstractClient = require('../lib/abstractClient.js');
+const { getClientConfig } = require('../lib/configLoader.js');
 const { PACKETS } = constants;
-const path = require('path');
 const dgram = require('dgram');
-
-const loadableConfigName = "f1.config.js";
-const defaultConfig = {
-    port: 20777,
-    forwardPorts: [20778, 29373],
-    leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "ENGINETEMP", "ERSLEVEL"],
-    rightModes: ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"]
-};
 
 
 class F1 extends AbstractClient {
     config;
+    udpServer = null;
 
     constructor(tmBtLed) {
         if (!tmBtLed) {
@@ -32,16 +25,7 @@ class F1 extends AbstractClient {
 
         super(tmBtLed);    
 
-        try {
-            this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
-            if (this.config?.forwardPorts[0] && this.config?.leftModes && this.config?.rightModes) {
-                console.log("Found custom config");
-            } else {
-                throw "No custom config";
-            }
-        } catch (e) {
-            this.config = defaultConfig;
-        }  
+        this.config = getClientConfig('f1', 'f1.config.js');
 
         this.setCallbacks({
             onLeftPreviousMode: this.leftPreviousMode,
@@ -51,44 +35,53 @@ class F1 extends AbstractClient {
         });
         this.setModes(this.config?.leftModes, this.config?.rightModes);
 
+        const listenPort = this.config.port || 20777;
+        const forwardPorts = this.config.forwardPorts || [];
 
-        
-const server = dgram.createSocket('udp4');
-
-server.on('error', (err) => {
-    console.error(`Server error:\n${err.stack}`);
-    server.close();
-  });
-  
-  server.on('message', (msg, rinfo) => {
-    console.log(`Received ${msg.length} bytes from ${rinfo.address}:${rinfo.port}`);
-  
-    // Forward the message to each port
-    defaultConfig.forwardPorts.forEach(port => {
-      server.send(msg, port, '0.0.0.0', (err) => {
-        if (err) {
-          console.error(`Error forwarding to port ${port}:`, err);
+        if (forwardPorts.length > 0) {
+            const internalPort = this.config.internalPort || 20778;
+            this.setupUdpForwarder(listenPort, internalPort, forwardPorts);
+            this.client = new F1TelemetryClient({ port: internalPort, bigintEnabled: true });
         } else {
-          console.log(`Forwarded to 0.0.0.0:${port}`);
+            this.client = new F1TelemetryClient({ port: listenPort, bigintEnabled: true });
         }
-      });
-    });
-  });
-  
-  server.on('listening', () => {
-    const address = server.address();
-    console.log(`UDP server listening on ${address.address}:${address.port}`);
-  });
-  
-  // Bind to listening port
-  server.bind(defaultConfig.port);
+    }
 
+    setupUdpForwarder(listenPort, internalPort, forwardPorts) {
+        this.udpServer = dgram.createSocket('udp4');
 
-        this.client = new F1TelemetryClient({ port: this.config?.forwardPorts[0], bigintEnabled: true });
+        this.udpServer.on('error', (err) => {
+            console.error(`UDP Server error:\n${err.stack}`);
+            this.udpServer.close();
+        });
+        
+        this.udpServer.on('message', (msg, rinfo) => {
+            this.udpServer.send(msg, internalPort, '127.0.0.1', (err) => {
+                if (err) console.error(`Error forwarding to internal port:`, err);
+            });
+
+            forwardPorts.forEach(port => {
+                this.udpServer.send(msg, port, '127.0.0.1', (err) => {
+                    if (err) console.error(`Error forwarding to port ${port}:`, err);
+                });
+            });
+        });
+        
+        this.udpServer.on('listening', () => {
+            const address = this.udpServer.address();
+            console.log(`F1 UDP server listening on port ${address.port}`);
+            console.log(`Forwarding to internal port ${internalPort} and additional ports: ${forwardPorts.join(', ')}`);
+        });
+        
+        this.udpServer.bind(listenPort);
     }
 
     stopClient = () => {
         this.client.stop();
+        if (this.udpServer) {
+            this.udpServer.close();
+            this.udpServer = null;
+        }
     }
 
     startClient = () =>  {     

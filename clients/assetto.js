@@ -9,14 +9,7 @@
 
 const AssettoCorsaSharedMemory = require("../AssettoCorsaSharedMemory/build/Release/AssettoCorsaSharedMemory.node");
 const AbstractClient = require('../lib/abstractClient.js');
-const path = require('path');
-
-const loadableConfigName = "assetto-sharedmemory.config.js";
-const defaultConfig = {
-  leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP"],
-  rightModesAcc: ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "PRED LAP", "POSITION", "LAP", "LAPS LEFT"],
-  rightModesAssetto: ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"]
-};
+const { getClientConfig } = require('../lib/configLoader.js');
 
 
 // SM Version 1.7
@@ -57,16 +50,7 @@ class ACC extends AbstractClient {
         "LAPS LEFT": this.showLapsLeft
       };
 
-      try {
-          this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
-          if (this.config?.leftModes && this.config?.rightModesAcc && this.config?.rightModesAssetto) {
-              console.log("Found custom config");
-          } else {
-              throw "No custom config";
-          }
-      } catch (e) {
-          this.config = defaultConfig;
-      }
+      this.config = getClientConfig('assetto', 'assetto.config.js');
 
       this.setCallbacks({
           onLeftPreviousMode: this.leftPreviousMode,
