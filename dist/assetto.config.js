@@ -1,23 +1,29 @@
 /**
- * Assetto Corsa/Assetto Corsa Competizione config - add or delete mode for each display as you like and make a backup before overwriting with new version
+ * Assetto Corsa UDP config - add or delete modes for each display as you like
  * 
- * Available modes: "SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"
- * Only available for ACC: "DELTA", "PRED LAP"
+ * IMPORTANT: Enable UDP telemetry in Assetto Corsa:
+ * Documents/Assetto Corsa/cfg/assetto_corsa.ini -> [REMOTE_TELEMETRY] -> ENABLED=1
+ * 
+ * Available modes: "SPEED", "RPM", "FUEL", "TYRETEMP", "LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP"
  * 
  * Rev lights options:
  * - blueRevLightsIndicateShift: Blue LEDs flash at 99% RPM
  * - flashingRevLightsIndicateShift: Blue LEDs flash above 90% RPM
  * - flashAllLedsAtMaxRpm: ALL LEDs flash rapidly when reaching max RPM (98%+)
+ * 
+ * UDP settings:
+ * - udpPort: Port to listen on (default: 9996, must match AC settings)
+ * - udpHost: Host address (default: 127.0.0.1)
  */
 
 const config = {
-    leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP"],
-    rightModesAcc: ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "PRED LAP", "POSITION", "LAP", "LAPS LEFT"],
-    rightModesAssetto: ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"],
+    leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP"],
+    rightModes: ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP"],
     blueRevLightsIndicateShift: false,
     flashingRevLightsIndicateShift: false,
     flashAllLedsAtMaxRpm: false,
-    lowerLightsIndicateAbsAndTcAction: false,
+    udpPort: 9996,
+    udpHost: "127.0.0.1"
 };
 
 module.exports = config;

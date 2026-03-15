@@ -1,36 +1,36 @@
 /*
- * Game client for Assetto corsa series
+ * Game client for Assetto Corsa (UDP version)
+ * Uses ac-remote-telemetry-client for pure JavaScript UDP telemetry
  *
- * Created Date: Wednesday, January 13th 2021, 11:20:51 pm
+ * Created Date: Sunday, March 15th 2026
  * Author: Markus Plutka
  * 
- * Copyright (c) 2021 Markus Plutka
+ * Copyright (c) 2021-2026 Markus Plutka
  */
 
-const AssettoCorsaSharedMemory = require("../AssettoCorsaSharedMemory/build/Release/AssettoCorsaSharedMemory.node");
+const { ACRemoteTelemetryClient } = require('ac-remote-telemetry-client');
 const AbstractClient = require('../lib/abstractClient.js');
 const path = require('path');
 
 const loadableConfigName = "assetto.config.js";
 const defaultConfig = {
-  leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP"],
-  rightModesAcc: ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "PRED LAP", "POSITION", "LAP", "LAPS LEFT"],
-  rightModesAssetto: ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"]
+  leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP"],
+  rightModes: ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP"],
+  udpPort: 9996,
+  udpHost: "127.0.0.1"
 };
 
-
-// SM Version 1.7
-class ACC extends AbstractClient {
+class AssettoUDP extends AbstractClient {
     maxRpm = 0;
-    isACC = true;
-    refreshInterval = null;
+    client = null;
+    connected = false;
 
     config;
     modeMapping;
 
-    physics;
-    graphics;
-    statics;
+    carInfo = null;
+    lapInfo = null;
+    handshakeResponse = null;
 
     constructor(tmBtLed) {
       if (!tmBtLed) {
@@ -44,21 +44,17 @@ class ACC extends AbstractClient {
         "RPM": this.showRpm,
         "FUEL": this.showFuel,
         "TYRETEMP": this.showTyreTemp,
-        "BRAKETEMP": this.showBrakeTemp,
 
         "LAPTIME": this.showCurrentLap,
-        "DELTA": this.showDelta,
         "LAST LAP": this.showLastLap,
         "BEST LAP": this.showBestLap,
-        "PRED LAP": this.showPredLap,
         "POSITION": this.showPosition,
-        "LAP": this.showLapNumber,
-        "LAPS LEFT": this.showLapsLeft
+        "LAP": this.showLapNumber
       };
 
       try {
           this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
-          if (this.config?.leftModes && this.config?.rightModesAcc && this.config?.rightModesAssetto) {
+          if (this.config?.leftModes && this.config?.rightModes) {
               console.log("Found custom config");
           } else {
               throw "No custom config";
@@ -73,80 +69,69 @@ class ACC extends AbstractClient {
           onRightPreviousMode: this.rightPreviousMode,
           onRightNextMode: this.rightNextMode
       });
-      this.setModes(this.config?.leftModes, this.config?.rightModesAcc);
-
-      AssettoCorsaSharedMemory.initMaps();
+      this.setModes(this.config?.leftModes, this.config?.rightModes);
     }
 
-    startClient = () =>  {
-        this.refreshInterval = setInterval(() => {
-            this.updateValues();
-        }, 1000 / 60); // 60 Hz
+    startClient = () => {
+        console.log("Starting Assetto Corsa UDP client...");
+        console.log(`Connecting to ${this.config.udpHost || defaultConfig.udpHost}:${this.config.udpPort || defaultConfig.udpPort}`);
+        
+        this.client = new ACRemoteTelemetryClient({
+            port: this.config.udpPort || defaultConfig.udpPort,
+            host: this.config.udpHost || defaultConfig.udpHost
+        });
+
+        this.client.on('HANDSHAKER_RESPONSE', (data) => {
+            console.log("Connected to Assetto Corsa");
+            this.handshakeResponse = data;
+            this.maxRpm = data.maxRpm || 8000;
+            this.connected = true;
+            
+            this.client.subscribeUpdate();
+            this.client.subscribeSpot();
+        });
+
+        this.client.on('RT_CAR_INFO', (data) => {
+            this.carInfo = data;
+            this.updateDisplay();
+        });
+
+        this.client.on('RT_LAP', (data) => {
+            this.lapInfo = data;
+        });
+
+        this.client.on('error', (err) => {
+            console.error("UDP Error:", err.message);
+        });
+
+        this.client.start();
+        this.client.handshake();
     }
 
     stopClient = () => {
-        if (this.refreshInterval) {
-          console.log("Stopping interval")
-            clearInterval(this.refreshInterval);
-            this.refreshInterval = null;
+        console.log("Stopping Assetto Corsa UDP client");
+        if (this.client) {
+            this.client.stop();
+            this.client = null;
         }
-        AssettoCorsaSharedMemory.cleanup();
+        this.connected = false;
+        this.carInfo = null;
+        this.lapInfo = null;
     }
 
-    updateValues = () => {
-        this.physics = AssettoCorsaSharedMemory.getPhysics();
-        this.statics = AssettoCorsaSharedMemory.getStatics();
-        this.isACC = !(this.statics.smVersion < 1.8);
+    updateDisplay = () => {
+        if (!this.carInfo) return;
 
-        if (this.isACC) {
-          this.graphics = AssettoCorsaSharedMemory.getGraphicsACC();
-          this.rightModes = this.config?.rightModesAcc;
-        } else {
-          this.graphics = AssettoCorsaSharedMemory.getGraphicsAssetto();
-          this.rightModes = this.config?.rightModesAssetto;
-        }
+        this.tmBtLed.setGear(this.carInfo.gear - 1);
 
-        this.tmBtLed.setGear(this.physics.gear - 1);
-
-        // RevLights & PitLimiter
         this.handleRevLights();
 
-        if (this.physics.isEngineRunning === 1) {
+        if (this.carInfo.engineRPM > 0) {
           this.tmBtLed.setGearDot(true);
         } else {
           this.tmBtLed.setGearDot(false);
         }
 
-        // Flags
-        switch(this.graphics.flag) {
-          case 1:
-            this.tmBtLed.setFlashingBlue(true);
-            break      
-          case 2:
-            this.tmBtLed.setFlashingYellow(true);
-            break         
-          case 8:
-          case 6:
-            this.tmBtLed.setFlashingRed(true);
-            break                      
-          case -1:
-          case 0:
-          default:
-            if (this.tmBtLed.isFlashingYellow) {
-              this.tmBtLed.setFlashingYellow(false);
-            }
-            if (this.tmBtLed.isFlashingRed) {
-              this.tmBtLed.setFlashingRed(false);
-            }
-            if (this.tmBtLed.isFlashingBlue) {
-              this.tmBtLed.setFlashingBlue(false);
-            }
-            break
-        }
-
-        this.handleAssists();
-
-        // Set left display according to left modes array and currentLeftMode array index
         if (this.currentLeftMode <= this.leftModes.length) {
           const leftDataProcessor = this.modeMapping[this.leftModes[this.currentLeftMode]];
           if (typeof leftDataProcessor === "function") {
@@ -154,8 +139,6 @@ class ACC extends AbstractClient {
           }
         }
 
-        // Set right display according to right modes array and currentRightMode array index
-        // Second boolean parameter (true) in setter displays value in right display
         if (this.currentRightMode <= this.rightModes.length) {
             const rightDataProcessor = this.modeMapping[this.rightModes[this.currentRightMode]];
             if (typeof rightDataProcessor === "function") {
@@ -165,11 +148,12 @@ class ACC extends AbstractClient {
     };
 
     handleRevLights() {
-      let rpmPercent = (this.physics.rpms / this.statics.maxRpm) * 100;
+      if (!this.carInfo) return;
+      
+      const maxRpm = this.maxRpm || 8000;
+      let rpmPercent = (this.carInfo.engineRPM / maxRpm) * 100;
 
-      if (this.physics.pitLimiterOn === 1 || this.graphics.isInPitLane || this.graphics.isInPit) {
-        this.tmBtLed.setRevLightsFlashing(1);
-      } else if (this.config.flashAllLedsAtMaxRpm && rpmPercent >= 98) {
+      if (this.config.flashAllLedsAtMaxRpm && rpmPercent >= 98) {
         this.tmBtLed.setRevLightsFlashing(2);
       } else {
         this.tmBtLed.setRevLightsFlashing(0);
@@ -205,59 +189,56 @@ class ACC extends AbstractClient {
       }
     }
 
-    handleAssists() {
-      if (!this.config.lowerLightsIndicateAbsAndTcAction) {
-        return;
-      }
-
-      const absActive = this.physics.abs > 0.1;
-      const tcActive = this.physics.tc > 0.1;
-      this.tmBtLed.setBlue(absActive);
-      this.tmBtLed.setRed(tcActive);
-      this.tmBtLed.setYellow(absActive || tcActive);
-    }
-
     showSpeed = (onRight) => {
-      this.tmBtLed.setSpeed(this.physics.speedKmh, onRight);
+      if (!this.carInfo) return;
+      this.tmBtLed.setSpeed(this.carInfo.speed_Kmh, onRight);
     };
 
     showRpm = (onRight) => {
-      this.tmBtLed.setRpm(this.physics.rpms, onRight);
+      if (!this.carInfo) return;
+      this.tmBtLed.setRpm(this.carInfo.engineRPM, onRight);
     };
+
     showFuel = (onRight) => {
-      this.tmBtLed.setWeight(this.physics.fuel, onRight);
+      if (!this.carInfo) return;
+      this.tmBtLed.setWeight(this.carInfo.fuel, onRight);
     };
+
     showTyreTemp = (onRight) => {
-      this.tmBtLed.setTemperature(this.physics.tyreCoreTemperature, onRight);
+      if (!this.carInfo) return;
+      const avgTemp = (
+        this.carInfo.tyreTemp_FL + 
+        this.carInfo.tyreTemp_FR + 
+        this.carInfo.tyreTemp_RL + 
+        this.carInfo.tyreTemp_RR
+      ) / 4;
+      this.tmBtLed.setTemperature(avgTemp, onRight);
     };
-    showBrakeTemp = (onRight) => {
-      this.tmBtLed.setTemperature(this.physics.brakeTemp, onRight);
-    };
- 
+
     showCurrentLap = (onRight) => {
-      this.tmBtLed.setTime(this.graphics.iCurrentTime, onRight);
+      if (!this.carInfo) return;
+      this.tmBtLed.setTime(this.carInfo.currentLapTime, onRight);
     };
-    showDelta = (onRight) => {
-      this.tmBtLed.setDiffTime(this.graphics.iDeltaLapTime, onRight);
-    };
+
     showLastLap = (onRight) => {
-      this.tmBtLed.setTime(this.graphics.iLastTime, onRight);
+      if (!this.carInfo) return;
+      this.tmBtLed.setTime(this.carInfo.lastLapTime, onRight);
     };
+
     showBestLap = (onRight) => {
-      this.tmBtLed.setTime(this.graphics.iBestTime, onRight);
+      if (!this.carInfo) return;
+      this.tmBtLed.setTime(this.carInfo.bestLapTime, onRight);
     };
-    showPredLap = (onRight) => {
-      this.tmBtLed.setTime(this.graphics.iEstimatedLapTime, onRight);
-    };
+
     showPosition = (onRight) => {
-      this.tmBtLed.setInt(this.graphics.position, onRight);
+      if (!this.carInfo) return;
+      this.tmBtLed.setInt(this.carInfo.carPosition, onRight);
     };
+
     showLapNumber = (onRight) => {
-      this.tmBtLed.setInt(this.graphics.completedLaps + 1, onRight);
+      if (!this.carInfo) return;
+      this.tmBtLed.setInt(this.carInfo.lapCount, onRight);
     };
-    showLapsLeft = (onRight) => {
-      this.tmBtLed.setInt(this.graphics.numberOfLaps < 1000 ? (this.graphics.numberOfLaps - this.graphics.completedLaps) : 0, onRight);
-    };    
 }
 
-module.exports = ACC;
+module.exports = AssettoUDP;
