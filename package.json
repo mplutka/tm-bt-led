@@ -42,7 +42,9 @@
       "nan": "2.18.0"
     },
     "patchedDependencies": {
-      "node-irsdk@2.1.6": "patches/node-irsdk@2.1.6.patch"
+      "@abandonware/bluetooth-hci-socket": "patches/@abandonware__bluetooth-hci-socket.patch",
+      "@abandonware/noble": "patches/@abandonware__noble.patch",
+      "node-irsdk": "patches/node-irsdk.patch"
     },
     "onlyBuiltDependencies": [
       "@abandonware/bluetooth-hci-socket",
@@ -58,20 +60,18 @@
   "bin": "lib/launcher.js",
   "gypfile": true,
   "dependencies": {
-    "@abandonware/noble": "github:mplutka/noble.git#6bdcff7ddd8e33e9130883cf1b6f5b9a3816e4b7",
+    "@abandonware/noble": "1.9.2-26",
     "@racehub-io/f1-telemetry-client": "^0.2.12",
+    "@yao-pkg/pkg": "^6.14.1",
     "binary-parser": "^2.2.1",
     "convert-units": "^2.3.4",
     "lodash": "^4.17.21",
-    "node-bitarray": "^0.1.0",
-    "node-irsdk": "github:mplutka/node-irsdk",
-    "node-processlist": "^1.0.2",
-    "yargs": "^17.6.2",
-    "@yao-pkg/pkg": "^6.14.1",
     "node-addon-api": "^5.1.0",
-    "node-gyp": "^12.2.0"
-  },
-  "devDependencies": {
+    "node-bitarray": "^0.1.0",
+    "node-gyp": "^12.2.0",
+    "node-irsdk": "^2.1.6",
+    "node-processlist": "^1.0.2",
+    "yargs": "^17.6.2"
   },
   "pkg": {
     "scripts": [

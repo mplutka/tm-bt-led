@@ -1,0 +1,1601 @@
+diff --git a/lib/characteristic.js b/lib/characteristic.js
+index 18e7c1e0b94c8e11a938b35910c8d073a92c913e..de0214384b1f7a262f130fdd47cc1d2516ef06c1 100644
+--- a/lib/characteristic.js
++++ b/lib/characteristic.js
+@@ -3,7 +3,7 @@ const util = require('util');
+ 
+ const characteristics = require('./characteristics.json');
+ 
+-function Characteristic (noble, peripheralId, serviceUuid, uuid, properties) {
++function Characteristic (noble, peripheralId, serviceUuid, uuid, properties, valueHandle, startHandle, endHandle) {
+   this._noble = noble;
+   this._peripheralId = peripheralId;
+   this._serviceUuid = serviceUuid;
+@@ -13,6 +13,9 @@ function Characteristic (noble, peripheralId, serviceUuid, uuid, properties) {
+   this.type = null;
+   this.properties = properties;
+   this.descriptors = null;
++  this.valueHandle = valueHandle;
++  this.startHandle = startHandle;
++  this.endHandle = endHandle;
+ 
+   const characteristic = characteristics[uuid];
+   if (characteristic) {
+@@ -34,7 +37,7 @@ Characteristic.prototype.toString = function () {
+ 
+ const read = function (callback) {
+   if (callback) {
+-    const onRead = (data, isNotification) => {
++    const onRead = (data, isNotification, valueHandle) => {
+       // only call the callback if 'read' event and non-notification
+       // 'read' for non-notifications is only present for backwards compatbility
+       if (!isNotification) {
+@@ -42,7 +45,7 @@ const read = function (callback) {
+         this.removeListener('read', onRead);
+ 
+         // call the callback
+-        callback(null, data);
++        callback(null, data, valueHandle);
+       }
+     };
+ 
+@@ -52,7 +55,8 @@ const read = function (callback) {
+   this._noble.read(
+     this._peripheralId,
+     this._serviceUuid,
+-    this.uuid
++    this.uuid,
++    this.valueHandle
+   );
+ };
+ 
+@@ -61,14 +65,8 @@ Characteristic.prototype.readAsync = util.promisify(read);
+ 
+ const write = function (data, withoutResponse, callback) {
+   if (process.title !== 'browser') {
+-    const allowedTypes = [
+-      Buffer,
+-      Uint8Array,
+-      Uint16Array,
+-      Uint32Array
+-    ];
+-    if (!allowedTypes.some((allowedType) => data instanceof allowedType)) {
+-      throw new Error(`data must be a ${allowedTypes.map((allowedType) => allowedType.name).join(' or ')}`);
++    if (!(data instanceof Buffer)) {
++      throw new Error('data must be a Buffer');
+     }
+   }
+ 
+@@ -77,13 +75,13 @@ const write = function (data, withoutResponse, callback) {
+       callback(null);
+     });
+   }
+-
+   this._noble.write(
+     this._peripheralId,
+     this._serviceUuid,
+     this.uuid,
+     data,
+-    withoutResponse
++    withoutResponse,
++    this.valueHandle
+   );
+ };
+ 
+@@ -120,7 +118,8 @@ const notify = function (notify, callback) {
+     this._peripheralId,
+     this._serviceUuid,
+     this.uuid,
+-    notify
++    notify,
++    this.valueHandle
+   );
+ };
+ 
+@@ -151,7 +150,8 @@ const discoverDescriptors = function (callback) {
+   this._noble.discoverDescriptors(
+     this._peripheralId,
+     this._serviceUuid,
+-    this.uuid
++    this.uuid,
++    this.valueHandle
+   );
+ };
+ 
+diff --git a/lib/descriptor.js b/lib/descriptor.js
+index 5539222b47f5276ba309ef5ddedd7ad5160ad315..d12b670eb9372bc7cfb6de69e98e8961d88f9350 100644
+--- a/lib/descriptor.js
++++ b/lib/descriptor.js
+@@ -3,7 +3,7 @@ const util = require('util');
+ 
+ const descriptors = require('./descriptors.json');
+ 
+-function Descriptor (noble, peripheralId, serviceUuid, characteristicUuid, uuid) {
++function Descriptor (noble, peripheralId, serviceUuid, characteristicUuid, uuid, valueHandle) {
+   this._noble = noble;
+   this._peripheralId = peripheralId;
+   this._serviceUuid = serviceUuid;
+@@ -12,6 +12,7 @@ function Descriptor (noble, peripheralId, serviceUuid, characteristicUuid, uuid)
+   this.uuid = uuid;
+   this.name = null;
+   this.type = null;
++  this.valueHandle = valueHandle;
+ 
+   const descriptor = descriptors[uuid];
+   if (descriptor) {
+@@ -40,7 +41,8 @@ const readValue = function (callback) {
+     this._peripheralId,
+     this._serviceUuid,
+     this._characteristicUuid,
+-    this.uuid
++    this.uuid,
++    this.valueHandle
+   );
+ };
+ 
+@@ -62,7 +64,8 @@ const writeValue = function (data, callback) {
+     this._serviceUuid,
+     this._characteristicUuid,
+     this.uuid,
+-    data
++    data,
++    this.valueHandle
+   );
+ };
+ 
+diff --git a/lib/hci-socket/bindings.js b/lib/hci-socket/bindings.js
+index fb892943d6f8eb3bf3c2c1099ddf17299e4b99ee..d3a35ebc83d1a90e16bb27d1d6e347c21635eaaa 100644
+--- a/lib/hci-socket/bindings.js
++++ b/lib/hci-socket/bindings.js
+@@ -7,14 +7,12 @@ const Gap = require('./gap');
+ const Hci = require('./hci');
+ const Signaling = require('./signaling');
+ 
+-const NobleBindings = function (options) {
++const NobleBindings = function () {
+   this._state = null;
+ 
+   this._addresses = {};
+   this._addresseTypes = {};
+   this._connectable = {};
+-  this._isExtended = 'extended' in options && options.extended;
+-  this.scannable = {};
+ 
+   this._pendingConnectionUuid = null;
+   this._connectionQueue = [];
+@@ -24,20 +22,13 @@ const NobleBindings = function (options) {
+   this._aclStreams = {};
+   this._signalings = {};
+ 
+-  this._hci = new Hci(options);
++  this._hci = new Hci();
+   this._gap = new Gap(this._hci);
+ };
+ 
+ util.inherits(NobleBindings, events.EventEmitter);
+ 
+-NobleBindings.prototype.setScanParameters = function (interval, window) {
+-  this._gap.setScanParameters(interval, window);
+-};
+-
+-NobleBindings.prototype.startScanning = function (
+-  serviceUuids,
+-  allowDuplicates
+-) {
++NobleBindings.prototype.startScanning = function (serviceUuids, allowDuplicates) {
+   this._scanServiceUuids = serviceUuids || [];
+ 
+   this._gap.startScanning(allowDuplicates);
+@@ -47,16 +38,16 @@ NobleBindings.prototype.stopScanning = function () {
+   this._gap.stopScanning();
+ };
+ 
+-NobleBindings.prototype.connect = function (peripheralUuid, parameters) {
++NobleBindings.prototype.connect = function (peripheralUuid) {
+   const address = this._addresses[peripheralUuid];
+   const addressType = this._addresseTypes[peripheralUuid];
+ 
+   if (!this._pendingConnectionUuid) {
+     this._pendingConnectionUuid = peripheralUuid;
+ 
+-    this._hci.createLeConn(address, addressType, parameters);
++    this._hci.createLeConn(address, addressType);
+   } else {
+-    this._connectionQueue.push({ id: peripheralUuid, params: parameters });
++    this._connectionQueue.push(peripheralUuid);
+   }
+ };
+ 
+@@ -64,14 +55,6 @@ NobleBindings.prototype.disconnect = function (peripheralUuid) {
+   this._hci.disconnect(this._handles[peripheralUuid]);
+ };
+ 
+-NobleBindings.prototype.cancelConnect = function (peripheralUuid) {
+-  // TODO: check if it was not in the queue and only then issue cancel on hci
+-  this._connectionQueue = this._connectionQueue.filter(
+-    (c) => c.id !== peripheralUuid
+-  );
+-  this._hci.cancelConnect(this._handles[peripheralUuid]);
+-};
+-
+ NobleBindings.prototype.reset = function () {
+   this._hci.reset();
+ };
+@@ -83,7 +66,6 @@ NobleBindings.prototype.updateRssi = function (peripheralUuid) {
+ NobleBindings.prototype.init = function () {
+   this.onSigIntBinded = this.onSigInt.bind(this);
+ 
+-  this._gap.on('scanParametersSet', this.onScanParametersSet.bind(this));
+   this._gap.on('scanStart', this.onScanStart.bind(this));
+   this._gap.on('scanStop', this.onScanStop.bind(this));
+   this._gap.on('discover', this.onDiscover.bind(this));
+@@ -131,19 +113,11 @@ NobleBindings.prototype.onStateChange = function (state) {
+   this._state = state;
+ 
+   if (state === 'unauthorized') {
+-    console.log(
+-      'noble warning: adapter state unauthorized, please run as root or with sudo'
+-    );
+-    console.log(
+-      '               or see README for information on running without root/sudo:'
+-    );
+-    console.log(
+-      '               https://github.com/sandeepmistry/noble#running-on-linux'
+-    );
++    console.log('noble warning: adapter state unauthorized, please run as root or with sudo');
++    console.log('               or see README for information on running without root/sudo:');
++    console.log('               https://github.com/sandeepmistry/noble#running-on-linux');
+   } else if (state === 'unsupported') {
+-    console.log(
+-      'noble warning: adapter does not support Bluetooth Low Energy (BLE, Bluetooth Smart).'
+-    );
++    console.log('noble warning: adapter does not support Bluetooth Low Energy (BLE, Bluetooth Smart).');
+     console.log('               Try to run with environment variable:');
+     console.log('               [sudo] NOBLE_HCI_DEVICE_ID=x node ...');
+   }
+@@ -155,10 +129,6 @@ NobleBindings.prototype.onAddressChange = function (address) {
+   this.emit('addressChange', address);
+ };
+ 
+-NobleBindings.prototype.onScanParametersSet = function () {
+-  this.emit('scanParametersSet');
+-};
+-
+ NobleBindings.prototype.onScanStart = function (filterDuplicates) {
+   this.emit('scanStart', filterDuplicates);
+ };
+@@ -167,22 +137,14 @@ NobleBindings.prototype.onScanStop = function () {
+   this.emit('scanStop');
+ };
+ 
+-NobleBindings.prototype.onDiscover = function (
+-  status,
+-  address,
+-  addressType,
+-  connectable,
+-  advertisement,
+-  rssi,
+-  scannable
+-) {
++NobleBindings.prototype.onDiscover = function (status, address, addressType, connectable, advertisement, rssi) {
+   if (this._scanServiceUuids === undefined) {
+     return;
+   }
+ 
+   let serviceUuids = advertisement.serviceUuids || [];
+   const serviceData = advertisement.serviceData || [];
+-  let hasScanServiceUuids = this._scanServiceUuids.length === 0;
++  let hasScanServiceUuids = (this._scanServiceUuids.length === 0);
+ 
+   if (!hasScanServiceUuids) {
+     let i;
+@@ -194,8 +156,7 @@ NobleBindings.prototype.onDiscover = function (
+     }
+ 
+     for (i in serviceUuids) {
+-      hasScanServiceUuids =
+-        this._scanServiceUuids.indexOf(serviceUuids[i]) !== -1;
++      hasScanServiceUuids = (this._scanServiceUuids.indexOf(serviceUuids[i]) !== -1);
+ 
+       if (hasScanServiceUuids) {
+         break;
+@@ -204,37 +165,17 @@ NobleBindings.prototype.onDiscover = function (
+   }
+ 
+   if (hasScanServiceUuids) {
+-    const uuid = address.split(':').join('');
++    var uuid = address.split(':').join('');
+     this._addresses[uuid] = address;
+     this._addresseTypes[uuid] = addressType;
+     this._connectable[uuid] = connectable;
+-    this.scannable[uuid] = scannable;
+-
+-    this.emit(
+-      'discover',
+-      uuid,
+-      address,
+-      addressType,
+-      connectable,
+-      advertisement,
+-      rssi,
+-      scannable
+-    );
++
++    this.emit('discover', uuid, address, addressType, connectable, advertisement, rssi);
+   }
+ };
+ 
+-NobleBindings.prototype.onLeConnComplete = function (
+-  status,
+-  handle,
+-  role,
+-  addressType,
+-  address,
+-  interval,
+-  latency,
+-  supervisionTimeout,
+-  masterClockAccuracy
+-) {
+-  if (role !== 0 && role !== undefined) {
++NobleBindings.prototype.onLeConnComplete = function (status, handle, role, addressType, address, interval, latency, supervisionTimeout, masterClockAccuracy) {
++  if (role !== 0) {
+     // not master, ignore
+     return;
+   }
+@@ -245,14 +186,7 @@ NobleBindings.prototype.onLeConnComplete = function (
+   if (status === 0) {
+     uuid = address.split(':').join('').toLowerCase();
+ 
+-    const aclStream = new AclStream(
+-      this._hci,
+-      handle,
+-      this._hci.addressType,
+-      this._hci.address,
+-      addressType,
+-      address
+-    );
++    const aclStream = new AclStream(this._hci, handle, this._hci.addressType, this._hci.address, addressType, address);
+     const gatt = new Gatt(address, aclStream);
+     const signaling = new Signaling(handle, aclStream);
+ 
+@@ -263,47 +197,26 @@ NobleBindings.prototype.onLeConnComplete = function (
+     this._handles[handle] = uuid;
+ 
+     this._gatts[handle].on('mtu', this.onMtu.bind(this));
+-    this._gatts[handle].on(
+-      'servicesDiscover',
+-      this.onServicesDiscovered.bind(this)
+-    );
+-    this._gatts[handle].on(
+-      'servicesDiscovered',
+-      this.onServicesDiscoveredEX.bind(this)
+-    );
+-    this._gatts[handle].on(
+-      'includedServicesDiscover',
+-      this.onIncludedServicesDiscovered.bind(this)
+-    );
+-    this._gatts[handle].on(
+-      'characteristicsDiscover',
+-      this.onCharacteristicsDiscovered.bind(this)
+-    );
+-    this._gatts[handle].on(
+-      'characteristicsDiscovered',
+-      this.onCharacteristicsDiscoveredEX.bind(this)
+-    );
++    this._gatts[handle].on('servicesDiscover', this.onServicesDiscovered.bind(this));
++    this._gatts[handle].on('servicesDiscovered', this.onServicesDiscoveredEX.bind(this));
++    this._gatts[handle].on('includedServicesDiscover', this.onIncludedServicesDiscovered.bind(this));
++    this._gatts[handle].on('characteristicsDiscover', this.onCharacteristicsDiscovered.bind(this));
++    this._gatts[handle].on('characteristicsDiscovered', this.onCharacteristicsDiscoveredEX.bind(this));
+     this._gatts[handle].on('read', this.onRead.bind(this));
+     this._gatts[handle].on('write', this.onWrite.bind(this));
+     this._gatts[handle].on('broadcast', this.onBroadcast.bind(this));
+     this._gatts[handle].on('notify', this.onNotify.bind(this));
+     this._gatts[handle].on('notification', this.onNotification.bind(this));
+-    this._gatts[handle].on(
+-      'descriptorsDiscover',
+-      this.onDescriptorsDiscovered.bind(this)
+-    );
++    this._gatts[handle].on('descriptorsDiscover', this.onDescriptorsDiscovered.bind(this));
+     this._gatts[handle].on('valueRead', this.onValueRead.bind(this));
+     this._gatts[handle].on('valueWrite', this.onValueWrite.bind(this));
+     this._gatts[handle].on('handleRead', this.onHandleRead.bind(this));
+     this._gatts[handle].on('handleWrite', this.onHandleWrite.bind(this));
+     this._gatts[handle].on('handleNotify', this.onHandleNotify.bind(this));
+ 
+-    this._signalings[handle].on(
+-      'connectionParameterUpdateRequest',
+-      this.onConnectionParameterUpdateRequest.bind(this)
+-    );
++    this._signalings[handle].on('connectionParameterUpdateRequest', this.onConnectionParameterUpdateRequest.bind(this));
+ 
+-    this._gatts[handle].exchangeMtu();
++    this._gatts[handle].exchangeMtu(256);
+   } else {
+     uuid = this._pendingConnectionUuid;
+     let statusMessage = Hci.STATUS_MAPPER[status] || 'HCI Error: Unknown';
+@@ -315,27 +228,21 @@ NobleBindings.prototype.onLeConnComplete = function (
+   this.emit('connect', uuid, error);
+ 
+   if (this._connectionQueue.length > 0) {
+-    const queueItem = this._connectionQueue.shift();
+-    const peripheralUuid = queueItem.id;
++    const peripheralUuid = this._connectionQueue.shift();
+ 
+     address = this._addresses[peripheralUuid];
+     addressType = this._addresseTypes[peripheralUuid];
+ 
+     this._pendingConnectionUuid = peripheralUuid;
+ 
+-    this._hci.createLeConn(address, addressType, queueItem.params);
++    this._hci.createLeConn(address, addressType);
+   } else {
+     this._pendingConnectionUuid = null;
+   }
+ };
+ 
+-NobleBindings.prototype.onLeConnUpdateComplete = function (
+-  handle,
+-  interval,
+-  latency,
+-  supervisionTimeout
+-) {
+-  // no-op
++NobleBindings.prototype.onLeConnUpdateComplete = function (status, handle, interval, latency, supervisionTimeout) {
++  this.emit('leConnUpdateComplete', status, handle, interval, latency, supervisionTimeout);
+ };
+ 
+ NobleBindings.prototype.onDisconnComplete = function (handle, reason) {
+@@ -354,7 +261,7 @@ NobleBindings.prototype.onDisconnComplete = function (handle, reason) {
+     delete this._handles[uuid];
+     delete this._handles[handle];
+ 
+-    this.emit('disconnect', uuid, reason);
++    this.emit('disconnect', uuid); // TODO: handle reason?
+   } else {
+     console.warn(`noble warning: unknown handle ${handle} disconnected!`);
+   }
+@@ -369,7 +276,7 @@ NobleBindings.prototype.onEncryptChange = function (handle, encrypt) {
+ };
+ 
+ NobleBindings.prototype.onMtu = function (address, mtu) {
+-  const uuid = address.split(':').join('').toLowerCase();
++  var uuid = address.split(':').join('').toLowerCase();
+ 
+   this.emit('onMtu', uuid, mtu);
+ };
+@@ -408,10 +315,7 @@ NobleBindings.prototype.discoverServices = function (peripheralUuid, uuids) {
+   }
+ };
+ 
+-NobleBindings.prototype.onServicesDiscovered = function (
+-  address,
+-  serviceUuids
+-) {
++NobleBindings.prototype.onServicesDiscovered = function (address, serviceUuids) {
+   const uuid = address.split(':').join('').toLowerCase();
+ 
+   this.emit('servicesDiscover', uuid, serviceUuids);
+@@ -423,11 +327,7 @@ NobleBindings.prototype.onServicesDiscoveredEX = function (address, services) {
+   this.emit('servicesDiscovered', uuid, services);
+ };
+ 
+-NobleBindings.prototype.discoverIncludedServices = function (
+-  peripheralUuid,
+-  serviceUuid,
+-  serviceUuids
+-) {
++NobleBindings.prototype.discoverIncludedServices = function (peripheralUuid, serviceUuid, serviceUuids) {
+   const handle = this._handles[peripheralUuid];
+   const gatt = this._gatts[handle];
+ 
+@@ -438,26 +338,13 @@ NobleBindings.prototype.discoverIncludedServices = function (
+   }
+ };
+ 
+-NobleBindings.prototype.onIncludedServicesDiscovered = function (
+-  address,
+-  serviceUuid,
+-  includedServiceUuids
+-) {
++NobleBindings.prototype.onIncludedServicesDiscovered = function (address, serviceUuid, includedServiceUuids) {
+   const uuid = address.split(':').join('').toLowerCase();
+ 
+-  this.emit(
+-    'includedServicesDiscover',
+-    uuid,
+-    serviceUuid,
+-    includedServiceUuids
+-  );
++  this.emit('includedServicesDiscover', uuid, serviceUuid, includedServiceUuids);
+ };
+ 
+-NobleBindings.prototype.addCharacteristics = function (
+-  peripheralUuid,
+-  serviceUuid,
+-  characteristics
+-) {
++NobleBindings.prototype.addCharacteristics = function (peripheralUuid, serviceUuid, characteristics) {
+   const handle = this._handles[peripheralUuid];
+   const gatt = this._gatts[handle];
+ 
+@@ -468,11 +355,7 @@ NobleBindings.prototype.addCharacteristics = function (
+   }
+ };
+ 
+-NobleBindings.prototype.discoverCharacteristics = function (
+-  peripheralUuid,
+-  serviceUuid,
+-  characteristicUuids
+-) {
++NobleBindings.prototype.discoverCharacteristics = function (peripheralUuid, serviceUuid, characteristicUuids) {
+   const handle = this._handles[peripheralUuid];
+   const gatt = this._gatts[handle];
+ 
+@@ -483,85 +366,53 @@ NobleBindings.prototype.discoverCharacteristics = function (
+   }
+ };
+ 
+-NobleBindings.prototype.onCharacteristicsDiscovered = function (
+-  address,
+-  serviceUuid,
+-  characteristics
+-) {
++NobleBindings.prototype.onCharacteristicsDiscovered = function (address, serviceUuid, characteristics) {
+   const uuid = address.split(':').join('').toLowerCase();
+ 
+   this.emit('characteristicsDiscover', uuid, serviceUuid, characteristics);
+ };
+ 
+-NobleBindings.prototype.onCharacteristicsDiscoveredEX = function (
+-  address,
+-  serviceUuid,
+-  characteristics
+-) {
++NobleBindings.prototype.onCharacteristicsDiscoveredEX = function (address, serviceUuid, characteristics) {
+   const uuid = address.split(':').join('').toLowerCase();
+ 
+   this.emit('characteristicsDiscovered', uuid, serviceUuid, characteristics);
+ };
+ 
+-NobleBindings.prototype.read = function (
+-  peripheralUuid,
+-  serviceUuid,
+-  characteristicUuid
+-) {
++NobleBindings.prototype.read = function (peripheralUuid, serviceUuid, characteristicUuid, valueHandle) {
+   const handle = this._handles[peripheralUuid];
+   const gatt = this._gatts[handle];
+ 
+   if (gatt) {
+-    gatt.read(serviceUuid, characteristicUuid);
++    gatt.read(serviceUuid, characteristicUuid, valueHandle);
+   } else {
+     console.warn(`noble warning: unknown peripheral ${peripheralUuid}`);
+   }
+ };
+ 
+-NobleBindings.prototype.onRead = function (
+-  address,
+-  serviceUuid,
+-  characteristicUuid,
+-  data
+-) {
++NobleBindings.prototype.onRead = function (address, serviceUuid, characteristicUuid, data, valueHandle) {
+   const uuid = address.split(':').join('').toLowerCase();
+ 
+-  this.emit('read', uuid, serviceUuid, characteristicUuid, data, false);
++  this.emit('read', uuid, serviceUuid, characteristicUuid, data, false, valueHandle);
+ };
+ 
+-NobleBindings.prototype.write = function (
+-  peripheralUuid,
+-  serviceUuid,
+-  characteristicUuid,
+-  data,
+-  withoutResponse
+-) {
++NobleBindings.prototype.write = function (peripheralUuid, serviceUuid, characteristicUuid, data, withoutResponse, valueHandle) {
+   const handle = this._handles[peripheralUuid];
+   const gatt = this._gatts[handle];
+ 
+   if (gatt) {
+-    gatt.write(serviceUuid, characteristicUuid, data, withoutResponse);
++    gatt.write(serviceUuid, characteristicUuid, data, withoutResponse, valueHandle);
+   } else {
+     console.warn(`noble warning: unknown peripheral ${peripheralUuid}`);
+   }
+ };
+ 
+-NobleBindings.prototype.onWrite = function (
+-  address,
+-  serviceUuid,
+-  characteristicUuid
+-) {
++NobleBindings.prototype.onWrite = function (address, serviceUuid, characteristicUuid, valueHandle) {
+   const uuid = address.split(':').join('').toLowerCase();
+ 
+-  this.emit('write', uuid, serviceUuid, characteristicUuid);
++  this.emit('write', uuid, serviceUuid, characteristicUuid, valueHandle);
+ };
+ 
+-NobleBindings.prototype.broadcast = function (
+-  peripheralUuid,
+-  serviceUuid,
+-  characteristicUuid,
+-  broadcast
+-) {
++NobleBindings.prototype.broadcast = function (peripheralUuid, serviceUuid, characteristicUuid, broadcast) {
+   const handle = this._handles[peripheralUuid];
+   const gatt = this._gatts[handle];
+ 
+@@ -572,154 +423,84 @@ NobleBindings.prototype.broadcast = function (
+   }
+ };
+ 
+-NobleBindings.prototype.onBroadcast = function (
+-  address,
+-  serviceUuid,
+-  characteristicUuid,
+-  state
+-) {
++NobleBindings.prototype.onBroadcast = function (address, serviceUuid, characteristicUuid, state) {
+   const uuid = address.split(':').join('').toLowerCase();
+ 
+   this.emit('broadcast', uuid, serviceUuid, characteristicUuid, state);
+ };
+ 
+-NobleBindings.prototype.notify = function (
+-  peripheralUuid,
+-  serviceUuid,
+-  characteristicUuid,
+-  notify
+-) {
++NobleBindings.prototype.notify = function (peripheralUuid, serviceUuid, characteristicUuid, notify, valueHandle) {
+   const handle = this._handles[peripheralUuid];
+   const gatt = this._gatts[handle];
+ 
+   if (gatt) {
+-    gatt.notify(serviceUuid, characteristicUuid, notify);
++    gatt.notify(serviceUuid, characteristicUuid, notify, valueHandle);
+   } else {
+     console.warn(`noble warning: unknown peripheral ${peripheralUuid}`);
+   }
+ };
+ 
+-NobleBindings.prototype.onNotify = function (
+-  address,
+-  serviceUuid,
+-  characteristicUuid,
+-  state
+-) {
++NobleBindings.prototype.onNotify = function (address, serviceUuid, characteristicUuid, state) {
+   const uuid = address.split(':').join('').toLowerCase();
+ 
+   this.emit('notify', uuid, serviceUuid, characteristicUuid, state);
+ };
+ 
+-NobleBindings.prototype.onNotification = function (
+-  address,
+-  serviceUuid,
+-  characteristicUuid,
+-  data
+-) {
++NobleBindings.prototype.onNotification = function (address, serviceUuid, characteristicUuid, data, valueHandle) {
+   const uuid = address.split(':').join('').toLowerCase();
+ 
+-  this.emit('read', uuid, serviceUuid, characteristicUuid, data, true);
++  this.emit('read', uuid, serviceUuid, characteristicUuid, data, true, valueHandle);
+ };
+ 
+-NobleBindings.prototype.discoverDescriptors = function (
+-  peripheralUuid,
+-  serviceUuid,
+-  characteristicUuid
+-) {
++NobleBindings.prototype.discoverDescriptors = function (peripheralUuid, serviceUuid, characteristicUuid, valueHandle) {
+   const handle = this._handles[peripheralUuid];
+   const gatt = this._gatts[handle];
+ 
+   if (gatt) {
+-    gatt.discoverDescriptors(serviceUuid, characteristicUuid);
++    gatt.discoverDescriptors(serviceUuid, characteristicUuid, valueHandle);
+   } else {
+     console.warn(`noble warning: unknown peripheral ${peripheralUuid}`);
+   }
+ };
+ 
+-NobleBindings.prototype.onDescriptorsDiscovered = function (
+-  address,
+-  serviceUuid,
+-  characteristicUuid,
+-  descriptorUuids
+-) {
++NobleBindings.prototype.onDescriptorsDiscovered = function (address, serviceUuid, characteristicUuid, descriptorUuids, valueHandle) {
+   const uuid = address.split(':').join('').toLowerCase();
+ 
+-  this.emit(
+-    'descriptorsDiscover',
+-    uuid,
+-    serviceUuid,
+-    characteristicUuid,
+-    descriptorUuids
+-  );
+-};
+-
+-NobleBindings.prototype.readValue = function (
+-  peripheralUuid,
+-  serviceUuid,
+-  characteristicUuid,
+-  descriptorUuid
+-) {
++  this.emit('descriptorsDiscover', uuid, serviceUuid, characteristicUuid, descriptorUuids, valueHandle);
++};
++
++NobleBindings.prototype.readValue = function (peripheralUuid, serviceUuid, characteristicUuid, descriptorUuid, valueHandle) {
+   const handle = this._handles[peripheralUuid];
+   const gatt = this._gatts[handle];
+ 
+   if (gatt) {
+-    gatt.readValue(serviceUuid, characteristicUuid, descriptorUuid);
++    gatt.readValue(serviceUuid, characteristicUuid, descriptorUuid, valueHandle);
+   } else {
+     console.warn(`noble warning: unknown peripheral ${peripheralUuid}`);
+   }
+ };
+ 
+-NobleBindings.prototype.onValueRead = function (
+-  address,
+-  serviceUuid,
+-  characteristicUuid,
+-  descriptorUuid,
+-  data
+-) {
++NobleBindings.prototype.onValueRead = function (address, serviceUuid, characteristicUuid, descriptorUuid, data, valueHandle) {
+   const uuid = address.split(':').join('').toLowerCase();
+ 
+-  this.emit(
+-    'valueRead',
+-    uuid,
+-    serviceUuid,
+-    characteristicUuid,
+-    descriptorUuid,
+-    data
+-  );
+-};
+-
+-NobleBindings.prototype.writeValue = function (
+-  peripheralUuid,
+-  serviceUuid,
+-  characteristicUuid,
+-  descriptorUuid,
+-  data
+-) {
++  this.emit('valueRead', uuid, serviceUuid, characteristicUuid, descriptorUuid, data, valueHandle);
++};
++
++NobleBindings.prototype.writeValue = function (peripheralUuid, serviceUuid, characteristicUuid, descriptorUuid, data, valueHandle) {
+   const handle = this._handles[peripheralUuid];
+   const gatt = this._gatts[handle];
+ 
+   if (gatt) {
+-    gatt.writeValue(serviceUuid, characteristicUuid, descriptorUuid, data);
++    gatt.writeValue(serviceUuid, characteristicUuid, descriptorUuid, data, valueHandle);
+   } else {
+     console.warn(`noble warning: unknown peripheral ${peripheralUuid}`);
+   }
+ };
+ 
+-NobleBindings.prototype.onValueWrite = function (
+-  address,
+-  serviceUuid,
+-  characteristicUuid,
+-  descriptorUuid
+-) {
++NobleBindings.prototype.onValueWrite = function (address, serviceUuid, characteristicUuid, descriptorUuid, valueHandle) {
+   const uuid = address.split(':').join('').toLowerCase();
+ 
+-  this.emit(
+-    'valueWrite',
+-    uuid,
+-    serviceUuid,
+-    characteristicUuid,
+-    descriptorUuid
+-  );
++  this.emit('valueWrite', uuid, serviceUuid, characteristicUuid, descriptorUuid, valueHandle);
+ };
+ 
+ NobleBindings.prototype.readHandle = function (peripheralUuid, attHandle) {
+@@ -739,12 +520,7 @@ NobleBindings.prototype.onHandleRead = function (address, handle, data) {
+   this.emit('handleRead', uuid, handle, data);
+ };
+ 
+-NobleBindings.prototype.writeHandle = function (
+-  peripheralUuid,
+-  attHandle,
+-  data,
+-  withoutResponse
+-) {
++NobleBindings.prototype.writeHandle = function (peripheralUuid, attHandle, data, withoutResponse) {
+   const handle = this._handles[peripheralUuid];
+   const gatt = this._gatts[handle];
+ 
+@@ -767,20 +543,19 @@ NobleBindings.prototype.onHandleNotify = function (address, handle, data) {
+   this.emit('handleNotify', uuid, handle, data);
+ };
+ 
+-NobleBindings.prototype.onConnectionParameterUpdateRequest = function (
+-  handle,
+-  minInterval,
+-  maxInterval,
+-  latency,
+-  supervisionTimeout
+-) {
+-  this._hci.connUpdateLe(
+-    handle,
+-    minInterval,
+-    maxInterval,
+-    latency,
+-    supervisionTimeout
+-  );
++
++NobleBindings.prototype.connUpdateLe = function (peripheralUuid, minInterval, maxInterval, latency, supervisionTimeout) {
++  const handle = this._handles[peripheralUuid];
++
++  if (handle) {
++    this._hci.connUpdateLe(handle, minInterval, maxInterval, latency, supervisionTimeout);
++  }
++}
++
++NobleBindings.prototype.onConnectionParameterUpdateRequest = function (handle, minInterval, maxInterval, latency, supervisionTimeout) {
++  this._hci.connUpdateLe(handle, minInterval, maxInterval, latency, supervisionTimeout);
++
++  this.emit('connectionParameterUpdateRequest', minInterval, maxInterval, latency, supervisionTimeout);
+ };
+ 
+-module.exports = NobleBindings;
++module.exports = new NobleBindings();
+\ No newline at end of file
+diff --git a/lib/hci-socket/gatt.js b/lib/hci-socket/gatt.js
+index 03c08f39ef32645aab03a4f54cba67448645b793..bcb035379581c0321f8db7d0f5e1edc5d0ad6a4b 100644
+--- a/lib/hci-socket/gatt.js
++++ b/lib/hci-socket/gatt.js
+@@ -69,7 +69,6 @@ const Gatt = function (address, aclStream) {
+   this._commandQueue = [];
+ 
+   this._mtu = 23;
+-  this._desired_mtu = 256;
+   this._security = 'low';
+ 
+   this.onAclStreamDataBinded = this.onAclStreamData.bind(this);
+@@ -90,20 +89,15 @@ Gatt.prototype.onAclStreamData = function (cid, data) {
+     return;
+   }
+ 
+-  if (this._currentCommand && (data.toString('hex') === this._currentCommand.buffer.toString('hex'))) {
++  if (this._currentCommand && data.toString('hex') === this._currentCommand.buffer.toString('hex')) {
+     debug(`${this._address}: echo ... echo ... echo ...`);
+   } else if (data[0] % 2 === 0) {
+     if (process.env.NOBLE_MULTI_ROLE) {
+       debug(`${this._address}: multi-role flag in use, ignoring command meant for peripheral role.`);
+     } else {
+       const requestType = data[0];
+-      if (requestType === ATT_OP_MTU_REQ) {
+-        debug(`${this._address}: replying to MTU request`);
+-        this.writeAtt(this.mtuResponse(this._desired_mtu));
+-      } else {
+-        debug(`${this._address}: replying with REQ_NOT_SUPP to 0x${requestType.toString(16)}`);
+-        this.writeAtt(this.errorResponse(requestType, 0x0000, ATT_ECODE_REQ_NOT_SUPP));
+-      }
++      debug(`${this._address}: replying with REQ_NOT_SUPP to 0x${requestType.toString(16)}`);
++      this.writeAtt(this.errorResponse(requestType, 0x0000, ATT_ECODE_REQ_NOT_SUPP));
+     }
+   } else if (data[0] === ATT_OP_HANDLE_NOTIFY || data[0] === ATT_OP_HANDLE_IND) {
+     const valueHandle = data.readUInt16LE(1);
+@@ -119,9 +113,12 @@ Gatt.prototype.onAclStreamData = function (cid, data) {
+ 
+     for (const serviceUuid in this._services) {
+       for (const characteristicUuid in this._characteristics[serviceUuid]) {
+-        if (this._characteristics[serviceUuid][characteristicUuid].valueHandle === valueHandle) {
+-          this.emit('notification', this._address, serviceUuid, characteristicUuid, valueData);
+-        }
++        this._characteristics[serviceUuid][characteristicUuid].forEach((c, index) => {
++          if (c.valueHandle === valueHandle) {
++            this.emit('notification', this._address, serviceUuid, characteristicUuid, valueData, valueHandle);
++          }
++        })
++
+       }
+     }
+   } else if (!this._currentCommand) {
+@@ -134,11 +131,6 @@ Gatt.prototype.onAclStreamData = function (cid, data) {
+       return;
+     }
+ 
+-    if (data[0] === ATT_OP_ERROR && data[4] === ATT_ECODE_INVALID_PDU) {
+-      debug('Error: can\'t change MTU, invalid PDU');
+-      return;
+-    }
+-
+     debug(`${this._address}: read: ${data.toString('hex')}`);
+ 
+     this._currentCommand.callback(data);
+@@ -199,9 +191,9 @@ Gatt.prototype.errorResponse = function (opcode, handle, status) {
+ 
+ Gatt.prototype._queueCommand = function (buffer, callback, writeCallback) {
+   this._commandQueue.push({
+-    buffer,
+-    callback,
+-    writeCallback
++    buffer: buffer,
++    callback: callback,
++    writeCallback: writeCallback
+   });
+ 
+   if (this._currentCommand === null) {
+@@ -230,15 +222,6 @@ Gatt.prototype.mtuRequest = function (mtu) {
+   return buf;
+ };
+ 
+-Gatt.prototype.mtuResponse = function (mtu) {
+-  const buf = Buffer.alloc(3);
+-
+-  buf.writeUInt8(ATT_OP_MTU_RESP, 0);
+-  buf.writeUInt16LE(mtu, 1);
+-
+-  return buf;
+-};
+-
+ Gatt.prototype.readByGroupRequest = function (startHandle, endHandle, groupUuid) {
+   const buf = Buffer.alloc(7);
+ 
+@@ -334,8 +317,8 @@ Gatt.prototype.handleConfirmation = function () {
+   return buf;
+ };
+ 
+-Gatt.prototype.exchangeMtu = function () {
+-  this._queueCommand(this.mtuRequest(this._desired_mtu), (data) => {
++Gatt.prototype.exchangeMtu = function (mtu) {
++  this._queueCommand(this.mtuRequest(mtu), (data) => {
+     const opcode = data[0];
+ 
+     if (opcode === ATT_OP_MTU_RESP) {
+@@ -440,7 +423,10 @@ Gatt.prototype.addCharacteristics = function (serviceUuid, characteristics) {
+   this._descriptors[serviceUuid] = this._descriptors[serviceUuid] || {};
+ 
+   for (let i = 0; i < characteristics.length; i++) {
+-    this._characteristics[serviceUuid][characteristics[i].uuid] = characteristics[i];
++    if (!this._characteristics[serviceUuid][characteristics[i].uuid]) {
++      this._characteristics[serviceUuid][characteristics[i].uuid] = [];
++    }
++    this._characteristics[serviceUuid][characteristics[i].uuid].push(characteristics[i]);
+   }
+ };
+ 
+@@ -473,7 +459,7 @@ Gatt.prototype.discoverCharacteristics = function (serviceUuid, characteristicUu
+     if (opcode !== ATT_OP_READ_BY_TYPE_RESP || characteristics[characteristics.length - 1].valueHandle === service.endHandle) {
+       const characteristicsDiscovered = [];
+       for (i = 0; i < characteristics.length; i++) {
+-        const properties = characteristics[i].properties;
++        var properties = characteristics[i].properties;
+ 
+         const characteristic = {
+           properties: [],
+@@ -492,7 +478,10 @@ Gatt.prototype.discoverCharacteristics = function (serviceUuid, characteristicUu
+           characteristics[i].endHandle = service.endHandle;
+         }
+ 
+-        this._characteristics[serviceUuid][characteristics[i].uuid] = characteristics[i];
++        if (!this._characteristics[serviceUuid][characteristics[i].uuid]) {
++          this._characteristics[serviceUuid][characteristics[i].uuid] = [];
++        }
++        this._characteristics[serviceUuid][characteristics[i].uuid].push(characteristics[i]);
+ 
+         if (properties & 0x01) {
+           characteristic.properties.push('broadcast');
+@@ -541,8 +530,13 @@ Gatt.prototype.discoverCharacteristics = function (serviceUuid, characteristicUu
+   this._queueCommand(this.readByTypeRequest(service.startHandle, service.endHandle, GATT_CHARAC_UUID), callback);
+ };
+ 
+-Gatt.prototype.read = function (serviceUuid, characteristicUuid) {
+-  const characteristic = this._characteristics[serviceUuid][characteristicUuid];
++Gatt.prototype.read = function (serviceUuid, characteristicUuid, valueHandle) {
++  let characteristic = null;
++  if (valueHandle) {
++    characteristic = this._characteristics[serviceUuid][characteristicUuid].find(c => c.valueHandle === valueHandle);
++  } else {
++    characteristic = this._characteristics[serviceUuid][characteristicUuid][0];
++  }
+ 
+   let readData = Buffer.alloc(0);
+ 
+@@ -555,22 +549,28 @@ Gatt.prototype.read = function (serviceUuid, characteristicUuid) {
+       if (data.length === this._mtu) {
+         this._queueCommand(this.readBlobRequest(characteristic.valueHandle, readData.length), callback);
+       } else {
+-        this.emit('read', this._address, serviceUuid, characteristicUuid, readData);
++        this.emit('read', this._address, serviceUuid, characteristicUuid, readData, valueHandle);
+       }
+     } else {
+-      this.emit('read', this._address, serviceUuid, characteristicUuid, readData);
++      this.emit('read', this._address, serviceUuid, characteristicUuid, readData, valueHandle);
+     }
+   };
+ 
+   this._queueCommand(this.readRequest(characteristic.valueHandle), callback);
+ };
+ 
+-Gatt.prototype.write = function (serviceUuid, characteristicUuid, data, withoutResponse) {
+-  const characteristic = this._characteristics[serviceUuid][characteristicUuid];
++Gatt.prototype.write = function (serviceUuid, characteristicUuid, data, withoutResponse, valueHandle) {
++
++  let characteristic = null;
++  if (valueHandle) {
++    characteristic = this._characteristics[serviceUuid][characteristicUuid].find(c => c.valueHandle === valueHandle);
++  } else {
++    characteristic = this._characteristics[serviceUuid][characteristicUuid][0];
++  }
+ 
+   if (withoutResponse) {
+     this._queueCommand(this.writeRequest(characteristic.valueHandle, data, true), null, () => {
+-      this.emit('write', this._address, serviceUuid, characteristicUuid);
++      this.emit('write', this._address, serviceUuid, characteristicUuid, valueHandle);
+     });
+   } else if (data.length + 3 > this._mtu) {
+     return this.longWrite(serviceUuid, characteristicUuid, data, withoutResponse);
+@@ -579,7 +579,7 @@ Gatt.prototype.write = function (serviceUuid, characteristicUuid, data, withoutR
+       const opcode = data[0];
+ 
+       if (opcode === ATT_OP_WRITE_RESP) {
+-        this.emit('write', this._address, serviceUuid, characteristicUuid);
++        this.emit('write', this._address, serviceUuid, characteristicUuid, valueHandle);
+       }
+     });
+   }
+@@ -587,7 +587,7 @@ Gatt.prototype.write = function (serviceUuid, characteristicUuid, data, withoutR
+ 
+ /* Perform a "long write" as described Bluetooth Spec section 4.9.4 "Write Long Characteristic Values" */
+ Gatt.prototype.longWrite = function (serviceUuid, characteristicUuid, data, withoutResponse) {
+-  const characteristic = this._characteristics[serviceUuid][characteristicUuid];
++  const characteristic = this._characteristics[serviceUuid][characteristicUuid][0];
+   const limit = this._mtu - 5;
+ 
+   const prepareWriteCallback = (dataChunk) => {
+@@ -628,7 +628,7 @@ Gatt.prototype.longWrite = function (serviceUuid, characteristicUuid, data, with
+ };
+ 
+ Gatt.prototype.broadcast = function (serviceUuid, characteristicUuid, broadcast) {
+-  const characteristic = this._characteristics[serviceUuid][characteristicUuid];
++  const characteristic = this._characteristics[serviceUuid][characteristicUuid][0];
+ 
+   this._queueCommand(this.readByTypeRequest(characteristic.startHandle, characteristic.endHandle, GATT_SERVER_CHARAC_CFG_UUID), data => {
+     const opcode = data[0];
+@@ -656,11 +656,17 @@ Gatt.prototype.broadcast = function (serviceUuid, characteristicUuid, broadcast)
+   });
+ };
+ 
+-Gatt.prototype.notify = function (serviceUuid, characteristicUuid, notify) {
+-  const characteristic = this._characteristics[serviceUuid][characteristicUuid];
++Gatt.prototype.notify = function (serviceUuid, characteristicUuid, notify, valueHandle) {
++  let characteristic = null;
++  if (valueHandle) {
++    characteristic = this._characteristics[serviceUuid][characteristicUuid].find(c => c.valueHandle === valueHandle);
++  } else {
++    characteristic = this._characteristics[serviceUuid][characteristicUuid][0];
++  }
+ 
+   this._queueCommand(this.readByTypeRequest(characteristic.startHandle, characteristic.endHandle, GATT_CLIENT_CHARAC_CFG_UUID), data => {
+     const opcode = data[0];
++
+     if (opcode === ATT_OP_READ_BY_TYPE_RESP) {
+       const handle = data.readUInt16LE(2);
+       let value = data.readUInt16LE(4);
+@@ -689,15 +695,21 @@ Gatt.prototype.notify = function (serviceUuid, characteristicUuid, notify) {
+         const opcode = data[0];
+ 
+         if (opcode === ATT_OP_WRITE_RESP) {
+-          this.emit('notify', this._address, serviceUuid, characteristicUuid, notify);
++          this.emit('notify', this._address, serviceUuid, characteristicUuid, notify, valueHandle);
+         }
+       });
+     }
+   });
+ };
+ 
+-Gatt.prototype.discoverDescriptors = function (serviceUuid, characteristicUuid) {
+-  const characteristic = this._characteristics[serviceUuid][characteristicUuid];
++Gatt.prototype.discoverDescriptors = function (serviceUuid, characteristicUuid, valueHandle) {
++  let characteristic = null;
++  if (valueHandle) {
++    characteristic = this._characteristics[serviceUuid][characteristicUuid].find(c => c.valueHandle === valueHandle);
++  } else {
++    characteristic = this._characteristics[serviceUuid][characteristicUuid][0];
++  }
++
+   const descriptors = [];
+ 
+   this._descriptors[serviceUuid][characteristicUuid] = {};
+@@ -724,10 +736,13 @@ Gatt.prototype.discoverDescriptors = function (serviceUuid, characteristicUuid)
+       for (i = 0; i < descriptors.length; i++) {
+         descriptorUuids.push(descriptors[i].uuid);
+ 
+-        this._descriptors[serviceUuid][characteristicUuid][descriptors[i].uuid] = descriptors[i];
++        if (!this._descriptors[serviceUuid][characteristicUuid][valueHandle]) {
++          this._descriptors[serviceUuid][characteristicUuid][valueHandle] = {};
++        }
++        this._descriptors[serviceUuid][characteristicUuid][valueHandle][descriptors[i].uuid] = descriptors[i];
+       }
+ 
+-      this.emit('descriptorsDiscover', this._address, serviceUuid, characteristicUuid, descriptorUuids);
++      this.emit('descriptorsDiscover', this._address, serviceUuid, characteristicUuid, descriptorUuids, valueHandle);
+     } else {
+       this._queueCommand(this.findInfoRequest(descriptors[descriptors.length - 1].handle + 1, characteristic.endHandle), callback);
+     }
+@@ -736,8 +751,8 @@ Gatt.prototype.discoverDescriptors = function (serviceUuid, characteristicUuid)
+   this._queueCommand(this.findInfoRequest(characteristic.valueHandle + 1, characteristic.endHandle), callback);
+ };
+ 
+-Gatt.prototype.readValue = function (serviceUuid, characteristicUuid, descriptorUuid) {
+-  const descriptor = this._descriptors[serviceUuid][characteristicUuid][descriptorUuid];
++Gatt.prototype.readValue = function (serviceUuid, characteristicUuid, descriptorUuid, valueHandle) {
++  const descriptor = this._descriptors[serviceUuid][characteristicUuid][valueHandle][descriptorUuid];
+ 
+   let readData = Buffer.alloc(0);
+ 
+@@ -748,24 +763,24 @@ Gatt.prototype.readValue = function (serviceUuid, characteristicUuid, descriptor
+       if (data.length === this._mtu) {
+         this._queueCommand(this.readBlobRequest(descriptor.handle, readData.length), callback);
+       } else {
+-        this.emit('valueRead', this._address, serviceUuid, characteristicUuid, descriptorUuid, readData);
++        this.emit('valueRead', this._address, serviceUuid, characteristicUuid, descriptorUuid, readData, valueHandle);
+       }
+     } else {
+-      this.emit('valueRead', this._address, serviceUuid, characteristicUuid, descriptorUuid, readData);
++      this.emit('valueRead', this._address, serviceUuid, characteristicUuid, descriptorUuid, readData, valueHandle);
+     }
+   };
+ 
+   this._queueCommand(this.readRequest(descriptor.handle), callback);
+ };
+ 
+-Gatt.prototype.writeValue = function (serviceUuid, characteristicUuid, descriptorUuid, data) {
+-  const descriptor = this._descriptors[serviceUuid][characteristicUuid][descriptorUuid];
++Gatt.prototype.writeValue = function (serviceUuid, characteristicUuid, descriptorUuid, data, valueHandle) {
++  const descriptor = this._descriptors[serviceUuid][characteristicUuid][valueHandle][descriptorUuid];
+ 
+   this._queueCommand(this.writeRequest(descriptor.handle, data, false), data => {
+     const opcode = data[0];
+ 
+     if (opcode === ATT_OP_WRITE_RESP) {
+-      this.emit('valueWrite', this._address, serviceUuid, characteristicUuid, descriptorUuid);
++      this.emit('valueWrite', this._address, serviceUuid, characteristicUuid, descriptorUuid, valueHandle);
+     }
+   });
+ };
+diff --git a/lib/noble.js b/lib/noble.js
+index 1678b587482d5d056408ad43fd939e9ac47f15a8..b2b3a7107f41c7f231639fd87607504c6964dc39 100644
+--- a/lib/noble.js
++++ b/lib/noble.js
+@@ -18,11 +18,10 @@ function Noble (bindings) {
+   this._services = {};
+   this._characteristics = {};
+   this._descriptors = {};
+-  this._discoveredPeripheralUUids = {};
++  this._discoveredPeripheralUUids = [];
+ 
+   this._bindings.on('stateChange', this.onStateChange.bind(this));
+   this._bindings.on('addressChange', this.onAddressChange.bind(this));
+-  this._bindings.on('scanParametersSet', this.onScanParametersSet.bind(this));
+   this._bindings.on('scanStart', this.onScanStart.bind(this));
+   this._bindings.on('scanStop', this.onScanStop.bind(this));
+   this._bindings.on('discover', this.onDiscover.bind(this));
+@@ -46,6 +45,9 @@ function Noble (bindings) {
+   this._bindings.on('handleNotify', this.onHandleNotify.bind(this));
+   this._bindings.on('onMtu', this.onMtu.bind(this));
+ 
++  this._bindings.on('connectionParameterUpdateRequest', this.onConnectionParameterUpdateRequest.bind(this));
++  this._bindings.on('leConnUpdateComplete', this.onConnectionUpdateCompleted.bind(this));
++
+   this.on('warning', (message) => {
+     if (this.listeners('warning').length === 1) {
+       console.warn(`noble: ${message}`);
+@@ -58,11 +60,7 @@ function Noble (bindings) {
+       this.initialized = true;
+ 
+       process.nextTick(() => {
+-        try {
+-          this._bindings.init();
+-        } catch (error) {
+-          this.emit('warning', 'Initialization of USB device failed: ' + error.message);
+-        }
++        this._bindings.init();
+       });
+     }
+   });
+@@ -98,18 +96,6 @@ Noble.prototype.onAddressChange = function (address) {
+   this.address = address;
+ };
+ 
+-Noble.prototype.setScanParameters = function (interval, window, callback) {
+-  if (callback) {
+-    this.once('scanParametersSet', callback);
+-  }
+-  this._bindings.setScanParameters(interval, window);
+-};
+-
+-Noble.prototype.onScanParametersSet = function () {
+-  debug('scanParametersSet');
+-  this.emit('scanParametersSet');
+-};
+-
+ const startScanning = function (serviceUuids, allowDuplicates, callback) {
+   if (typeof serviceUuids === 'function') {
+     this.emit('warning', 'calling startScanning(callback) is deprecated');
+@@ -135,7 +121,7 @@ const startScanning = function (serviceUuids, allowDuplicates, callback) {
+         });
+       }
+ 
+-      this._discoveredPeripheralUUids = {};
++      this._discoveredPeripheralUUids = [];
+       this._allowDuplicates = allowDuplicates;
+ 
+       this._bindings.startScanning(serviceUuids, allowDuplicates);
+@@ -185,11 +171,11 @@ Noble.prototype.reset = function () {
+   this._bindings.reset();
+ };
+ 
+-Noble.prototype.onDiscover = function (uuid, address, addressType, connectable, advertisement, rssi, scannable) {
++Noble.prototype.onDiscover = function (uuid, address, addressType, connectable, advertisement, rssi) {
+   let peripheral = this._peripherals[uuid];
+ 
+   if (!peripheral) {
+-    peripheral = new Peripheral(this, uuid, address, addressType, connectable, advertisement, rssi, scannable);
++    peripheral = new Peripheral(this, uuid, address, addressType, connectable, advertisement, rssi);
+ 
+     this._peripherals[uuid] = peripheral;
+     this._services[uuid] = {};
+@@ -204,23 +190,22 @@ Noble.prototype.onDiscover = function (uuid, address, addressType, connectable,
+     }
+ 
+     peripheral.connectable = connectable;
+-    peripheral.scannable = scannable;
+     peripheral.rssi = rssi;
+   }
+ 
+-  const previouslyDiscoverd = this._discoveredPeripheralUUids[uuid] === true;
++  const previouslyDiscoverd = (this._discoveredPeripheralUUids.indexOf(uuid) !== -1);
+ 
+   if (!previouslyDiscoverd) {
+-    this._discoveredPeripheralUUids[uuid] = true;
++    this._discoveredPeripheralUUids.push(uuid);
+   }
+ 
+-  if (this._allowDuplicates || !previouslyDiscoverd || (!scannable && !connectable)) {
++  if (this._allowDuplicates || !previouslyDiscoverd) {
+     this.emit('discover', peripheral);
+   }
+ };
+ 
+-Noble.prototype.connect = function (peripheralUuid, parameters) {
+-  this._bindings.connect(peripheralUuid, parameters);
++Noble.prototype.connect = function (peripheralUuid) {
++  this._bindings.connect(peripheralUuid);
+ };
+ 
+ Noble.prototype.onConnect = function (peripheralUuid, error) {
+@@ -234,20 +219,16 @@ Noble.prototype.onConnect = function (peripheralUuid, error) {
+   }
+ };
+ 
+-Noble.prototype.cancelConnect = function (peripheralUuid, parameters) {
+-  this._bindings.cancelConnect(peripheralUuid, parameters);
+-};
+-
+ Noble.prototype.disconnect = function (peripheralUuid) {
+   this._bindings.disconnect(peripheralUuid);
+ };
+ 
+-Noble.prototype.onDisconnect = function (peripheralUuid, reason) {
++Noble.prototype.onDisconnect = function (peripheralUuid) {
+   const peripheral = this._peripherals[peripheralUuid];
+ 
+   if (peripheral) {
+     peripheral.state = 'disconnected';
+-    peripheral.emit('disconnect', reason);
++    peripheral.emit('disconnect');
+   } else {
+     this.emit('warning', `unknown peripheral ${peripheralUuid} disconnected!`);
+   }
+@@ -378,10 +359,17 @@ Noble.prototype.addCharacteristics = function (peripheralUuid, serviceUuid, char
+       peripheralUuid,
+       serviceUuid,
+       characteristicUuid,
+-      characteristics[i].properties
++      characteristics[i].properties,
++      characteristics[i].valueHandle,
++      characteristics[i].startHandle,
++      characteristics[i].endHandle
+     );
+ 
+-    this._characteristics[peripheralUuid][serviceUuid][characteristicUuid] = characteristic;
++    if (!this._characteristics[peripheralUuid][serviceUuid][characteristicUuid]) {
++      this._characteristics[peripheralUuid][serviceUuid][characteristicUuid] = [];
++    }
++
++    this._characteristics[peripheralUuid][serviceUuid][characteristicUuid].push(characteristic);
+     this._descriptors[peripheralUuid][serviceUuid][characteristicUuid] = {};
+ 
+     characteristics_.push(characteristic);
+@@ -414,10 +402,14 @@ Noble.prototype.onCharacteristicsDiscover = function (peripheralUuid, serviceUui
+         peripheralUuid,
+         serviceUuid,
+         characteristicUuid,
+-        characteristics[i].properties
++        characteristics[i].properties,
++        characteristics[i].valueHandle
+       );
+ 
+-      this._characteristics[peripheralUuid][serviceUuid][characteristicUuid] = characteristic;
++      if(!this._characteristics[peripheralUuid][serviceUuid][characteristicUuid]) {
++        this._characteristics[peripheralUuid][serviceUuid][characteristicUuid] = []
++      }
++      this._characteristics[peripheralUuid][serviceUuid][characteristicUuid].push(characteristic);
+       this._descriptors[peripheralUuid][serviceUuid][characteristicUuid] = {};
+ 
+       characteristics_.push(characteristic);
+@@ -431,28 +423,38 @@ Noble.prototype.onCharacteristicsDiscover = function (peripheralUuid, serviceUui
+   }
+ };
+ 
+-Noble.prototype.read = function (peripheralUuid, serviceUuid, characteristicUuid) {
+-  this._bindings.read(peripheralUuid, serviceUuid, characteristicUuid);
++Noble.prototype.read = function (peripheralUuid, serviceUuid, characteristicUuid, valueHandle) {
++  this._bindings.read(peripheralUuid, serviceUuid, characteristicUuid, valueHandle);
+ };
+ 
+-Noble.prototype.onRead = function (peripheralUuid, serviceUuid, characteristicUuid, data, isNotification) {
+-  const characteristic = this._characteristics[peripheralUuid][serviceUuid][characteristicUuid];
++Noble.prototype.onRead = function (peripheralUuid, serviceUuid, characteristicUuid, data, isNotification, valueHandle) {
++  let characteristic = null;
++  if (valueHandle) {
++    characteristic = this._characteristics[peripheralUuid][serviceUuid][characteristicUuid].find(c => c.valueHandle === valueHandle);
++  } else {
++    characteristic = this._characteristics[peripheralUuid][serviceUuid][characteristicUuid][0];
++  }
+ 
+   if (characteristic) {
+-    characteristic.emit('data', data, isNotification);
++    characteristic.emit('data', data, isNotification, valueHandle);
+ 
+-    characteristic.emit('read', data, isNotification); // for backwards compatbility
++    characteristic.emit('read', data, isNotification, valueHandle); // for backwards compatbility
+   } else {
+-    this.emit('warning', `unknown peripheral ${peripheralUuid}, ${serviceUuid}, ${characteristicUuid} read!`);
++    this.emit('warning', `unknown peripheral ${peripheralUuid}, ${serviceUuid}, ${characteristicUuid}, ${valueHandle} read!`);
+   }
+ };
+ 
+-Noble.prototype.write = function (peripheralUuid, serviceUuid, characteristicUuid, data, withoutResponse) {
+-  this._bindings.write(peripheralUuid, serviceUuid, characteristicUuid, data, withoutResponse);
++Noble.prototype.write = function (peripheralUuid, serviceUuid, characteristicUuid, data, withoutResponse, valueHandle) {
++  this._bindings.write(peripheralUuid, serviceUuid, characteristicUuid, data, withoutResponse, valueHandle);
+ };
+ 
+-Noble.prototype.onWrite = function (peripheralUuid, serviceUuid, characteristicUuid) {
+-  const characteristic = this._characteristics[peripheralUuid][serviceUuid][characteristicUuid];
++Noble.prototype.onWrite = function (peripheralUuid, serviceUuid, characteristicUuid, valueHandle) {
++  let characteristic = null;
++  if (valueHandle) {
++    characteristic = this._characteristics[peripheralUuid][serviceUuid][characteristicUuid].find(c => c.valueHandle === valueHandle);
++  } else {
++    characteristic = this._characteristics[peripheralUuid][serviceUuid][characteristicUuid][0];
++  }
+ 
+   if (characteristic) {
+     characteristic.emit('write');
+@@ -466,7 +468,7 @@ Noble.prototype.broadcast = function (peripheralUuid, serviceUuid, characteristi
+ };
+ 
+ Noble.prototype.onBroadcast = function (peripheralUuid, serviceUuid, characteristicUuid, state) {
+-  const characteristic = this._characteristics[peripheralUuid][serviceUuid][characteristicUuid];
++  const characteristic = this._characteristics[peripheralUuid][serviceUuid][characteristicUuid][0];
+ 
+   if (characteristic) {
+     characteristic.emit('broadcast', state);
+@@ -475,12 +477,17 @@ Noble.prototype.onBroadcast = function (peripheralUuid, serviceUuid, characteris
+   }
+ };
+ 
+-Noble.prototype.notify = function (peripheralUuid, serviceUuid, characteristicUuid, notify) {
+-  this._bindings.notify(peripheralUuid, serviceUuid, characteristicUuid, notify);
++Noble.prototype.notify = function (peripheralUuid, serviceUuid, characteristicUuid, notify, valueHandle) {
++  this._bindings.notify(peripheralUuid, serviceUuid, characteristicUuid, notify, valueHandle);
+ };
+ 
+-Noble.prototype.onNotify = function (peripheralUuid, serviceUuid, characteristicUuid, state) {
+-  const characteristic = this._characteristics[peripheralUuid][serviceUuid][characteristicUuid];
++Noble.prototype.onNotify = function (peripheralUuid, serviceUuid, characteristicUuid, state, valueHandle) {
++  let characteristic = null;
++  if (valueHandle) {
++    characteristic = this._characteristics[peripheralUuid][serviceUuid][characteristicUuid].find(c => c.valueHandle === valueHandle);
++  } else {
++    characteristic = this._characteristics[peripheralUuid][serviceUuid][characteristicUuid][0];
++  }
+ 
+   if (characteristic) {
+     characteristic.emit('notify', state);
+@@ -489,12 +496,17 @@ Noble.prototype.onNotify = function (peripheralUuid, serviceUuid, characteristic
+   }
+ };
+ 
+-Noble.prototype.discoverDescriptors = function (peripheralUuid, serviceUuid, characteristicUuid) {
+-  this._bindings.discoverDescriptors(peripheralUuid, serviceUuid, characteristicUuid);
++Noble.prototype.discoverDescriptors = function (peripheralUuid, serviceUuid, characteristicUuid, valueHandle) {
++  this._bindings.discoverDescriptors(peripheralUuid, serviceUuid, characteristicUuid, valueHandle);
+ };
+ 
+-Noble.prototype.onDescriptorsDiscover = function (peripheralUuid, serviceUuid, characteristicUuid, descriptors) {
+-  const characteristic = this._characteristics[peripheralUuid][serviceUuid][characteristicUuid];
++Noble.prototype.onDescriptorsDiscover = function (peripheralUuid, serviceUuid, characteristicUuid, descriptors, valueHandle) {
++  let characteristic = null;
++  if (valueHandle) {
++    characteristic = this._characteristics[peripheralUuid][serviceUuid][characteristicUuid].find(c => c.valueHandle === valueHandle);
++  } else {
++    characteristic = this._characteristics[peripheralUuid][serviceUuid][characteristicUuid][0];
++  }
+ 
+   if (characteristic) {
+     const descriptors_ = [];
+@@ -507,28 +519,31 @@ Noble.prototype.onDescriptorsDiscover = function (peripheralUuid, serviceUuid, c
+         peripheralUuid,
+         serviceUuid,
+         characteristicUuid,
+-        descriptorUuid
++        descriptorUuid,
++        valueHandle
+       );
+ 
+-      this._descriptors[peripheralUuid][serviceUuid][characteristicUuid][descriptorUuid] = descriptor;
++      if (!this._descriptors[peripheralUuid][serviceUuid][characteristicUuid][valueHandle]) {
++        this._descriptors[peripheralUuid][serviceUuid][characteristicUuid][valueHandle] = {};
++      }
++      this._descriptors[peripheralUuid][serviceUuid][characteristicUuid][valueHandle][descriptorUuid] = descriptor;
+ 
+       descriptors_.push(descriptor);
+     }
+ 
+     characteristic.descriptors = descriptors_;
+-
+     characteristic.emit('descriptorsDiscover', descriptors_);
+   } else {
+     this.emit('warning', `unknown peripheral ${peripheralUuid}, ${serviceUuid}, ${characteristicUuid} descriptors discover!`);
+   }
+ };
+ 
+-Noble.prototype.readValue = function (peripheralUuid, serviceUuid, characteristicUuid, descriptorUuid) {
+-  this._bindings.readValue(peripheralUuid, serviceUuid, characteristicUuid, descriptorUuid);
++Noble.prototype.readValue = function (peripheralUuid, serviceUuid, characteristicUuid, descriptorUuid, valueHandle) {
++  this._bindings.readValue(peripheralUuid, serviceUuid, characteristicUuid, descriptorUuid, valueHandle);
+ };
+ 
+-Noble.prototype.onValueRead = function (peripheralUuid, serviceUuid, characteristicUuid, descriptorUuid, data) {
+-  const descriptor = this._descriptors[peripheralUuid][serviceUuid][characteristicUuid][descriptorUuid];
++Noble.prototype.onValueRead = function (peripheralUuid, serviceUuid, characteristicUuid, descriptorUuid, data, valueHandle) {
++  const descriptor = this._descriptors[peripheralUuid][serviceUuid][characteristicUuid][valueHandle][descriptorUuid];
+ 
+   if (descriptor) {
+     descriptor.emit('valueRead', data);
+@@ -537,12 +552,12 @@ Noble.prototype.onValueRead = function (peripheralUuid, serviceUuid, characteris
+   }
+ };
+ 
+-Noble.prototype.writeValue = function (peripheralUuid, serviceUuid, characteristicUuid, descriptorUuid, data) {
+-  this._bindings.writeValue(peripheralUuid, serviceUuid, characteristicUuid, descriptorUuid, data);
++Noble.prototype.writeValue = function (peripheralUuid, serviceUuid, characteristicUuid, descriptorUuid, data, valueHandle) {
++  this._bindings.writeValue(peripheralUuid, serviceUuid, characteristicUuid, descriptorUuid, data, valueHandle);
+ };
+ 
+-Noble.prototype.onValueWrite = function (peripheralUuid, serviceUuid, characteristicUuid, descriptorUuid) {
+-  const descriptor = this._descriptors[peripheralUuid][serviceUuid][characteristicUuid][descriptorUuid];
++Noble.prototype.onValueWrite = function (peripheralUuid, serviceUuid, characteristicUuid, descriptorUuid, valueHandle) {
++  const descriptor = this._descriptors[peripheralUuid][serviceUuid][characteristicUuid][valueHandle][descriptorUuid];
+ 
+   if (descriptor) {
+     descriptor.emit('valueWrite');
+@@ -590,8 +605,20 @@ Noble.prototype.onHandleNotify = function (peripheralUuid, handle, data) {
+ };
+ 
+ Noble.prototype.onMtu = function (peripheralUuid, mtu) {
+-  const peripheral = this._peripherals[peripheralUuid];
+-  if (peripheral && mtu) peripheral.mtu = mtu;
++  var peripheral = this._peripherals[peripheralUuid];
++  peripheral.mtu = mtu;
+ };
+ 
++Noble.prototype.connUpdateLe = function (peripheralUuid, minInterval, maxInterval, latency, supervisionTimeout) {
++  this._bindings.connUpdateLe(peripheralUuid, minInterval, maxInterval, latency, supervisionTimeout);
++}
++
++Noble.prototype.onConnectionParameterUpdateRequest = function (minInterval, maxInterval, latency, supervisionTimeout) {
++  this.emit('connectionParameterUpdateRequest', minInterval, maxInterval, latency, supervisionTimeout);
++};
++
++Noble.prototype.onConnectionUpdateCompleted = function (status, handle, interval, latency, supervisionTimeout) {
++  this.emit('connectionUpdateCompleted', status, handle, interval, latency, supervisionTimeout);
++}
++
+ module.exports = Noble;
+\ No newline at end of file
+diff --git a/lib/peripheral.js b/lib/peripheral.js
+index 1bd6987c82189050b8fe6214cfe7c5cf66bedea8..95e889315bbac1b7a6c8f5caa81c84596139e052 100644
+--- a/lib/peripheral.js
++++ b/lib/peripheral.js
+@@ -1,7 +1,7 @@
+ const events = require('events');
+ const util = require('util');
+ 
+-function Peripheral (noble, id, address, addressType, connectable, advertisement, rssi, scannable) {
++function Peripheral (noble, id, address, addressType, connectable, advertisement, rssi) {
+   this._noble = noble;
+ 
+   this.id = id;
+@@ -9,7 +9,6 @@ function Peripheral (noble, id, address, addressType, connectable, advertisement
+   this.address = address;
+   this.addressType = addressType;
+   this.connectable = connectable;
+-  this.scannable = scannable;
+   this.advertisement = advertisement;
+   this.rssi = rssi;
+   this.services = null;
+@@ -32,12 +31,7 @@ Peripheral.prototype.toString = function () {
+   });
+ };
+ 
+-const connect = function (options, callback) {
+-  if (typeof options === 'function') {
+-    callback = options;
+-    options = undefined;
+-  }
+-
++const connect = function (callback) {
+   if (callback) {
+     this.once('connect', error => {
+       callback(error);
+@@ -48,21 +42,12 @@ const connect = function (options, callback) {
+     this.emit('connect', new Error('Peripheral already connected'));
+   } else {
+     this.state = 'connecting';
+-    this._noble.connect(this.id, options);
++    this._noble.connect(this.id);
+   }
+ };
+ 
+ Peripheral.prototype.connect = connect;
+-Peripheral.prototype.connectAsync = function (options) {
+-  return util.promisify(callback => this.connect(options, callback))();
+-};
+-
+-Peripheral.prototype.cancelConnect = function (options) {
+-  if (this.state === 'connecting') {
+-    this.emit('connect', new Error('connection canceled!'));
+-    this._noble.cancelConnect(this.id, options);
+-  }
+-};
++Peripheral.prototype.connectAsync = util.promisify(connect);
+ 
+ const disconnect = function (callback) {
+   if (callback) {
+@@ -209,4 +194,9 @@ const writeHandle = function (handle, data, withoutResponse, callback) {
+ Peripheral.prototype.writeHandle = writeHandle;
+ Peripheral.prototype.writeHandleAsync = util.promisify(writeHandle);
+ 
++const connUpdateLe = function (minInterval, maxInterval, latency, supervisionTimeout) {
++  this._noble.connUpdateLe(this.id, minInterval, maxInterval, latency, supervisionTimeout);
++};
++Peripheral.prototype.connUpdateLe = connUpdateLe;
++
+ module.exports = Peripheral;
+\ No newline at end of file
+diff --git a/package-lock.json b/package-lock.json
+deleted file mode 100644
+index 1930574e300fed43fb4d24f6b9e6efc3aebfaf48..0000000000000000000000000000000000000000
