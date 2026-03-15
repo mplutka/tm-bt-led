@@ -165,15 +165,17 @@ class ACC extends AbstractClient {
     };
 
     handleRevLights() {
+      let rpmPercent = (this.physics.rpms / this.statics.maxRpm) * 100;
+
       if (this.physics.pitLimiterOn === 1 || this.graphics.isInPitLane || this.graphics.isInPit) {
         this.tmBtLed.setRevLightsFlashing(1);
+      } else if (this.config.flashAllLedsAtMaxRpm && rpmPercent >= 98) {
+        this.tmBtLed.setRevLightsFlashing(2);
       } else {
         this.tmBtLed.setRevLightsFlashing(0);
       }
   
-      if (this.tmBtLed.revLightsFlashing !== 1) {
-        let rpmPercent = (this.physics.rpms / this.statics.maxRpm) * 100;
-  
+      if (this.tmBtLed.revLightsFlashing === 0) {
         switch (true) {
           case this.config.blueRevLightsIndicateShift:
             this.tmBtLed.setRevLightsWithoutBlue(rpmPercent);

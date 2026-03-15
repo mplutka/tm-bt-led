@@ -3,6 +3,11 @@
  * 
  * Available modes: "SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"
  * Only available for ACC: "DELTA", "PRED LAP"
+ * 
+ * Rev lights options:
+ * - blueRevLightsIndicateShift: Blue LEDs flash at 99% RPM
+ * - flashingRevLightsIndicateShift: Blue LEDs flash above 90% RPM
+ * - flashAllLedsAtMaxRpm: ALL LEDs flash rapidly when reaching max RPM (98%+)
  */
 
 const config = {
@@ -11,6 +16,7 @@ const config = {
     rightModesAssetto: ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"],
     blueRevLightsIndicateShift: false,
     flashingRevLightsIndicateShift: false,
+    flashAllLedsAtMaxRpm: false,
     lowerLightsIndicateAbsAndTcAction: false,
 };
 
