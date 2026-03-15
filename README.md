@@ -125,6 +125,7 @@ BLE connection intervals must be multiples of 1.25ms. Common presets:
 | 66 | 15ms | 66.7 | Higher refresh |
 | 80 | 12.5ms | 80.0 | Maximum (may be unstable) |
 | 40 | 25ms | 40.0 | Power save |
+| 15 | 66ms | 14.1 | Compatibility 
 
 Run `--listFps` to see all valid options.
 

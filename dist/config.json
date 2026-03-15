@@ -3,9 +3,11 @@
     
     "global": {
         "_note": "Global settings that apply to the application. Command line arguments override these.",
+        "_unitsNote": "Units are auto-detected by default. Set metric or imperial to true to force.",
         "debug": false,
         "fps": 60,
         "queueDepth": 2,
+        "metric": false,
         "imperial": false,
         "message": ""
     },
