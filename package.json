@@ -4,7 +4,7 @@
   "license": "MIT",
   "name": "tm-bt-led",
   "description": "A library for accessing the Thrustmaster BT LED peripheral on Windows/PC",
-  "version": "3.1.8",
+  "version": "4.0.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/mplutka/tm-bt-led.git"
@@ -21,6 +21,7 @@
     "TM BT LED ACC",
     "TM BT LED iRacing",
     "TM BT LED Dirt Rally",
+    "TM BT LED Richard Burns Rally",
     "TM BT LED Project Cars 2",
     "TM BT LED Project Cars 3",
     "TM BT LED Automobilista 2",
@@ -34,7 +35,24 @@
   ],
   "main": "./lib/test.js",
   "engines": {
-    "node": ">=6"
+    "node": ">=14 <=20"
+  },
+  "pnpm": {
+    "overrides": {
+      "nan": "2.18.0"
+    },
+    "patchedDependencies": {
+      "@abandonware/bluetooth-hci-socket": "patches/@abandonware__bluetooth-hci-socket.patch",
+      "@abandonware/noble": "patches/@abandonware__noble.patch",
+      "node-irsdk": "patches/node-irsdk.patch"
+    },
+    "onlyBuiltDependencies": [
+      "@abandonware/bluetooth-hci-socket",
+      "@abandonware/noble",
+      "esbuild",
+      "node-irsdk",
+      "usb"
+    ]
   },
   "os": [
     "win32"
@@ -42,32 +60,33 @@
   "bin": "lib/launcher.js",
   "gypfile": true,
   "dependencies": {
-    "@abandonware/noble": "git+https://github.com/mplutka/noble.git",
-    "@racehub-io/f1-telemetry-client": "^0.2.11",
+    "@abandonware/noble": "1.9.2-26",
+    "@racehub-io/f1-telemetry-client": "^0.2.12",
+    "@yao-pkg/pkg": "^6.14.1",
     "binary-parser": "^2.2.1",
     "convert-units": "^2.3.4",
     "lodash": "^4.17.21",
     "node-addon-api": "^5.1.0",
     "node-bitarray": "^0.1.0",
-    "node-irsdk": "git+https://github.com/mplutka/node-irsdk.git",
+    "node-gyp": "^12.2.0",
+    "node-irsdk": "^2.1.6",
     "node-processlist": "^1.0.2",
-    "pkg": "^5.8.1",
-    "yargs": "^17.6.2"
+    "yargs": "^17.6.2",
+    "ac-remote-telemetry-client": "^0.1.1"
   },
-  "devDependencies": {},
   "pkg": {
     "scripts": [
       "clients/*.js"
     ],
     "targets": [
-      "node14-win"
+      "node20-win"
     ],
     "outputPath": "dist"
   },
+  "packageManager": "pnpm@10.30.3",
   "scripts": {
     "start": "node lib/launcher.js",
     "build": "node-gyp rebuild -C AssettoCorsaSharedMemory && node-gyp rebuild -C rF2SharedMemory && node-gyp rebuild -C r3e-api && node-gyp rebuild -C SCSSharedMemory",
-    "pack": "pkg . -C GZip"
-
+    "pack": "npx @yao-pkg/pkg . -C GZip"
   }
 }

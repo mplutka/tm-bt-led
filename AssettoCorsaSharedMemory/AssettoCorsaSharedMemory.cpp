@@ -124,6 +124,7 @@ Napi::Object AssettoCorsaSharedMemory::GetPhysics(const Napi::CallbackInfo& info
 	ret.Set("cgHeight", Napi::Number::New(env, physics->cgHeight));
 	ret.Set("drs", Napi::Number::New(env, physics->drs));
 	ret.Set("tc", Napi::Number::New(env, physics->tc));
+	ret.Set("abs", Napi::Number::New(env, physics->abs));
 	ret.Set("fuel", Napi::Number::New(env, physics->fuel));
 	ret.Set("gas", Napi::Number::New(env, physics->gas));
 	ret.Set("gear", Napi::Number::New(env, physics->gear));

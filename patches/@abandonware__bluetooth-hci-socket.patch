@@ -1,0 +1,65 @@
+diff --git a/lib/usb.js b/lib/usb.js
+index 85e2bc48a88c513bb6577688190b8c7d6fee8017..298a88cd421657819d5bfb8e28134a77ded6d125 100644
+--- a/lib/usb.js
++++ b/lib/usb.js
+@@ -2,7 +2,7 @@ var events = require('events');
+ var util = require('util');
+ 
+ var debug = require('debug')('hci-usb');
+-var usb = require('usb');
++var { usb, findByIds, getDeviceList } = require('usb');
+ 
+ var HCI_COMMAND_PKT = 0x01;
+ var HCI_ACLDATA_PKT = 0x02;
+@@ -28,6 +28,8 @@ var VENDOR_DEVICE_LIST = [
+   {vid: 0x050D, pid: 0x065A }, // Belkin BCM20702A0
+   {vid: 0x1286, pid: 0x204C }, // Marvell AVASTAR
+   {vid: 0x8087, pid: 0x0025 }, // Dell Precision 5530
++  {vid: 0x0bda, pid: 0x8771 }, // MPOW BT 5.0
++  {vid: 0x2357, pid: 0x0604 }, // TP-Link UB500/UB400 Nano
+ ];
+ 
+ function BluetoothHciSocket() {
+@@ -70,7 +72,7 @@ BluetoothHciSocket.prototype.bindUser = function(devId, params) {
+     }
+   } else {
+     this._usbDevice = VENDOR_DEVICE_LIST
+-      .map(d => usb.findByIds(d.vid, d.pid))
++      .map(d => findByIds(d.vid, d.pid))
+       .find(d => d != null);
+   }
+ 
+@@ -131,7 +133,7 @@ BluetoothHciSocket.prototype._getUsbParams = function(params) {
+ };
+ 
+ BluetoothHciSocket.prototype._findUsbDevice = function(devId, usbParams) {
+-  var usbDevices = usb.getDeviceList();
++  var usbDevices = getDeviceList();
+ 
+   for (var i = 0; i < usbDevices.length; i++) {
+     var usbDevice = usbDevices[i];
+@@ -158,7 +160,7 @@ BluetoothHciSocket.prototype._findUsbDevice = function(devId, usbParams) {
+ };
+ 
+ BluetoothHciSocket.prototype.getDeviceList = function() {
+-  return usb.getDeviceList()
++  return getDeviceList()
+     .filter(dev => {
+       return VENDOR_DEVICE_LIST.findIndex(d => {
+         return dev.deviceDescriptor.idVendor == d.vid && dev.deviceDescriptor.idProduct == d.pid;
+diff --git a/package-lock.json b/package-lock.json
+deleted file mode 100644
+index d196e8747c1a40c1484a4fd10a6050b8f0feed57..0000000000000000000000000000000000000000
+diff --git a/package.json b/package.json
+index b41402d05eeccb0d453f143d9aeece4bd7462d1f..96b1f1bc439febfdedd5704c8aee4b7d15f305bc 100644
+--- a/package.json
++++ b/package.json
+@@ -33,7 +33,7 @@
+     "node-gyp": "^10.0.1"
+   },
+   "optionalDependencies": {
+-    "usb": "^2.11.0"
++    "usb": "^2.17.0"
+   },
+   "devDependencies": {
+     "jshint": "^2.13.6"

@@ -1,0 +1,60 @@
+diff --git a/binding.gyp b/binding.gyp
+index 27fa0614db081657b924590ca1ffdad4ffd0dbf0..a7f5d58fa7fcb602f3ff4b7226ca39512937f8e2 100644
+--- a/binding.gyp
++++ b/binding.gyp
+@@ -1,4 +1,4 @@
+-﻿{
++{
+   "targets": [
+     {
+       "target_name": "IrSdkNodeBindings",
+diff --git a/package.json b/package.json
+index 88755f4cb4c075ff5b08f87bf89fb176f05feaa3..aebb4d1c39b3d46531192d7a98815095cecbc58c 100644
+--- a/package.json
++++ b/package.json
+@@ -37,7 +37,7 @@
+     "jsdoc-to-markdown": "4.*",
+     "mocha": "5.*",
+     "moment": "^2.19.3",
+-    "prebuild": "9.0.0",
++    "prebuild": "11.0.0",
+     "sandboxed-module": "2.0.*",
+     "sinon": "^6.0.1",
+     "sinon-chai": "3.*",
+diff --git a/src/cpp/IrSdkBindingHelpers.cpp b/src/cpp/IrSdkBindingHelpers.cpp
+index 962c2b166915461b71037313a4c9bd6913adbb24..9f51bdcba72e71a1698b6582218e0d3f09bac97d 100644
+--- a/src/cpp/IrSdkBindingHelpers.cpp
++++ b/src/cpp/IrSdkBindingHelpers.cpp
+@@ -49,7 +49,7 @@ Local<Value> NodeIrSdk::convertTelemetryVarToObject(IRSDKWrapper::TelemetryVar &
+     Local<Array> arr = Nan::New<Array>(var.header->count);
+     for (int i = 0; i < var.header->count; ++i)
+     {
+-      arr->Set(i, convertTelemetryValueToObject(var, i));
++      Nan::Set(arr, i, convertTelemetryValueToObject(var, i));
+     }
+     return arr;
+   }
+diff --git a/src/cpp/IrSdkNodeBindings.h b/src/cpp/IrSdkNodeBindings.h
+index 29b66f846275b8a8d8ba3ed8d41c46238b46d85d..b99e3058704200ea6770ffd359d218778ebbae6b 100644
+--- a/src/cpp/IrSdkNodeBindings.h
++++ b/src/cpp/IrSdkNodeBindings.h
+@@ -36,7 +36,8 @@ namespace NodeIrSdk {
+   {
+     irsdk.startup();
+ 
+-    node::AtExit(cleanUp);
++    node::Environment* env = node::GetCurrentEnvironment(v8::Isolate::GetCurrent()->GetCurrentContext());
++    node::AtExit(env, cleanUp, nullptr);
+ 
+     NAN_EXPORT(target, start);
+     NAN_EXPORT(target, shutdown);
+diff --git a/src/node-irsdk.js b/src/node-irsdk.js
+index 29002a4f39fed5f671f873ad2c8c2c3e6740ad68..1a69b9dbe2ef228b6d9dc3c8c5e9a7dc1a0cba19 100644
+--- a/src/node-irsdk.js
++++ b/src/node-irsdk.js
+@@ -1,4 +1,4 @@
+-var IrSdkNodeWrapper = require('../build/Release/IrSdkNodeBindings')
++var IrSdkNodeWrapper = require('../build/Release/IrSdkNodeBindings.node')
+ var JsIrSdk = require('./JsIrSdk')
+ 
+ /**

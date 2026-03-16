@@ -17,13 +17,14 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 **Please don't buy a Thrustmaster BT LED for this only to use it with your PC!** This method works now but could easily break because of future updates etc. I also don't recommend to do any firmware updates on the device if it works as intended. 
 
 ### Latest version
-[Download](https://github.com/mplutka/tm-bt-led/releases/download/v3.1.8/3.1.8.zip)
+[Download](https://github.com/mplutka/tm-bt-led/releases/download/v4.0.0/4.0.0.zip)
 
 ## Currently supported games 
 
-* F1 2019-23 (f1.bat)
+* F1 2019-25 (f1.bat)
 * Assetto Corsa, Assetto Corsa Competizione (assetto.bat)
 * iRacing (iracing.bat)
+* Richard Burns Rally by Rallysimfans (rbr.bat)
 * Dirt 3, Dirt 4, Dirt Rally, Dirt Rally 2 (dirt.bat)
 * Project Cars 2, Project Cars 3, Automobilista 2 (pcars2.bat)
 * Forza Motorsport 7, Forza Horizon 4, Forza Horizon 5 (forza.bat)
@@ -60,7 +61,7 @@ If you need the Windows bluetooth stack for your headset, keyboard, you need an 
 If you wish to go back to the stock drivers, simply do an automatic driver update in the device manager.
 
 ### Step 2. Download and setup connector
-1. Download current version [here](https://github.com/mplutka/tm-bt-led/releases/download/v3.1.8/3.1.8.zip) and extract the files into an empty folder.
+1. Download current version [here](https://github.com/mplutka/tm-bt-led/releases/download/v4.0.0/4.0.0.zip) and extract the files into an empty folder.
 2. Run `setup.bat` to detect your device and write its data to a file for faster reconnects (necessary).
 3. (Optional) You can start `test.bat` to run demo mode.
 
@@ -76,9 +77,126 @@ If you wish to go back to the stock drivers, simply do an automatic driver updat
 
 If you encounter false detections or any other problems, please let me know.
 
+## Command-Line Options
+
+Run `tm-bt-led.exe --help` for the full list. Common options:
+
+### Performance Tuning
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--fps=N` | Target FPS (auto-converts to valid BLE interval) | 60 |
+| `--interval=N` | Target interval in ms (rounds to nearest valid) | 16.25 |
+| `--queueDepth=N` | Max pending BLE writes (1-5, higher = more aggressive) | 2 |
+| `--legacyTimer` | Use setInterval instead of high-resolution timer | false |
+
+### Debugging
+
+| Option | Description |
+|--------|-------------|
+| `--debug` | Show detailed BLE stats every 2 seconds |
+| `--listFps` | Show all valid FPS/interval combinations and exit |
+
+### Display Settings
+
+| Option | Description |
+|--------|-------------|
+| `--metric` | Force metric units (km/h, kg, °C) |
+| `--imperial` | Force imperial units (mph, lb, °F) |
+| `--message="TEXT"` | Display scrolling message when no game running |
+| `--messagelights` | Enable all LEDs when no game running |
+
+### Mode Selection
+
+| Option | Description |
+|--------|-------------|
+| `--game=NAME` | Force specific game client (assetto, f1, iracing, etc.) |
+| `--test` | Run in test/demo mode |
+| `--setup` | Run device setup/pairing mode |
+
+### Valid FPS Values
+
+BLE connection intervals must be multiples of 1.25ms. Common presets:
+
+| FPS | Interval | Actual FPS | Notes |
+|-----|----------|------------|-------|
+| 60 | 16.25ms | 61.5 | Default, smooth gaming |
+| 50 | 20ms | 50.0 | Conservative |
+| 66 | 15ms | 66.7 | Higher refresh |
+| 80 | 12.5ms | 80.0 | Maximum (may be unstable) |
+| 40 | 25ms | 40.0 | Power save |
+| 15 | 66ms | 14.1 | Compatibility 
+
+Run `--listFps` to see all valid options.
+
+### Examples
+
+```batch
+:: Standard 60 FPS mode
+tm-bt-led.exe
+
+:: Higher refresh rate with deeper queue
+tm-bt-led.exe --fps=80 --queueDepth=3
+
+:: Debug mode to monitor performance
+tm-bt-led.exe --debug
+
+:: Conservative mode for stability
+tm-bt-led.exe --fps=40 --queueDepth=1
+
+:: Force specific game
+tm-bt-led.exe --game=assetto
+
+:: Show help
+tm-bt-led.exe --help
+
+:: Show valid FPS options
+tm-bt-led.exe --listFps
+```
+
 ## Customization
 You can change the order and type of data displayed on the left and right display (and sometimes the used UDP port) by editing the corresponding 
-`xxx.config.js` file in the same order as `tm-bt-led.exe`.
+`xxx.config.js` file in the same folder as `tm-bt-led.exe`.
+
+## UDP Port Forwarding
+
+For UDP-based games (F1, Dirt, Forza, RBR, Project Cars 2/AMS2), you can forward telemetry data to additional applications or devices. This is useful when you want to use tm-bt-led alongside other telemetry consumers, such as:
+
+- **Software**: SimHub, CrewChief, or other dashboard apps
+- **Hardware**: Rumble motors, buttkickers, jet seats, or other haptic feedback devices that receive UDP telemetry
+
+### Configuration
+
+Edit the game's config file (e.g., `f1.config.js`) and add ports to the `forwardPorts` array:
+
+```javascript
+const config = {
+    port: 20777,                // Port to listen on (game sends UDP here)
+    forwardPorts: [29373],      // Forward to SimHub (or any other port)
+    // ... other settings
+};
+```
+
+You can forward to multiple ports:
+```javascript
+forwardPorts: [29373, 30000],   // Forward to SimHub AND another app
+```
+
+### Supported Games
+
+| Game | Default Port | Config File |
+|------|-------------|-------------|
+| F1 Series | 20777 | f1.config.js |
+| Dirt Series | 20777 | dirt.config.js |
+| Forza Series | 20127 | forza.config.js |
+| Richard Burns Rally | 6776 | rbr.config.js |
+| Project Cars 2/AMS2 | 5606 | pcars2.config.js |
+
+### Notes
+
+- The original port continues to work normally - data is duplicated to forward ports
+- Forward ports are local only (127.0.0.1)
+- Leave `forwardPorts: []` empty if you don't need forwarding (default)
 
 ## Video
 
@@ -90,11 +208,25 @@ Here is a little video showing the device in action: [Youtube](https://www.youtu
 The script tries to read your OS's locale to automatically switch to MPH/F/LB if "en-us" is selected. To can force measurement units by running `run_imperial.bat` or `run_metric.bat` or by adding `--imperial` or `--metric` after the game batch file (e.g. assetto.bat --metric).
 
 ### Instability
-Stability has been improved with Version 2.0. After the initial connection the script tries to negotiate a connection interval of 17.5 ms which should give you a nice 60 Hz refresh rate. If your device freezes or USB errors are thrown in the command line window, try to kill the script and restart the TM BT LED and unplug/plug the usb stick.
+Stability has been improved with the high-resolution timer and write queue system. The default is 60 FPS (16.25ms interval). If your device freezes or USB errors occur:
 
-If you can't get it to run without crashes, you could add `--interval xxx` after the batch files to try out other refresh intervals (e.g. `assetto.bat --interval 50`). Please note that the given interval must be a multiple of 1.25 (15, 30, 50, 125). Also try out another USB port on your PC as this might help as well.
+1. **Try lower FPS**: `--fps=40` or `--fps=50`
+2. **Reduce queue depth**: `--queueDepth=1` (most conservative)
+3. **Use debug mode**: `--debug` to monitor for dropped writes or errors
+4. **Legacy timer**: `--legacyTimer` if high-res timer causes issues
+5. **Restart**: Kill the script, restart the TM BT LED, and unplug/replug the USB stick
+
+The system now includes automatic backoff when USB errors occur, which helps prevent disconnects.
+
+**Note**: BLE intervals must be multiples of 1.25ms. Run `--listFps` to see valid options.
 
 ## Game specific settings
+
+### F1 2019-2025
+Enable UDP telemetry in the game settings. The telemetry is sent to port 20777 by default.
+
+**Important for F1 25:** You must set the **UDP Format** to **2024** or earlier in the game's telemetry settings. The 2025 format is not yet supported by the telemetry parser.
+
 ### Forza Horizon 4 and Forza Motorsport 7
 Please follow these tutorials and set port to 20127. Also make sure that you disable network isolation (checknetisolation command) as mentioned.
 

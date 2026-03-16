@@ -1,6 +1,3 @@
-# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
-
 name: Node.js CI
 
 on:
@@ -11,32 +8,41 @@ on:
 
 jobs:
   build:
-
-    runs-on: windows-2019
+    runs-on: windows-latest
 
     strategy:
       matrix:
-        node-version: [14.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+        node-version: [20.x]
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
+
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-    #- run: npm uninstall @abandonware/noble && npm install https://github.com/mplutka/noble
-    #- run: npm uninstall node-irsdk && npm install https://github.com/sabifa/node-irsdk
-    #- run: npm uninstall f1-telemetry-client && npm install https://github.com/mplutka/f1-telemetry-client
-    - run: npm install && npm run build && npm run pack
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10.30.3
+
+    - name: Setup Windows Build Tools
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Build native modules
+      run: pnpm run build
+
+    - name: Package executable
+      run: pnpm run pack
 
     - name: Archive production artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: release
-        path: |
-          dist/*
-
-     
-          
-
+        name: tm-bt-led-${{ github.sha }}
+        path: dist/*

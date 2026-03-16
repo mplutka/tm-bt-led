@@ -9,14 +9,7 @@
 
 const AssettoCorsaSharedMemory = require("../AssettoCorsaSharedMemory/build/Release/AssettoCorsaSharedMemory.node");
 const AbstractClient = require('../lib/abstractClient.js');
-const path = require('path');
-
-const loadableConfigName = "assetto.config.js";
-const defaultConfig = {
-  leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP"],
-  rightModesAcc: ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "PRED LAP", "POSITION", "LAP", "LAPS LEFT"],
-  rightModesAssetto: ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"]
-};
+const { getClientConfig } = require('../lib/configLoader.js');
 
 
 // SM Version 1.7
@@ -24,6 +17,7 @@ class ACC extends AbstractClient {
     maxRpm = 0;
     isACC = true;
     refreshInterval = null;
+    detectedMaxRpm = 5000;
 
     config;
     modeMapping;
@@ -56,16 +50,7 @@ class ACC extends AbstractClient {
         "LAPS LEFT": this.showLapsLeft
       };
 
-      try {
-          this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
-          if (this.config?.leftModes && this.config?.rightModesAcc && this.config?.rightModesAssetto) {
-              console.log("Found custom config");
-          } else {
-              throw "No custom config";
-          }
-      } catch (e) {
-          this.config = defaultConfig;
-      }
+      this.config = getClientConfig('assetto', 'assetto.config.js');
 
       this.setCallbacks({
           onLeftPreviousMode: this.leftPreviousMode,
@@ -109,33 +94,7 @@ class ACC extends AbstractClient {
         this.tmBtLed.setGear(this.physics.gear - 1);
 
         // RevLights & PitLimiter
-        if (this.physics.pitLimiterOn === 1 || this.graphics.isInPitLane || this.graphics.isInPit) {
-          this.tmBtLed.setRevLightsFlashing(1);
-        } else {
-          this.tmBtLed.setRevLightsFlashing(0);
-        }
-        
-        if (this.tmBtLed.revLightsFlashing !== 1) {
-          let rpmPercent = this.physics.rpms / this.statics.maxRpm * 100;
-
-          if (this.config?.blueRevLightsIndicateShift) {
-            this.tmBtLed.setRevLightsWithoutBlue(rpmPercent);
-
-            if (rpmPercent >= 99) {
-              this.tmBtLed.setRevLightsBlueFlashing(true);
-            } else {
-              this.tmBtLed.setRevLightsBlueFlashing(false);
-            }
-          } else {
-            if (rpmPercent < 50) {
-              rpmPercent = 0;
-            } else {
-              rpmPercent = (rpmPercent - 50) / 50 * 100;
-            }
-  
-            this.tmBtLed.setRevLights(rpmPercent >= 98 ? 100 : rpmPercent);
-          }
-        }
+        this.handleRevLights();
 
         if (this.physics.isEngineRunning === 1) {
           this.tmBtLed.setGearDot(true);
@@ -170,6 +129,8 @@ class ACC extends AbstractClient {
             break
         }
 
+        this.handleAssists();
+
         // Set left display according to left modes array and currentLeftMode array index
         if (this.currentLeftMode <= this.leftModes.length) {
           const leftDataProcessor = this.modeMapping[this.leftModes[this.currentLeftMode]];
@@ -187,6 +148,72 @@ class ACC extends AbstractClient {
             }
         }
     };
+
+    handleRevLights() {
+      let maxRpm = this.statics.maxRpm;
+      
+      if (!maxRpm || maxRpm <= 0) {
+        if (this.physics.rpms > this.detectedMaxRpm) {
+          this.detectedMaxRpm = this.physics.rpms;
+        }
+        maxRpm = this.detectedMaxRpm;
+      }
+
+      let rpmPercent = (this.physics.rpms / maxRpm) * 100;
+      
+      if (!isFinite(rpmPercent) || isNaN(rpmPercent)) {
+        rpmPercent = 0;
+      }
+
+      if (this.physics.pitLimiterOn === 1 || this.graphics.isInPitLane || this.graphics.isInPit) {
+        this.tmBtLed.setRevLightsFlashing(1);
+      } else if (this.config.flashAllLedsAtMaxRpm && rpmPercent >= 98) {
+        this.tmBtLed.setRevLightsFlashing(2);
+      } else {
+        this.tmBtLed.setRevLightsFlashing(0);
+      }
+  
+      if (this.tmBtLed.revLightsFlashing === 0) {
+        switch (true) {
+          case this.config.blueRevLightsIndicateShift:
+            this.tmBtLed.setRevLightsWithoutBlue(rpmPercent);
+  
+            if (rpmPercent >= 99) {
+              this.tmBtLed.setRevLightsBlueFlashing(1);
+            } else {
+              this.tmBtLed.setRevLightsBlueFlashing(0);
+            }
+            break;
+          case this.config.flashingRevLightsIndicateShift:
+            if (rpmPercent <= 90) {
+              this.tmBtLed.setRevLights(rpmPercent);
+              if (this.tmBtLed.revLightsBlueFlashing) 
+                this.tmBtLed.setRevLightsBlueFlashing(0);
+              return;
+            }
+  
+            this.tmBtLed.setRevLightsWithoutBlue(rpmPercent);
+            this.tmBtLed.setRevLightsBlueFlashing(1);
+            break;
+          default:
+            rpmPercent = rpmPercent < 50 ? 0 : ((rpmPercent - 50) / 50) * 100;
+            this.tmBtLed.setRevLights(rpmPercent >= 98 ? 100 : rpmPercent);
+            break;
+        }
+      }
+    }
+
+    handleAssists() {
+      if (!this.config.lowerLightsIndicateAbsAndTcAction) {
+        return;
+      }
+
+      const absActive = this.physics.abs > 0.1;
+      const tcActive = this.physics.tc > 0.1;
+      this.tmBtLed.setBlue(absActive);
+      this.tmBtLed.setRed(tcActive);
+      this.tmBtLed.setYellow(absActive || tcActive);
+    }
 
     showSpeed = (onRight) => {
       this.tmBtLed.setSpeed(this.physics.speedKmh, onRight);
