@@ -9,36 +9,38 @@
  * EA WRC uses a JSON-configurable UDP telemetry system.
  * Default config location: Documents/My Games/WRC/telemetry/config.json
  * 
- * This client parses the default "wrc" packet structure which includes
- * vehicle telemetry data like speed, RPM, gear, brake temps, and stage timing.
+ * This client parses the default "wrc" / "custom1" session_update layout from
+ * readme/udp/wrc.json (channel order and types per readme/channels.json).
  */
 
 const UdpListener = require('../lib/udpListener.js');
 const AbstractClient = require('../lib/abstractClient.js');
 const { getClientConfig } = require('../lib/configLoader.js');
+const { resolveRevLightFlash } = require('../lib/revLightFlash.js');
 
 class WRC extends AbstractClient {
     config;
     modeMapping;
 
     /*
-     * Default EA WRC telemetry packet structure
-     * Based on the default wrc.json packet definition
-     * All values are little-endian
+     * session_update: channels only (header empty in wrc.json); first field is packet_uid.
+     * Packed size is 237 bytes (tight); some builds insert 3-byte padding after shiftlights_rpm_valid → 240.
+     * Optional 4-byte fourcc before payload → 241 or 244 bytes total.
+     * All values are little-endian.
      */
     packetStructure = [
-        // Packet identification (12 bytes)
-        { name: "packet_4cc", type: "uint32" },           // 4CC identifier (e.g., "wrc\0")
         { name: "packet_uid", type: "uint64" },           // Unique packet ID
 
-        // Shift lights data (16 bytes)
+        // Game timing (24 bytes) — must appear before shift lights in official schema
+        { name: "game_total_time", type: "float32" },
+        { name: "game_delta_time", type: "float32" },
+        { name: "game_frame_count", type: "uint64" },
+
+        // Shift lights (3 floats + boolean; gear follows immediately in tight packing)
         { name: "shiftlights_fraction", type: "float32" },
         { name: "shiftlights_rpm_start", type: "float32" },
         { name: "shiftlights_rpm_end", type: "float32" },
         { name: "shiftlights_rpm_valid", type: "uint8" },
-        { name: "_padding1", type: "uint8", skip: true },
-        { name: "_padding2", type: "uint8", skip: true },
-        { name: "_padding3", type: "uint8", skip: true },
 
         // Gear data (4 bytes)
         { name: "vehicle_gear_index", type: "uint8" },
@@ -112,11 +114,14 @@ class WRC extends AbstractClient {
         { name: "vehicle_steering", type: "float32" },
         { name: "vehicle_handbrake", type: "float32" },
 
-        // Stage data (12 bytes)
+        // Stage data — distances are float64 in channels.json
         { name: "stage_current_time", type: "float32" },
-        { name: "stage_current_distance", type: "float32" },
-        { name: "stage_length", type: "float32" }
+        { name: "stage_current_distance", type: "float64" },
+        { name: "stage_length", type: "float64" }
     ];
+
+    /** Same as packetStructure but 3-byte pad after shiftlights_rpm_valid (240-byte wire format). */
+    packetStructurePadded;
 
     lastStageTime = 0;
     bestStageTime = 0;
@@ -139,6 +144,8 @@ class WRC extends AbstractClient {
         };
 
         this.config = getClientConfig('wrc', 'wrc.config.js');
+        this.revFlashProfile = resolveRevLightFlash(this.config);
+        this.tmBtLed.setRevLightFlashProfile(this.revFlashProfile);
 
         this.setCallbacks({
             onLeftPreviousMode: this.leftPreviousMode,
@@ -147,6 +154,15 @@ class WRC extends AbstractClient {
             onRightNextMode: this.rightNextMode
         });
         this.setModes(this.config.leftModes, this.config.rightModes);
+
+        const idxShiftValid = this.packetStructure.findIndex((f) => f.name === 'shiftlights_rpm_valid');
+        this.packetStructurePadded = [
+            ...this.packetStructure.slice(0, idxShiftValid + 1),
+            { name: '_shift_pad1', type: 'uint8', skip: true },
+            { name: '_shift_pad2', type: 'uint8', skip: true },
+            { name: '_shift_pad3', type: 'uint8', skip: true },
+            ...this.packetStructure.slice(idxShiftValid + 1)
+        ];
 
         this.client = new UdpListener({
             port: this.config.port,
@@ -169,11 +185,21 @@ class WRC extends AbstractClient {
     }
 
     parseData = (message) => {
-        if (message.length < 100) {
+        const lenTight = 237;
+        const lenPadded = 240;
+        let payload = message;
+        // Optional fourcc prefix (4 + 237 = 241, 4 + 240 = 244)
+        if (message.length === lenTight + 4 || message.length === lenPadded + 4) {
+            payload = message.subarray(4);
+        }
+        let structure = this.packetStructure;
+        if (payload.length === lenPadded) {
+            structure = this.packetStructurePadded;
+        } else if (payload.length !== lenTight) {
             return;
         }
 
-        const data = this.transformData(message);
+        const data = this.transformData(payload, structure);
 
         if (!data) return;
 
@@ -225,7 +251,6 @@ class WRC extends AbstractClient {
 
     handleRevLights(data) {
         const currentRpm = data["vehicle_engine_rpm_current"];
-        const maxRpm = data["vehicle_engine_rpm_max"] || (this.config.fallbackMaxRpm || 7500);
         const shiftStart = data["shiftlights_rpm_start"];
         const shiftEnd = data["shiftlights_rpm_end"];
         const shiftFraction = data["shiftlights_fraction"];
@@ -239,33 +264,46 @@ class WRC extends AbstractClient {
             }
             rpmPercent = Math.min(100, Math.max(0, rpmPercent));
 
-            if (this.config.flashAllLedsAtMaxRpm && shiftFraction >= 1.0) {
+            if (this.revFlashProfile.maxRpm.enabled && shiftFraction >= 1.0) {
                 this.tmBtLed.setRevLightsFlashing(2);
             } else {
                 this.tmBtLed.setRevLightsFlashing(0);
             }
 
-            if (this.tmBtLed.revLightsFlashing === 0) {
-                if (this.config.blueRevLightsIndicateShift) {
-                    this.tmBtLed.setRevLightsWithoutBlue(rpmPercent);
-                    if (shiftFraction >= 0.95) {
-                        this.tmBtLed.setRevLightsBlueFlashing(1);
-                    } else {
-                        this.tmBtLed.setRevLightsBlueFlashing(0);
-                    }
-                } else if (this.config.flashingRevLightsIndicateShift) {
-                    if (shiftFraction < 0.8) {
-                        this.tmBtLed.setRevLights(rpmPercent);
-                        this.tmBtLed.setRevLightsBlueFlashing(0);
-                    } else {
-                        this.tmBtLed.setRevLightsWithoutBlue(rpmPercent);
-                        this.tmBtLed.setRevLightsBlueFlashing(1);
-                    }
-                } else {
-                    this.tmBtLed.setRevLights(shiftFraction >= 0.98 ? 100 : rpmPercent);
-                }
+            if (!this.tmBtLed.shouldApplyClientRevLights()) {
+                return;
             }
+
+            const shiftStyle = this.revFlashProfile.shift.style;
+            if (shiftStyle === 'blue_late') {
+                this.tmBtLed.setRevLightsWithoutBlue(rpmPercent);
+                if (shiftFraction >= 0.95) {
+                    this.tmBtLed.setRevLightsBlueFlashing(1);
+                } else {
+                    this.tmBtLed.setRevLightsBlueFlashing(0);
+                }
+                return;
+            }
+            if (shiftStyle === 'blue_early') {
+                if (shiftFraction < 0.8) {
+                    this.tmBtLed.setRevLights(rpmPercent);
+                    this.tmBtLed.setRevLightsBlueFlashing(0);
+                } else {
+                    this.tmBtLed.setRevLightsWithoutBlue(rpmPercent);
+                    this.tmBtLed.setRevLightsBlueFlashing(1);
+                }
+                return;
+            }
+            this.tmBtLed.setRevLights(shiftFraction >= 0.98 ? 100 : rpmPercent);
         } else {
+            let maxRpm = data["vehicle_engine_rpm_max"];
+            if (!maxRpm || maxRpm <= 0) {
+                maxRpm = this.config.fallbackMaxRpm || 7500;
+            }
+            if (!maxRpm || maxRpm <= 0) {
+                this.tmBtLed.setRevLights(0);
+                return;
+            }
             let rpmPercent = (currentRpm / maxRpm) * 100;
             rpmPercent = rpmPercent < 50 ? 0 : ((rpmPercent - 50) / 50) * 100;
             this.tmBtLed.setRevLights(rpmPercent >= 98 ? 100 : rpmPercent);
@@ -281,12 +319,19 @@ class WRC extends AbstractClient {
     };
 
     showBrakeTemp = (data, onRight) => {
-        const brakeTemps = 
-            data["vehicle_brake_temperature_bl"] +
-            data["vehicle_brake_temperature_br"] +
-            data["vehicle_brake_temperature_fl"] +
-            data["vehicle_brake_temperature_fr"];
-        this.tmBtLed.setTemperature(brakeTemps / 4, onRight);
+        const keys = [
+            "vehicle_brake_temperature_bl",
+            "vehicle_brake_temperature_br",
+            "vehicle_brake_temperature_fl",
+            "vehicle_brake_temperature_fr"
+        ];
+        const wheels = keys.map((k) => {
+            const v = Number(data[k]);
+            return Number.isFinite(v) ? v : 0;
+        });
+        // Hottest corner: drops as soon as the warmest rotor cools. A mean can stay high if one wheel lags.
+        const display = wheels.length ? Math.max(...wheels) : 0;
+        this.tmBtLed.setTemperature(display, onRight);
     };
 
     showStageTime = (data, onRight) => {
@@ -313,12 +358,12 @@ class WRC extends AbstractClient {
         this.tmBtLed.setInt(Math.round(progress), onRight);
     };
 
-    transformData = (message) => {
+    transformData = (message, structure = this.packetStructure) => {
         const view = new DataView(message.buffer, message.byteOffset, message.byteLength);
         let parsedData = {};
         let offset = 0;
 
-        for (const field of this.packetStructure) {
+        for (const field of structure) {
             if (offset >= message.length) break;
 
             try {
@@ -340,6 +385,10 @@ class WRC extends AbstractClient {
                     case "float32":
                         parsedData[field.name] = view.getFloat32(offset, true);
                         offset += 4;
+                        break;
+                    case "float64":
+                        parsedData[field.name] = view.getFloat64(offset, true);
+                        offset += 8;
                         break;
                     default:
                         offset += 4;

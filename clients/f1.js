@@ -10,6 +10,7 @@
 const { F1TelemetryClient, constants } = require('@racehub-io/f1-telemetry-client');
 const AbstractClient = require('../lib/abstractClient.js');
 const { getClientConfig } = require('../lib/configLoader.js');
+const { resolveRevLightFlash } = require('../lib/revLightFlash.js');
 const { PACKETS } = constants;
 const dgram = require('dgram');
 
@@ -26,6 +27,8 @@ class F1 extends AbstractClient {
         super(tmBtLed);    
 
         this.config = getClientConfig('f1', 'f1.config.js');
+        this.revFlashProfile = resolveRevLightFlash(this.config);
+        this.tmBtLed.setRevLightFlashProfile(this.revFlashProfile);
 
         this.setCallbacks({
             onLeftPreviousMode: this.leftPreviousMode,
@@ -313,7 +316,7 @@ class F1 extends AbstractClient {
             this.tmBtLed.setGear(carTelemetry.m_gear);
         
             drsOn = carTelemetry.m_drs === 1;
-            if (!this.tmBtLed.revLightsFlashing) {
+            if (this.tmBtLed.shouldApplyClientRevLights()) {
                 if (drsOn) {
                     this.tmBtLed.setRevLightsGreen(4);
                 } else if (drsAvailable) {
@@ -323,14 +326,15 @@ class F1 extends AbstractClient {
                 }
             }
             
-            if (this.tmBtLed.revLightsFlashing !== 1) { // No override because of pit limiter
+            if (this.tmBtLed.shouldApplyClientRevLights()) { // Pit limiter uses full-bar flash only
                 if (modernCar) {
                     this.tmBtLed.setRevLightsWithoutGreen(carTelemetry.m_revLightsPercent, 25);
                 } else {
-                    if (this.config?.blueRevLightsIndicateShift) {
+                    const st = this.revFlashProfile.shift.style;
+                    if (st === 'blue_late' || st === 'blue_early') {
                       this.tmBtLed.setRevLightsWithoutBlue(carTelemetry.m_revLightsPercent);
-        
-                      if (carTelemetry.m_revLightsPercent >= 99) {
+                      const th = st === 'blue_early' ? 95 : 99;
+                      if (carTelemetry.m_revLightsPercent >= th) {
                         this.tmBtLed.setRevLightsBlueFlashing(true);
                       } else {
                         this.tmBtLed.setRevLightsBlueFlashing(false);

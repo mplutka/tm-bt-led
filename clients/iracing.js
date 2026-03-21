@@ -10,6 +10,7 @@
 const irsdk = require('node-irsdk');
 const AbstractClient = require('../lib/abstractClient.js');
 const path = require('path');
+const { resolveRevLightFlash } = require('../lib/revLightFlash.js');
 
 const loadableConfigName = "iracing.config.js";
 const defaultConfig = {
@@ -56,6 +57,9 @@ class iRacing extends AbstractClient {
             this.config = defaultConfig;
         }
 
+        this.revFlashProfile = resolveRevLightFlash(this.config);
+        this.tmBtLed.setRevLightFlashProfile(this.revFlashProfile);
+
         this.setCallbacks({
             onLeftPreviousMode: this.leftPreviousMode,
             onLeftNextMode: this.leftNextMode,
@@ -87,12 +91,13 @@ class iRacing extends AbstractClient {
           } else {
             this.tmBtLed.setRevLightsFlashing(0);
           }
-          if (this.tmBtLed.revLightsFlashing !== 1) { // No override because of pit limiter
+          if (this.tmBtLed.shouldApplyClientRevLights()) {
             const rpmPercent = Math.ceil(telemetry.RPM / maxRpm * 100);
-            if (this.config?.blueRevLightsIndicateShift) {
+            const st = this.revFlashProfile.shift.style;
+            if (st === 'blue_late' || st === 'blue_early') {
               this.tmBtLed.setRevLightsWithoutBlue(rpmPercent);
-
-              if (rpmPercent >= 99) {
+              const th = st === 'blue_early' ? 95 : 99;
+              if (rpmPercent >= th) {
                 this.tmBtLed.setRevLightsBlueFlashing(true);
               } else {
                 this.tmBtLed.setRevLightsBlueFlashing(false);
@@ -140,7 +145,7 @@ class iRacing extends AbstractClient {
         
         this.client.on('SessionInfo', function (data) {
           const session = data.data;
-          if (this.config?.blueRevLightsIndicateShift && session.DriverInfo.DriverCarSLShiftRPM > 0) {
+          if (this.revFlashProfile.shift.style !== 'off' && session.DriverInfo.DriverCarSLShiftRPM > 0) {
             maxRpm = session.DriverInfo.DriverCarSLShiftRPM;
           } else if (session.DriverInfo.DriverCarRedLine > 0) {
             maxRpm = session.DriverInfo.DriverCarRedLine;

@@ -10,6 +10,7 @@
 const AssettoCorsaSharedMemory = require("../AssettoCorsaSharedMemory/build/Release/AssettoCorsaSharedMemory.node");
 const AbstractClient = require('../lib/abstractClient.js');
 const { getClientConfig } = require('../lib/configLoader.js');
+const { resolveRevLightFlash } = require('../lib/revLightFlash.js');
 
 
 // SM Version 1.7
@@ -47,10 +48,13 @@ class ACC extends AbstractClient {
         "PRED LAP": this.showPredLap,
         "POSITION": this.showPosition,
         "LAP": this.showLapNumber,
-        "LAPS LEFT": this.showLapsLeft
+        "LAPS LEFT": this.showLapsLeft,
+        "DISTANCE": this.showDistance
       };
 
       this.config = getClientConfig('assetto', 'assetto.config.js');
+      this.revFlashProfile = resolveRevLightFlash(this.config);
+      this.tmBtLed.setRevLightFlashProfile(this.revFlashProfile);
 
       this.setCallbacks({
           onLeftPreviousMode: this.leftPreviousMode,
@@ -167,40 +171,41 @@ class ACC extends AbstractClient {
 
       if (this.physics.pitLimiterOn === 1 || this.graphics.isInPitLane || this.graphics.isInPit) {
         this.tmBtLed.setRevLightsFlashing(1);
-      } else if (this.config.flashAllLedsAtMaxRpm && rpmPercent >= 98) {
+      } else if (this.revFlashProfile.maxRpm.enabled && rpmPercent >= 90) {
         this.tmBtLed.setRevLightsFlashing(2);
       } else {
         this.tmBtLed.setRevLightsFlashing(0);
       }
   
-      if (this.tmBtLed.revLightsFlashing === 0) {
-        switch (true) {
-          case this.config.blueRevLightsIndicateShift:
-            this.tmBtLed.setRevLightsWithoutBlue(rpmPercent);
-  
-            if (rpmPercent >= 99) {
-              this.tmBtLed.setRevLightsBlueFlashing(1);
-            } else {
-              this.tmBtLed.setRevLightsBlueFlashing(0);
-            }
-            break;
-          case this.config.flashingRevLightsIndicateShift:
-            if (rpmPercent <= 90) {
-              this.tmBtLed.setRevLights(rpmPercent);
-              if (this.tmBtLed.revLightsBlueFlashing) 
-                this.tmBtLed.setRevLightsBlueFlashing(0);
-              return;
-            }
-  
-            this.tmBtLed.setRevLightsWithoutBlue(rpmPercent);
-            this.tmBtLed.setRevLightsBlueFlashing(1);
-            break;
-          default:
-            rpmPercent = rpmPercent < 50 ? 0 : ((rpmPercent - 50) / 50) * 100;
-            this.tmBtLed.setRevLights(rpmPercent >= 98 ? 100 : rpmPercent);
-            break;
-        }
+      if (!this.tmBtLed.shouldApplyClientRevLights()) {
+        return;
       }
+
+      const shiftStyle = this.revFlashProfile.shift.style;
+      if (shiftStyle === 'blue_late') {
+        this.tmBtLed.setRevLightsWithoutBlue(rpmPercent);
+        if (rpmPercent >= 99) {
+          this.tmBtLed.setRevLightsBlueFlashing(1);
+        } else {
+          this.tmBtLed.setRevLightsBlueFlashing(0);
+        }
+        return;
+      }
+      if (shiftStyle === 'blue_early') {
+        if (rpmPercent <= 90) {
+          this.tmBtLed.setRevLights(rpmPercent);
+          if (this.tmBtLed.revLightsBlueFlashing) {
+            this.tmBtLed.setRevLightsBlueFlashing(0);
+          }
+          return;
+        }
+        this.tmBtLed.setRevLightsWithoutBlue(rpmPercent);
+        this.tmBtLed.setRevLightsBlueFlashing(1);
+        return;
+      }
+
+      rpmPercent = rpmPercent < 50 ? 0 : ((rpmPercent - 50) / 50) * 100;
+      this.tmBtLed.setRevLights(rpmPercent >= 98 ? 100 : rpmPercent);
     }
 
     handleAssists() {
@@ -255,7 +260,41 @@ class ACC extends AbstractClient {
     };
     showLapsLeft = (onRight) => {
       this.tmBtLed.setInt(this.graphics.numberOfLaps < 1000 ? (this.graphics.numberOfLaps - this.graphics.completedLaps) : 0, onRight);
-    };    
+    };
+
+    /**
+     * Meters remaining along current lap / stage (spline length).
+     * Uses normalizedCarPosition when the game reports it; some titles leave it at 0 and only
+     * update distanceTraveled (session metres), so we fall back to distance into lap via modulo.
+     */
+    showDistance = (onRight) => {
+      const trackLen = this.statics.trackSPlineLength;
+      let norm = this.graphics.normalizedCarPosition;
+      const dist = this.graphics.distanceTraveled;
+
+      if (!trackLen || trackLen <= 0 || !isFinite(trackLen)) {
+        this.tmBtLed.setInt(0, onRight);
+        return;
+      }
+
+      if (typeof norm !== 'number' || !isFinite(norm)) {
+        norm = 0;
+      } else {
+        norm = Math.min(1, Math.max(0, norm));
+      }
+
+      let intoLapMeters;
+      if (norm > 1e-6) {
+        intoLapMeters = norm * trackLen;
+      } else if (typeof dist === 'number' && isFinite(dist) && dist > 0) {
+        intoLapMeters = ((dist % trackLen) + trackLen) % trackLen;
+      } else {
+        intoLapMeters = 0;
+      }
+
+      const remaining = trackLen - intoLapMeters;
+      this.tmBtLed.setInt(Math.max(0, Math.round(remaining)), onRight);
+    };
 }
 
 module.exports = ACC;

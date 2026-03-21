@@ -100,8 +100,8 @@ class LiveForSpeed extends AbstractClient {
         else displayGear = g - 1;
         this.tmBtLed.setGear(displayGear);
 
-        const maxRpm = this.config.fallbackMaxRpm || 7500;
         const rpm = data.rpm || 0;
+        const maxRpm = this.config.fallbackMaxRpm || 7500;
         this.tmBtLed.setRevLights(Math.min(100, Math.max(0, Math.ceil((rpm / maxRpm) * 100))));
 
         this.tmBtLed.setGearDot(rpm > 200);

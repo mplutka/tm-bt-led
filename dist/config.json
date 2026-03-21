@@ -21,7 +21,12 @@
         "forwardPorts": [],
         "leftModes": ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "ENGINETEMP", "ERSLEVEL"],
         "rightModes": ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"],
-        "blueRevLightsIndicateShift": false
+        "_revLightFlashNote": "pitLimiterSpeed: slow|medium|fast; shift.style: off|blue_late|blue_early + shift.speed; maxRpm.enabled, maxRpm.colors [all|green|red|blue], maxRpm.speed",
+        "revLightFlash": {
+            "pitLimiterSpeed": "slow",
+            "shift": { "style": "off", "speed": "fast" },
+            "maxRpm": { "enabled": false, "colors": ["all"], "speed": "fast" }
+        }
     },
 
     "dirt": {
@@ -62,16 +67,18 @@
     },
 
     "assetto": {
-        "_availableModes": ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"],
+        "_availableModes": ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT", "DISTANCE"],
         "_accOnlyModes": ["DELTA", "PRED LAP"],
-        "_revLightsNote": "blueRevLightsIndicateShift: Blue LEDs flash at 99% RPM; flashingRevLightsIndicateShift: Blue LEDs flash above 90% RPM; flashAllLedsAtMaxRpm: ALL LEDs flash rapidly at 98%+ RPM",
+        "_revLightsNote": "revLightFlash: shift.style blue_late ≈ 99% RPM blue flash, blue_early ≈ above 90%; maxRpm at 98%+ when enabled",
         "executables": ["acc.exe", "acr.exe", "assettocorsa.exe"],
         "leftModes": ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP"],
-        "rightModesAcc": ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "PRED LAP", "POSITION", "LAP", "LAPS LEFT"],
-        "rightModesAssetto": ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"],
-        "blueRevLightsIndicateShift": false,
-        "flashingRevLightsIndicateShift": false,
-        "flashAllLedsAtMaxRpm": false,
+        "rightModesAcc": ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "PRED LAP", "POSITION", "LAP", "LAPS LEFT", "DISTANCE"],
+        "rightModesAssetto": ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT", "DISTANCE"],
+        "revLightFlash": {
+            "pitLimiterSpeed": "slow",
+            "shift": { "style": "off", "speed": "fast" },
+            "maxRpm": { "enabled": true, "colors": ["all"], "speed": "fast" }
+        },
         "lowerLightsIndicateAbsAndTcAction": false
     },
 
@@ -94,15 +101,17 @@
     "wrc": {
         "_availableModes": ["SPEED", "RPM", "BRAKETEMP", "STAGE TIME", "BEST TIME", "DISTANCE", "PROGRESS"],
         "_setupNote": "Enable UDP telemetry in EA Sports WRC: Documents/My Games/WRC/telemetry/config.json - Add a packet config pointing to 127.0.0.1:20777",
-        "_revLightsNote": "blueRevLightsIndicateShift: Blue LEDs flash at shift point; flashingRevLightsIndicateShift: Blue LEDs flash above 80% shift; flashAllLedsAtMaxRpm: ALL LEDs flash at max shift",
+        "_revLightsNote": "revLightFlash: blue_late near shift (>=95% fraction); blue_early from 80% shift. maxRpm.colors [all] = full-bar flash; partial colors flash only those segments",
         "executables": ["WRC.exe", "wrc.exe"],
         "port": 20777,
         "forwardPorts": [],
         "leftModes": ["SPEED", "RPM", "BRAKETEMP"],
         "rightModes": ["STAGE TIME", "BEST TIME", "DISTANCE", "PROGRESS"],
-        "blueRevLightsIndicateShift": false,
-        "flashingRevLightsIndicateShift": false,
-        "flashAllLedsAtMaxRpm": false,
+        "revLightFlash": {
+            "pitLimiterSpeed": "slow",
+            "shift": { "style": "off", "speed": "fast" },
+            "maxRpm": { "enabled": false, "colors": ["all"], "speed": "fast" }
+        },
         "fallbackMaxRpm": 7500
     },
 

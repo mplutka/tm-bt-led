@@ -26,6 +26,7 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 * iRacing (iracing.bat)
 * Richard Burns Rally by Rallysimfans (rbr.bat)
 * Dirt 3, Dirt 4, Dirt Rally, Dirt Rally 2 (dirt.bat)
+* EA Sports WRC (wrc.bat)
 * Project Cars 2, Project Cars 3, Automobilista 2 (pcars2.bat)
 * Forza Motorsport 7, Forza Horizon 4, Forza Horizon 5 (forza.bat)
 * rFactor2 (rF2.bat)
@@ -160,9 +161,47 @@ tm-bt-led.exe --listFps
 You can change the order and type of data displayed on the left and right display (and sometimes the used UDP port) by editing the corresponding 
 `xxx.config.js` file in the same folder as `tm-bt-led.exe`.
 
+Game defaults can also be merged from **`config.json`** in that same folder (see `dist/config.json` in the repo for a full template, and **`dist/config.demo.json`** for a smaller example with rev lights, forwarding, and WRC notes). Values under each game key (e.g. `"assetto"`, `"f1"`, `"wrc"`) override the built-in defaults; `xxx.config.js` still applies where used.
+
+### Rev lights (shift / max RPM flash)
+
+RPM strip behaviour for supported clients (e.g. **Assetto Corsa**, **WRC**, **F1** classic cars, **iRacing**) is controlled by the optional **`revLightFlash`** object inside the game section of `config.json`. Flash timing uses **wall-clock phases** (no separate `setInterval` per effect), so it stays in sync with the BLE update loop.
+
+**Speeds** (half-period of each on/off phase; full blink cycle is twice as long):
+
+| Value | Half-period | Full cycle (approx.) |
+|-------|-------------|----------------------|
+| `slow` | 250 ms | 500 ms |
+| `medium` | 125 ms | 250 ms |
+| `fast` | 50 ms | 100 ms |
+
+**Structure:**
+
+```json
+"revLightFlash": {
+    "pitLimiterSpeed": "slow",
+    "shift": { "style": "off", "speed": "fast" },
+    "maxRpm": { "enabled": false, "colors": ["all"], "speed": "fast" }
+}
+```
+
+- **`pitLimiterSpeed`** – Blink rate when the game triggers **pit limiter** full-bar flash (built-in behaviour, not tied to RPM config).
+- **`shift.style`** – `off` | `blue_late` | `blue_early`  
+  - **blue_late**: blue segment flashes near the shift point (e.g. ~99% RPM on Assetto / iRacing, high shift fraction on WRC).  
+  - **blue_early**: starts earlier (e.g. above ~90% RPM on Assetto, from ~80% shift fraction on WRC).  
+- **`shift.speed`** – Blink rate for that blue shift flash.
+- **`maxRpm`** – At high RPM (game-specific threshold, e.g. 98%+ on Assetto, max shift on WRC):  
+  - **`enabled`**: turn max-RPM flash on or off.  
+  - **`colors`**: `["all"]` blinks the **entire** RPM bar between empty and full. A list like `["blue"]`, `["red","blue"]`, etc. keeps the normal bar drawn by the game and only **blinks those colour groups** (off phase clears those segments).  
+  - **`speed`**: blink rate for max-RPM flash.
+
+**Avoid at the same time:** combining **max-RPM blue flash** with **shift blue flash** (both drive the blue LEDs); using **partial `maxRpm.colors`** together with the **combined** `setRevLights`-style bar only—partial colours align best with the “without blue / without green” style used by the shift helpers.
+
+Older `config.json` files may still list deprecated top-level keys (`blueRevLightsIndicateShift`, `flashingRevLightsIndicateShift`, `flashAllLedsAtMaxRpm`); those are still read for backward compatibility if present.
+
 ## UDP Port Forwarding
 
-For UDP-based games (F1, Dirt, Forza, RBR, Project Cars 2/AMS2, Live for Speed), you can forward telemetry data to additional applications or devices. This is useful when you want to use tm-bt-led alongside other telemetry consumers, such as:
+For UDP-based games (F1, Dirt, EA Sports WRC, Forza, RBR, Project Cars 2/AMS2, Live for Speed), you can forward telemetry data to additional applications or devices. This is useful when you want to use tm-bt-led alongside other telemetry consumers, such as:
 
 - **Software**: SimHub, CrewChief, or other dashboard apps
 - **Hardware**: Rumble motors, buttkickers, jet seats, or other haptic feedback devices that receive UDP telemetry
@@ -179,6 +218,8 @@ const config = {
 };
 ```
 
+For **EA Sports WRC**, set `forwardPorts` in the same folder’s **`config.json`**, inside the `"wrc"` object next to `"port"` (there is no separate `wrc.config.js` by default).
+
 You can forward to multiple ports:
 ```javascript
 forwardPorts: [29373, 30000],   // Forward to SimHub AND another app
@@ -190,6 +231,7 @@ forwardPorts: [29373, 30000],   // Forward to SimHub AND another app
 |------|-------------|-------------|
 | F1 Series | 20777 | f1.config.js |
 | Dirt Series | 20777 | dirt.config.js |
+| EA Sports WRC | 20777 | `config.json` (`wrc` section) |
 | Forza Series | 20127 | forza.config.js |
 | Richard Burns Rally | 6776 | rbr.config.js |
 | Project Cars 2/AMS2 | 5606 | pcars2.config.js |
@@ -230,6 +272,11 @@ Enable UDP telemetry in the game settings. The telemetry is sent to port 20777 b
 
 **Important for F1 25:** You must set the **UDP Format** to **2024** or earlier in the game's telemetry settings. The 2025 format is not yet supported by the telemetry parser.
 
+### Assetto Corsa, Competizione, EVO, Rally
+Telemetry uses the game’s **shared memory** (default client; no UDP setup required).
+
+**Right display — `DISTANCE` (experimental):** Optional mode that shows an approximate **distance remaining** along the current lap or stage, in **metres**, using spline length from static memory plus either **normalized car position** or, when that field stays at zero (seen on some builds), **`distanceTraveled`** session metres modulo spline length. Treat this as **experimental**: it depends entirely on what the title reports for spline length and position. Some layouts or mods may show **0**, **jumps**, or **obviously wrong** values; it is **not** a co-driver or pacenote distance—only geometry exposed on the internal track spline. Available for both **ACC** and **original Assetto**-family titles when you add **`DISTANCE`** to `rightModesAcc` / `rightModesAssetto` in `config.json` (see `dist/config.json`). If you **build from source**, rebuild the **`AssettoCorsaSharedMemory`** native addon so `trackSPlineLength` is available to the client.
+
 ### Forza Horizon 4 and Forza Motorsport 7
 Please follow these tutorials and set port to 20127. Also make sure that you disable network isolation (checknetisolation command) as mentioned.
 
@@ -245,6 +292,24 @@ https://c4z3q2x8.rocketcdn.me/wp/wp-content/uploads/2020/03/fanaleds_xml_after.j
 
 ### DiRT 3
 UDP telemetry doesn't provide data for max rpm to calculate the current rpm percentage. You need to edit the actual value for your current car (default is 7500) in the custom config file (dirt.config.js).
+
+### EA Sports WRC
+Telemetry is **off until you configure it** in the game’s telemetry JSON (not in tm-bt-led).
+
+#### Enable UDP output (standard `wrc` structure)
+
+1. **Launch EA Sports WRC once** and reach at least the first interactive screen, then quit. The game creates **`Documents\My Games\WRC\telemetry\`** with **`config.json`** and a **`readme\`** folder (channel definitions and packet layouts). If anything is missing, delete the `telemetry` folder and launch the game again so it is regenerated.
+2. Open **`Documents\My Games\WRC\telemetry\config.json`**. Under **`udp` → `packets`**, ensure there is an entry that uses:
+   - **`structure`**: **`"wrc"`** (the standard fixed packet layout — this is what tm-bt-led parses),
+   - **`packet`**: **`"session_update"`** (per-frame driving data),
+   - **`ip`**: **`127.0.0.1`** (or your PC’s address if the listener is elsewhere),
+   - **`port`**: **`20777`** (must match **`port`** in tm-bt-led’s **`config.json`** under **`"wrc"`**),
+   - **`bEnabled`**: **`true`**,
+   - **`frequencyHz`**: **`-1`** for no limit (full rate), or a positive value to cap update rate.
+3. Save the file and **restart the game** so it reloads the config. Check **`telemetry\log.txt`** if telemetry does not start.
+4. Start tm-bt-led with **`wrc.bat`** or **`tm-bt-led.exe --game=wrc`** before or while the game is running.
+
+**Use the standard `wrc` structure, not `wrc_experimental`.** Experimental mode uses a different packet split (start/update on different ports and merged state); tm-bt-led only supports the **`wrc`** **`session_update`** stream described in **`telemetry\readme\udp\wrc.json`** and **`telemetry\readme\channels.json`**. If a game update changes that layout, the client may need to be updated to match.
 
 ### rFactor2
 Copy "rF2SharedMemory/plugin/rFactor2SharedMemoryMapPlugin64.dll" into rF2 plugins folder and activate the plugin in the game.

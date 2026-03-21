@@ -246,6 +246,7 @@ Napi::Object AssettoCorsaSharedMemory::GetStatics(const Napi::CallbackInfo& info
 	ret.Set("maxFuel", Napi::Number::New(env, statics->maxFuel));
 	ret.Set("suspensionMaxTravel", Napi::Number::New(env, *statics->suspensionMaxTravel));
 	ret.Set("tyreRadius", Napi::Number::New(env, *statics->tyreRadius));
+	ret.Set("trackSPlineLength", Napi::Number::New(env, statics->trackSPlineLength));
 
 	return ret;
 }
