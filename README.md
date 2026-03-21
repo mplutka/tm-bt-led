@@ -17,12 +17,12 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 **Please don't buy a Thrustmaster BT LED for this only to use it with your PC!** This method works now but could easily break because of future updates etc. I also don't recommend to do any firmware updates on the device if it works as intended. 
 
 ### Latest version
-[Download](https://github.com/mplutka/tm-bt-led/releases/download/v4.0.0/4.0.0.zip)
+[Download](https://github.com/mplutka/tm-bt-led/releases/download/v4.1.0/4.1.0.zip)
 
 ## Currently supported games 
 
 * F1 2019-25 (f1.bat)
-* Assetto Corsa, Assetto Corsa Competizione (assetto.bat)
+* Assetto Corsa, Assetto Corsa Competizione, Assetto Corsa EVO, Assetto Corsa Rally (assetto.bat)
 * iRacing (iracing.bat)
 * Richard Burns Rally by Rallysimfans (rbr.bat)
 * Dirt 3, Dirt 4, Dirt Rally, Dirt Rally 2 (dirt.bat)
@@ -30,7 +30,8 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 * Forza Motorsport 7, Forza Horizon 4, Forza Horizon 5 (forza.bat)
 * rFactor2 (rF2.bat)
 * Raceroom (raceroom.bat)
-* Euro Truck Simulator 2, American Truck Simulator (ets2.bat) 
+* Euro Truck Simulator 2, American Truck Simulator (ets2.bat)
+* Live for Speed (lfs.bat)
 
 If you would like to add a game that uses udp port 20777 to the list, you can use `dump_udp.bat` to create a dumpfile with recorded telemetry data.
 
@@ -38,6 +39,7 @@ Either you use _template.js and create your own game file or get in touch with m
  
 ## Recommended Bluetooth chipsets/sticks known to be working
 * Certain CSR 8510 A10 based devices (USB VID: 0x0a12, USB PID: 0x0001) [This one works fine for me](https://amzn.to/3Y9a8Li)
+  * **Warning:** There are many fake "CSR 4.0" dongles on the market. They may show the same USB IDs but are unreliable or do not work with this project. Prefer known-good hardware or one of the alternatives below.
 * Realtek Bluetooth 8761B (USB VID: 0x0bda, USB PID: 0x8771, e.g. MPOW Bluetooth 5.0 stick)
 * Intel Wireless Bluetooth 8265 (USB VID: 0x8087, USB PID: 0x0a2b)
 Others might work too, but again: No guarantee.  
@@ -61,7 +63,7 @@ If you need the Windows bluetooth stack for your headset, keyboard, you need an 
 If you wish to go back to the stock drivers, simply do an automatic driver update in the device manager.
 
 ### Step 2. Download and setup connector
-1. Download current version [here](https://github.com/mplutka/tm-bt-led/releases/download/v4.0.0/4.0.0.zip) and extract the files into an empty folder.
+1. Download current version [here](https://github.com/mplutka/tm-bt-led/releases/download/v4.1.0/4.1.0.zip) and extract the files into an empty folder.
 2. Run `setup.bat` to detect your device and write its data to a file for faster reconnects (necessary).
 3. (Optional) You can start `test.bat` to run demo mode.
 
@@ -160,7 +162,7 @@ You can change the order and type of data displayed on the left and right displa
 
 ## UDP Port Forwarding
 
-For UDP-based games (F1, Dirt, Forza, RBR, Project Cars 2/AMS2), you can forward telemetry data to additional applications or devices. This is useful when you want to use tm-bt-led alongside other telemetry consumers, such as:
+For UDP-based games (F1, Dirt, Forza, RBR, Project Cars 2/AMS2, Live for Speed), you can forward telemetry data to additional applications or devices. This is useful when you want to use tm-bt-led alongside other telemetry consumers, such as:
 
 - **Software**: SimHub, CrewChief, or other dashboard apps
 - **Hardware**: Rumble motors, buttkickers, jet seats, or other haptic feedback devices that receive UDP telemetry
@@ -191,6 +193,7 @@ forwardPorts: [29373, 30000],   // Forward to SimHub AND another app
 | Forza Series | 20127 | forza.config.js |
 | Richard Burns Rally | 6776 | rbr.config.js |
 | Project Cars 2/AMS2 | 5606 | pcars2.config.js |
+| Live for Speed (OutGauge) | 30000 | lfs.config.js |
 
 ### Notes
 
@@ -248,6 +251,9 @@ Copy "rF2SharedMemory/plugin/rFactor2SharedMemoryMapPlugin64.dll" into rF2 plugi
 
 ### Euro Truck Simulator 2/American Truck Simulator
 Copy "SCSSharedMemory/plugin/scs-telemetry.dll" into "<GAME_DIR>/bin/win_x64/plugins". Create the plugins folder if needed.
+
+### Live for Speed
+Edit `LFS\cfg.txt` and set **OutGauge** to send to this PC, for example: `OutGauge Mode 1` (or `2` to include replay), `OutGauge IP 127.0.0.1`, and `OutGauge Port` to the same value as in `config.json` / `lfs.config.js` (default **30000**). OutGauge packets are only sent when you are in **cockpit** view. If you set **OutGauge ID** in `cfg.txt`, packets include four extra bytes at the end; the client accepts both sizes.
 
 ## SPECIAL THANKS
 Thank you, Dave Cook aka cooknn, for your great support, testing and precious feedback!

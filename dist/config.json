@@ -75,20 +75,6 @@
         "lowerLightsIndicateAbsAndTcAction": false
     },
 
-    "assetto-udp": {
-        "_availableModes": ["SPEED", "RPM", "FUEL", "TYRETEMP", "LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP"],
-        "_udpNote": "Enable UDP telemetry in Assetto Corsa: Documents/Assetto Corsa/cfg/assetto_corsa.ini -> [REMOTE_TELEMETRY] -> ENABLED=1",
-        "_revLightsNote": "blueRevLightsIndicateShift: Blue LEDs flash at 99% RPM; flashingRevLightsIndicateShift: Blue LEDs flash above 90% RPM; flashAllLedsAtMaxRpm: ALL LEDs flash rapidly at 98%+ RPM",
-        "executables": [],
-        "leftModes": ["SPEED", "RPM", "FUEL", "TYRETEMP"],
-        "rightModes": ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP"],
-        "blueRevLightsIndicateShift": false,
-        "flashingRevLightsIndicateShift": false,
-        "flashAllLedsAtMaxRpm": false,
-        "udpPort": 9996,
-        "udpHost": "127.0.0.1"
-    },
-
     "iracing": {
         "executables": ["iRacingUI.exe", "iRacingSim64DX11.exe"]
     },
@@ -103,5 +89,31 @@
 
     "ets2": {
         "executables": ["eurotrucks2.exe"]
+    },
+
+    "wrc": {
+        "_availableModes": ["SPEED", "RPM", "BRAKETEMP", "STAGE TIME", "BEST TIME", "DISTANCE", "PROGRESS"],
+        "_setupNote": "Enable UDP telemetry in EA Sports WRC: Documents/My Games/WRC/telemetry/config.json - Add a packet config pointing to 127.0.0.1:20777",
+        "_revLightsNote": "blueRevLightsIndicateShift: Blue LEDs flash at shift point; flashingRevLightsIndicateShift: Blue LEDs flash above 80% shift; flashAllLedsAtMaxRpm: ALL LEDs flash at max shift",
+        "executables": ["WRC.exe", "wrc.exe"],
+        "port": 20777,
+        "forwardPorts": [],
+        "leftModes": ["SPEED", "RPM", "BRAKETEMP"],
+        "rightModes": ["STAGE TIME", "BEST TIME", "DISTANCE", "PROGRESS"],
+        "blueRevLightsIndicateShift": false,
+        "flashingRevLightsIndicateShift": false,
+        "flashAllLedsAtMaxRpm": false,
+        "fallbackMaxRpm": 7500
+    },
+
+    "lfs": {
+        "_availableModes": ["SPEED", "RPM", "FUEL", "ENGINETEMP", "OILTEMP", "OILPRESS", "TURBO", "DISPLAY1", "DISPLAY2", "THROTTLE", "BRAKE"],
+        "_setupNote": "Live for Speed: Edit LFS\\cfg.txt — OutGauge Mode 1 (or 2), OutGauge IP 127.0.0.1, OutGauge Port must match \"port\" below. OutGauge is only sent in cockpit view.",
+        "executables": ["LFS.exe"],
+        "port": 30000,
+        "forwardPorts": [],
+        "leftModes": ["SPEED", "RPM", "FUEL", "ENGINETEMP", "OILTEMP", "OILPRESS", "TURBO"],
+        "rightModes": ["DISPLAY1", "DISPLAY2", "THROTTLE", "BRAKE"],
+        "fallbackMaxRpm": 7500
     }
 }

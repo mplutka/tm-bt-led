@@ -4,7 +4,7 @@
   "license": "MIT",
   "name": "tm-bt-led",
   "description": "A library for accessing the Thrustmaster BT LED peripheral on Windows/PC",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/mplutka/tm-bt-led.git"
@@ -31,7 +31,9 @@
     "TM BT LED rFactor 2",
     "TM BT LED Raceroom",
     "TM BT LED Euro Truck Simulator 2",
-    "TM BT LED American Truck Simulator"
+    "TM BT LED American Truck Simulator",
+    "TM BT LED EA Sports WRC",
+    "TM BT LED Live for Speed"
   ],
   "main": "./lib/test.js",
   "engines": {
@@ -71,8 +73,7 @@
     "node-gyp": "^12.2.0",
     "node-irsdk": "^2.1.6",
     "node-processlist": "^1.0.2",
-    "yargs": "^17.6.2",
-    "ac-remote-telemetry-client": "^0.1.1"
+    "yargs": "^17.6.2"
   },
   "pkg": {
     "scripts": [

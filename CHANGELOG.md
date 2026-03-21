@@ -162,3 +162,14 @@
 ## Version 3.1.8
 
 * Support for F1 2022, 2023 & 2024
+
+## Version 4.0.0
+
+* Major refactoring and performance improvements
+* High-resolution timer and write queue system
+* Command-line options for performance tuning
+* UDP port forwarding support
+
+## Version 4.1.0
+
+* Support for Assetto Corsa EVO and Assetto Corsa Rally
