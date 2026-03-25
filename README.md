@@ -17,7 +17,7 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 **Please don't buy a Thrustmaster BT LED for this only to use it with your PC!** This method works now but could easily break because of future updates etc. I also don't recommend to do any firmware updates on the device if it works as intended. 
 
 ### Latest version
-[Download](https://github.com/mplutka/tm-bt-led/releases/download/v4.1.1/4.1.1.zip)
+[Download](https://github.com/mplutka/tm-bt-led/releases/download/v4.1.2/4.1.2.zip)
 
 ## Currently supported games 
 
@@ -64,7 +64,7 @@ If you need the Windows bluetooth stack for your headset, keyboard, you need an 
 If you wish to go back to the stock drivers, simply do an automatic driver update in the device manager.
 
 ### Step 2. Download and setup connector
-1. Download current version [here](https://github.com/mplutka/tm-bt-led/releases/download/v4.1.1/4.1.1.zip) and extract the files into an empty folder.
+1. Download current version [here](https://github.com/mplutka/tm-bt-led/releases/download/v4.1.2/4.1.2.zip) and extract the files into an empty folder.
 2. Run `setup.bat` to detect your device and write its data to a file for faster reconnects (necessary).
 3. (Optional) You can start `test.bat` to run demo mode.
 
@@ -199,6 +199,24 @@ RPM strip behaviour for supported clients (e.g. **Assetto Corsa**, **WRC**, **F1
 
 Older `config.json` files may still list deprecated top-level keys (`blueRevLightsIndicateShift`, `flashingRevLightsIndicateShift`, `flashAllLedsAtMaxRpm`); those are still read for backward compatibility if present.
 
+### Max RPM for rev-light percentage (`fallbackMaxRpm` games)
+
+Several clients scale the **RPM LED bar** from a **maximum RPM** value. For **Assetto Corsa** (shared memory), **Richard Burns Rally**, **Live for Speed**, **DiRT** (UDP), and **EA Sports WRC** (UDP, only when shift-light RPM data is *not* used for the bar), that maximum is chosen with the same rules (implemented in `lib/resolveMaxRpm.js`):
+
+1. **Game telemetry** – If the title reports a max RPM and it looks sane (**strictly between 500 and 50000**), that value is used.  
+   - *Assetto:* `maxRpm` from static memory.  
+   - *DiRT:* `max_rpm` from the packet (internally compared after converting to the same scale as displayed RPM).  
+   - *WRC:* `vehicle_engine_rpm_max` on the **fallback** path (when shift lights are not driving the bar from `shiftlights_rpm_*`).  
+   - *RBR / LFS:* no max-RPM field in the packet, so this step is skipped.
+
+2. **Config fallback** – Otherwise, if **`fallbackMaxRpm`** under that game in **`config.json`** (or merged defaults from the repo) is **greater than zero**, that value is used. Defaults are typically **7500** where the game defines them.
+
+3. **Learned peak** – If there is still no value, the client uses an internal **learned maximum** (`detectedMaxRpm`, starting around **5000**), updated **every frame** whenever current RPM exceeds the stored peak.
+
+4. **Never below what you have seen** – After the above, if the learned peak is **higher** than the chosen maximum (for example the game under-reports redline but you have revved higher), the effective maximum is **raised** to that peak so the bar does not saturate early.
+
+You can still set **`fallbackMaxRpm`** per game in **`config.json`** when telemetry is missing or wrong. **WRC** continues to use the **shift-light RPM range** when the game marks it valid; the logic above applies only to the **plain RPM-fraction** bar in that case.
+
 ## UDP Port Forwarding
 
 For UDP-based games (F1, Dirt, EA Sports WRC, Forza, RBR, Project Cars 2/AMS2, Live for Speed), you can forward telemetry data to additional applications or devices. This is useful when you want to use tm-bt-led alongside other telemetry consumers, such as:
@@ -290,8 +308,8 @@ Please enable "DATA OUT" in the "HUD AND GAMEPLAY" settings and set "DATA OUT IP
 Enable UDP telemetry in Documents\My Games\DiRT Rally...\hardwaresettings\hardware_settings_config.xml by editing the motion_platform node as shown here:
 https://c4z3q2x8.rocketcdn.me/wp/wp-content/uploads/2020/03/fanaleds_xml_after.jpg
 
-### DiRT 3
-UDP telemetry doesn't provide data for max rpm to calculate the current rpm percentage. You need to edit the actual value for your current car (default is 7500) in the custom config file (dirt.config.js).
+### DiRT 3, DiRT Rally, GRID Legends, etc.
+UDP may omit or expose an unreliable **`max_rpm`**. The client uses **`max_rpm`** when it falls in the **500–50000 RPM** range (after scaling), otherwise **`fallbackMaxRpm`** from **`config.json`** / **`dirt.config.js`** (default **7500**), and it **learns** a higher peak while you drive. Override **`fallbackMaxRpm`** if the bar still feels wrong for a specific title or car.
 
 ### EA Sports WRC
 Telemetry is **off until you configure it** in the game’s telemetry JSON (not in tm-bt-led).
