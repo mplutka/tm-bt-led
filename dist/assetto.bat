@@ -1,3 +1,3 @@
 @echo off
-tm-bt-led.exe --game assetto-sharedmemory %*
+tm-bt-led.exe --game assetto %*
 pause
