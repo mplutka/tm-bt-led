@@ -78,7 +78,7 @@
         "revLightFlash": {
             "pitLimiterSpeed": "slow",
             "shift": { "style": "off", "speed": "fast" },
-            "maxRpm": { "enabled": true, "colors": ["all"], "speed": "fast" }
+            "maxRpm": { "enabled": false, "colors": ["all"], "speed": "fast" }
         },
         "lowerLightsIndicateAbsAndTcAction": false
     },
