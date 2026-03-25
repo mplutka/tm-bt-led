@@ -17,8 +17,11 @@ const UdpListener = require('../lib/udpListener.js');
 const AbstractClient = require('../lib/abstractClient.js');
 const { getClientConfig } = require('../lib/configLoader.js');
 const { resolveRevLightFlash } = require('../lib/revLightFlash.js');
+const { resolveMaxRpmForRevLights } = require('../lib/resolveMaxRpm.js');
 
 class WRC extends AbstractClient {
+    detectedMaxRpm = 5000;
+
     config;
     modeMapping;
 
@@ -296,10 +299,14 @@ class WRC extends AbstractClient {
             }
             this.tmBtLed.setRevLights(shiftFraction >= 0.98 ? 100 : rpmPercent);
         } else {
-            let maxRpm = data["vehicle_engine_rpm_max"];
-            if (!maxRpm || maxRpm <= 0) {
-                maxRpm = this.config.fallbackMaxRpm || 7500;
-            }
+            const maxRpm = resolveMaxRpmForRevLights(
+                {
+                    telemetryMaxRpm: data["vehicle_engine_rpm_max"],
+                    fallbackMaxRpm: this.config.fallbackMaxRpm,
+                    currentRpm
+                },
+                this
+            );
             if (!maxRpm || maxRpm <= 0) {
                 this.tmBtLed.setRevLights(0);
                 return;

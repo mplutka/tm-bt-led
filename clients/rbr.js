@@ -10,6 +10,7 @@
 const UdpListener = require('../lib/udpListener.js');
 const AbstractClient = require('../lib/abstractClient.js');
 const { getClientConfig } = require('../lib/configLoader.js');
+const { resolveMaxRpmForRevLights } = require('../lib/resolveMaxRpm.js');
 
 // RBR NGP TelemetryData struct byte offsets (packed, little-endian)
 const OFF = {
@@ -30,6 +31,8 @@ const OFF = {
 };
 
 class RBRClient extends AbstractClient {
+    detectedMaxRpm = 5000;
+
     config;
     modeMapping;
 
@@ -82,8 +85,11 @@ class RBRClient extends AbstractClient {
         const gear = (data.gear || 0) - 1;
         this.tmBtLed.setGear(gear === -1 ? -1 : gear);
 
-        const maxRpm = this.config.fallbackMaxRpm;
         const rpm = data.rpm || 0;
+        const maxRpm = resolveMaxRpmForRevLights(
+            { fallbackMaxRpm: this.config.fallbackMaxRpm, currentRpm: rpm },
+            this
+        );
         this.tmBtLed.setRevLights(Math.min(100, Math.max(0, Math.ceil((rpm / maxRpm) * 100))));
 
         if (this.currentLeftMode < this.leftModes.length) {

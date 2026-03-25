@@ -11,6 +11,7 @@ const AssettoCorsaSharedMemory = require("../AssettoCorsaSharedMemory/build/Rele
 const AbstractClient = require('../lib/abstractClient.js');
 const { getClientConfig } = require('../lib/configLoader.js');
 const { resolveRevLightFlash } = require('../lib/revLightFlash.js');
+const { resolveMaxRpmForRevLights } = require('../lib/resolveMaxRpm.js');
 
 
 // SM Version 1.7
@@ -154,25 +155,17 @@ class ACC extends AbstractClient {
     };
 
     handleRevLights() {
-      let maxRpm = this.statics.maxRpm;
-      
-      // Choose a usable max RPM for rpm% based rev light thresholds.
-      // Preference order:
-      // 1) config assetto.fallbackMaxRpm
-      // 2) detectedMaxRpm (learned from observed rpms)
-      if (!maxRpm || maxRpm < 500 || maxRpm > 50000) {
-          const cfgFallbackMaxRpm = Number(this.config?.fallbackMaxRpm || 0);
-          if (cfgFallbackMaxRpm > 0) {
-            maxRpm = cfgFallbackMaxRpm;
-          } else {
-            if (this.physics.rpms > this.detectedMaxRpm) {
-              this.detectedMaxRpm = this.physics.rpms;
-            }
-            maxRpm = this.detectedMaxRpm;
-          }
-      }
+      const currentRpm = this.physics.rpms;
+      const maxRpm = resolveMaxRpmForRevLights(
+        {
+          telemetryMaxRpm: this.statics.maxRpm,
+          fallbackMaxRpm: this.config?.fallbackMaxRpm,
+          currentRpm
+        },
+        this
+      );
 
-      let rpmPercent = (this.physics.rpms / maxRpm) * 100;
+      let rpmPercent = (currentRpm / maxRpm) * 100;
       
       if (!isFinite(rpmPercent) || isNaN(rpmPercent)) {
         rpmPercent = 0;

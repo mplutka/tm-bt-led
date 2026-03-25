@@ -15,6 +15,7 @@
 const UdpListener = require('../lib/udpListener.js');
 const AbstractClient = require('../lib/abstractClient.js');
 const { getClientConfig } = require('../lib/configLoader.js');
+const { resolveMaxRpmForRevLights } = require('../lib/resolveMaxRpm.js');
 
 /** Minimum OutGaugePack size without trailing ID (ispackets.h) */
 const OUTGAUGE_MIN_LEN = 92;
@@ -35,6 +36,8 @@ function displayText4(str) {
 }
 
 class LiveForSpeed extends AbstractClient {
+    detectedMaxRpm = 5000;
+
     config;
     modeMapping;
 
@@ -101,7 +104,10 @@ class LiveForSpeed extends AbstractClient {
         this.tmBtLed.setGear(displayGear);
 
         const rpm = data.rpm || 0;
-        const maxRpm = this.config.fallbackMaxRpm || 7500;
+        const maxRpm = resolveMaxRpmForRevLights(
+            { fallbackMaxRpm: this.config.fallbackMaxRpm, currentRpm: rpm },
+            this
+        );
         this.tmBtLed.setRevLights(Math.min(100, Math.max(0, Math.ceil((rpm / maxRpm) * 100))));
 
         this.tmBtLed.setGearDot(rpm > 200);

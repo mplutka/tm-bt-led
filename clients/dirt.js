@@ -10,9 +10,11 @@
 const UdpListener = require('../lib/udpListener.js');
 const AbstractClient = require('../lib/abstractClient.js');
 const { getClientConfig } = require('../lib/configLoader.js');
+const { resolveMaxRpmForRevLights } = require('../lib/resolveMaxRpm.js');
 
 class DirtRally extends AbstractClient {
-   
+    detectedMaxRpm = 5000;
+
     config;
     modeMapping;
 
@@ -143,9 +145,26 @@ class DirtRally extends AbstractClient {
         // Display current gear (10 -> -1: Reverse, 0: Neutral, 1-9: Gears )
         this.tmBtLed.setGear(data["gear"] == 10 ? -1 : data["gear"]);
 
-        // Set RevLights as percentage
-        const maxRpm = data["max_rpm"] || (this.config.fallbackMaxRpm || 7500) / 10;
-        this.tmBtLed.setRevLights(Math.ceil((data["engine_rate"] * 10) / (maxRpm * 10) * 100));
+        // Set RevLights as percentage (engine_rate / max_rpm in game units; RPM = rate * 10)
+        const rate = data["engine_rate"];
+        const currentRpm =
+            typeof rate === 'number' && isFinite(rate) ? rate * 10 : 0;
+        const rawMax = data["max_rpm"];
+        const telemetryMaxRpm =
+            typeof rawMax === 'number' && isFinite(rawMax) && rawMax > 0 ? rawMax * 10 : undefined;
+        const maxRpmRpm = resolveMaxRpmForRevLights(
+            {
+                telemetryMaxRpm,
+                fallbackMaxRpm: this.config.fallbackMaxRpm,
+                currentRpm
+            },
+            this
+        );
+        const maxRpmRate = maxRpmRpm / 10;
+        const er = typeof rate === 'number' && isFinite(rate) ? rate : 0;
+        this.tmBtLed.setRevLights(
+            maxRpmRate > 0 ? Math.ceil((er / maxRpmRate) * 100) : 0
+        );
 
         // Set left display according to left modes array and currentLeftMode array index
         if (this.currentLeftMode <= this.leftModes.length) {
