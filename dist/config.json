@@ -36,7 +36,7 @@
         "forwardPorts": [],
         "leftModes": ["SPEED", "RPM", "BRAKETEMP"],
         "rightModes": ["LAPTIME", "LAST LAP", "DISTANCE", "POSITION", "LAP", "LAPS LEFT"],
-        "fallbackMaxRpm": 7500
+        "fallbackMaxRpm": 5000
     },
 
     "forza": {
@@ -55,7 +55,7 @@
         "forwardPorts": [],
         "leftModes": ["SPEED", "RPM", "BRAKETEMP"],
         "rightModes": ["STAGE TIME", "DISTANCE", "PROGRESS"],
-        "fallbackMaxRpm": 7500
+        "fallbackMaxRpm": 5000
     },
 
     "projectcars2": {
@@ -74,6 +74,7 @@
         "leftModes": ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP"],
         "rightModesAcc": ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "PRED LAP", "POSITION", "LAP", "LAPS LEFT", "DISTANCE"],
         "rightModesAssetto": ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT", "DISTANCE"],
+        "fallbackMaxRpm": 5000,
         "revLightFlash": {
             "pitLimiterSpeed": "slow",
             "shift": { "style": "off", "speed": "fast" },
@@ -112,7 +113,7 @@
             "shift": { "style": "off", "speed": "fast" },
             "maxRpm": { "enabled": false, "colors": ["all"], "speed": "fast" }
         },
-        "fallbackMaxRpm": 7500
+        "fallbackMaxRpm": 5000  
     },
 
     "lfs": {
@@ -123,6 +124,6 @@
         "forwardPorts": [],
         "leftModes": ["SPEED", "RPM", "FUEL", "ENGINETEMP", "OILTEMP", "OILPRESS", "TURBO"],
         "rightModes": ["DISPLAY1", "DISPLAY2", "THROTTLE", "BRAKE"],
-        "fallbackMaxRpm": 7500
+        "fallbackMaxRpm": 5000
     }
 }

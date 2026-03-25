@@ -156,11 +156,20 @@ class ACC extends AbstractClient {
     handleRevLights() {
       let maxRpm = this.statics.maxRpm;
       
-      if (!maxRpm || maxRpm <= 0) {
-        if (this.physics.rpms > this.detectedMaxRpm) {
-          this.detectedMaxRpm = this.physics.rpms;
-        }
-        maxRpm = this.detectedMaxRpm;
+      // Choose a usable max RPM for rpm% based rev light thresholds.
+      // Preference order:
+      // 1) config assetto.fallbackMaxRpm
+      // 2) detectedMaxRpm (learned from observed rpms)
+      if (!maxRpm || maxRpm < 500 || maxRpm > 50000) {
+          const cfgFallbackMaxRpm = Number(this.config?.fallbackMaxRpm || 0);
+          if (cfgFallbackMaxRpm > 0) {
+            maxRpm = cfgFallbackMaxRpm;
+          } else {
+            if (this.physics.rpms > this.detectedMaxRpm) {
+              this.detectedMaxRpm = this.physics.rpms;
+            }
+            maxRpm = this.detectedMaxRpm;
+          }
       }
 
       let rpmPercent = (this.physics.rpms / maxRpm) * 100;
@@ -169,7 +178,7 @@ class ACC extends AbstractClient {
         rpmPercent = 0;
       }
 
-      if (this.physics.pitLimiterOn === 1 || this.graphics.isInPitLane || this.graphics.isInPit) {
+      if (this.physics.pitLimiterOn === 1) {
         this.tmBtLed.setRevLightsFlashing(1);
       } else if (this.revFlashProfile.maxRpm.enabled && rpmPercent >= 90) {
         this.tmBtLed.setRevLightsFlashing(2);
