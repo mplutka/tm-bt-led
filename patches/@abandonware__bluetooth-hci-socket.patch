@@ -1,5 +1,5 @@
 diff --git a/lib/usb.js b/lib/usb.js
-index 85e2bc48a88c513bb6577688190b8c7d6fee8017..298a88cd421657819d5bfb8e28134a77ded6d125 100644
+index 85e2bc48a88c513bb6577688190b8c7d6fee8017..7fdd9bd5203d0326157c68335e80f5b40818791d 100644
 --- a/lib/usb.js
 +++ b/lib/usb.js
 @@ -2,7 +2,7 @@ var events = require('events');
@@ -11,7 +11,18 @@ index 85e2bc48a88c513bb6577688190b8c7d6fee8017..298a88cd421657819d5bfb8e28134a77
  
  var HCI_COMMAND_PKT = 0x01;
  var HCI_ACLDATA_PKT = 0x02;
-@@ -28,6 +28,8 @@ var VENDOR_DEVICE_LIST = [
+@@ -11,6 +11,10 @@ var HCI_EVENT_PKT = 0x04;
+ var OGF_HOST_CTL = 0x03;
+ var OCF_RESET = 0x0003;
+ 
++/* bmAttributes & 0x03 — libusb transfer type */
++var USB_TRANSFER_BULK = 2;
++var USB_TRANSFER_INTERRUPT = 3;
++
+ var VENDOR_DEVICE_LIST = [
+   {vid: 0x0CF3, pid: 0xE300 }, // Qualcomm Atheros QCA61x4
+   {vid: 0x0a5c, pid: 0x21e8 }, // Broadcom BCM20702A0
+@@ -28,8 +32,39 @@ var VENDOR_DEVICE_LIST = [
    {vid: 0x050D, pid: 0x065A }, // Belkin BCM20702A0
    {vid: 0x1286, pid: 0x204C }, // Marvell AVASTAR
    {vid: 0x8087, pid: 0x0025 }, // Dell Precision 5530
@@ -19,8 +30,187 @@ index 85e2bc48a88c513bb6577688190b8c7d6fee8017..298a88cd421657819d5bfb8e28134a77
 +  {vid: 0x2357, pid: 0x0604 }, // TP-Link UB500/UB400 Nano
  ];
  
++function parseUsbEpEnv(name) {
++  var s = process.env[name];
++  if (s === undefined || s === '') {
++    return null;
++  }
++  var v = parseInt(String(s), 0);
++  return Number.isFinite(v) ? v : null;
++}
++
++/**
++ * Detect fake CSR dongles that claim to be 0a12:0001 but have different
++ * internal hardware. These clones often need special handling.
++ * Based on Linux kernel btusb.c detection logic.
++ */
++function isFakeCsrDongle(device) {
++  if (!device || !device.deviceDescriptor) {
++    return false;
++  }
++  var d = device.deviceDescriptor;
++  // Check for CSR vendor/product ID
++  if (d.idVendor !== 0x0a12 || d.idProduct !== 0x0001) {
++    return false;
++  }
++  // Fake CSR dongles typically have bcdDevice <= 0x0100 or == 0x0134 or high values like 0x8891
++  var bcd = d.bcdDevice;
++  // Real CSR devices have specific bcdDevice values; fakes often use 0x0100, 0x0134, or bizarre values like 0x8891
++  return bcd <= 0x0100 || bcd === 0x0134 || bcd > 0x1000;
++}
++
  function BluetoothHciSocket() {
-@@ -70,7 +72,7 @@ BluetoothHciSocket.prototype.bindUser = function(devId, params) {
+   this._isUp = false;
+ 
+@@ -48,7 +83,146 @@ BluetoothHciSocket.prototype.bindRaw = function(devId, params) {
+ 
+   this._mode = 'raw';
+ 
+-  this.reset();
++  // For fake CSR dongles, delay before sending reset to let USB settle
++  if (this._isFakeCsr) {
++    var self = this;
++    debug('Fake CSR: delaying 100ms before HCI reset');
++    setTimeout(function() {
++      self.reset();
++    }, 100);
++  } else {
++    this.reset();
++  }
++};
++
++/**
++ * Pick HCI interrupt-in (events) and bulk-in (ACL) endpoints. Clones often use
++ * non-default addresses; override with BLUETOOTH_HCI_SOCKET_USB_EP_EVENT,
++ * BLUETOOTH_HCI_SOCKET_USB_EP_ACL_IN, BLUETOOTH_HCI_SOCKET_USB_EP_ACL_OUT (decimal or 0x hex).
++ */
++BluetoothHciSocket.prototype._bindHciEndpoints = function(iface) {
++  var epEv = parseUsbEpEnv('BLUETOOTH_HCI_SOCKET_USB_EP_EVENT');
++  var epAclIn = parseUsbEpEnv('BLUETOOTH_HCI_SOCKET_USB_EP_ACL_IN');
++  var epAclOut = parseUsbEpEnv('BLUETOOTH_HCI_SOCKET_USB_EP_ACL_OUT');
++
++  this._hciEventEndpoint = Number.isInteger(epEv) ? iface.endpoint(epEv) : null;
++  this._aclDataInEndpoint = Number.isInteger(epAclIn) ? iface.endpoint(epAclIn) : null;
++  this._aclDataOutEndpoint = Number.isInteger(epAclOut) ? iface.endpoint(epAclOut) : null;
++
++  var bulkOut = null;
++  var bulkIn = [];
++  var intIn = null;
++  var eps = iface.endpoints || [];
++  
++  // Log all endpoints for debugging fake CSR issues
++  var isFake = isFakeCsrDongle(this._usbDevice);
++  if (isFake) {
++    debug('Detected fake CSR dongle, scanning all endpoints...');
++  }
++  
++  for (var i = 0; i < eps.length; i++) {
++    var ep = eps[i];
++    debug('  endpoint: addr=0x%s type=%d dir=%s', 
++      ep.address.toString(16), ep.transferType, ep.direction);
++    if (ep.transferType === USB_TRANSFER_BULK) {
++      if (ep.direction === 'out') {
++        bulkOut = bulkOut || ep;
++      } else {
++        bulkIn.push(ep);
++      }
++    } else if (ep.transferType === USB_TRANSFER_INTERRUPT && ep.direction === 'in') {
++      intIn = intIn || ep;
++    }
++  }
++
++  // For fake CSR dongles, prefer specific endpoint addresses that are known to work
++  if (isFake) {
++    debug('Fake CSR: using alternative endpoint selection strategy');
++    // Fake CSR dongles typically use: 0x81 for interrupt (events), 0x82 for bulk in (ACL), 0x02 for bulk out
++    if (!this._aclDataOutEndpoint) {
++      this._aclDataOutEndpoint = iface.endpoint(0x02) || bulkOut || iface.endpoint(0x01);
++    }
++    if (!this._hciEventEndpoint) {
++      this._hciEventEndpoint = iface.endpoint(0x81) || intIn;
++    }
++    if (!this._aclDataInEndpoint) {
++      // Fake CSR: prefer 0x82 for ACL data in
++      this._aclDataInEndpoint = iface.endpoint(0x82);
++      if (!this._aclDataInEndpoint && bulkIn.length > 0) {
++        // Find a bulk-in endpoint that's not the event endpoint
++        for (var k = 0; k < bulkIn.length; k++) {
++          if (!this._hciEventEndpoint || bulkIn[k].address !== this._hciEventEndpoint.address) {
++            this._aclDataInEndpoint = bulkIn[k];
++            break;
++          }
++        }
++      }
++      if (!this._aclDataInEndpoint && bulkIn.length > 0) {
++        this._aclDataInEndpoint = bulkIn[0];
++      }
++    }
++  } else {
++    // Standard endpoint selection for real dongles
++    if (!this._aclDataOutEndpoint) {
++      this._aclDataOutEndpoint = iface.endpoint(0x02) || iface.endpoint(0x01) || bulkOut;
++    }
++    if (!this._hciEventEndpoint) {
++      this._hciEventEndpoint = intIn || iface.endpoint(0x81);
++    }
++    if (!this._aclDataInEndpoint) {
++      var chosenAclIn = null;
++      var k;
++      for (k = 0; k < bulkIn.length; k++) {
++        if (!this._hciEventEndpoint || bulkIn[k].address !== this._hciEventEndpoint.address) {
++          chosenAclIn = bulkIn[k];
++          break;
++        }
++      }
++      if (!chosenAclIn && bulkIn.length) {
++        chosenAclIn = bulkIn[0];
++      }
++      this._aclDataInEndpoint = chosenAclIn || iface.endpoint(0x82);
++    }
++  }
++
++  if (!this._aclDataOutEndpoint || !this._hciEventEndpoint || !this._aclDataInEndpoint) {
++    throw new Error(
++      'Could not resolve HCI USB endpoints (aclOut / interrupt-in events / bulk-in ACL). ' +
++        'Set BLUETOOTH_HCI_SOCKET_USB_EP_EVENT, BLUETOOTH_HCI_SOCKET_USB_EP_ACL_IN, ' +
++        'BLUETOOTH_HCI_SOCKET_USB_EP_ACL_OUT if needed.'
++    );
++  }
++
++  debug(
++    'HCI USB endpoints: aclOut=0x%s event=0x%s aclIn=0x%s (fakeCsr=%s)',
++    this._aclDataOutEndpoint.address.toString(16),
++    this._hciEventEndpoint.address.toString(16),
++    this._aclDataInEndpoint.address.toString(16),
++    isFake ? 'yes' : 'no'
++  );
++  
++  // Store fake CSR flag for use by HCI layer
++  this._isFakeCsr = isFake;
++};
++
++/**
++ * Linux btusb treats some 0a12:0001 devices as "fake CSR" (bcdDevice heuristic).
++ * Used to hint higher layers; not definitive.
++ */
++BluetoothHciSocket.prototype.isLikelyFakeCsrDongle = function() {
++  // Use cached value if available (set during endpoint binding)
++  if (typeof this._isFakeCsr === 'boolean') {
++    return this._isFakeCsr;
++  }
++  return isFakeCsrDongle(this._usbDevice);
++};
++
++/**
++ * Returns true if this is detected as a fake CSR dongle.
++ * Call after bindUser/bindRaw for accurate detection.
++ */
++BluetoothHciSocket.prototype.isFakeCsr = function() {
++  return !!this._isFakeCsr;
+ };
+ 
+ BluetoothHciSocket.prototype.bindUser = function(devId, params) {
+@@ -70,7 +244,7 @@ BluetoothHciSocket.prototype.bindUser = function(devId, params) {
      }
    } else {
      this._usbDevice = VENDOR_DEVICE_LIST
@@ -29,7 +219,104 @@ index 85e2bc48a88c513bb6577688190b8c7d6fee8017..298a88cd421657819d5bfb8e28134a77
        .find(d => d != null);
    }
  
-@@ -131,7 +133,7 @@ BluetoothHciSocket.prototype._getUsbParams = function(params) {
+@@ -78,17 +252,91 @@ BluetoothHciSocket.prototype.bindUser = function(devId, params) {
+     throw new Error('No compatible USB Bluetooth 4.0 device found!');
+   }
+ 
+-  this._usbDevice.open();
++  // Check if this is a fake CSR before opening
++  var isFake = isFakeCsrDongle(this._usbDevice);
++  if (isFake) {
++    debug('Fake CSR dongle detected (bcdDevice=0x%s)', 
++      this._usbDevice.deviceDescriptor.bcdDevice.toString(16));
++  }
+ 
++  this._usbDevice.open();
++  
++  // Log all device interfaces and their endpoints
++  debug('Device interfaces: %d', this._usbDevice.interfaces ? this._usbDevice.interfaces.length : 0);
++  if (isFake && this._usbDevice.interfaces) {
++    for (var ifNum = 0; ifNum < this._usbDevice.interfaces.length; ifNum++) {
++      var iface = this._usbDevice.interfaces[ifNum];
++      debug('  Interface %d: class=0x%s, subclass=0x%s, protocol=0x%s', 
++        ifNum, 
++        (iface.descriptor.bInterfaceClass || 0).toString(16),
++        (iface.descriptor.bInterfaceSubClass || 0).toString(16),
++        (iface.descriptor.bInterfaceProtocol || 0).toString(16));
++      if (iface.endpoints) {
++        for (var epNum = 0; epNum < iface.endpoints.length; epNum++) {
++          var ep = iface.endpoints[epNum];
++          debug('    Endpoint 0x%s: type=%d dir=%s', 
++            ep.address.toString(16), ep.transferType, ep.direction);
++        }
++      }
++    }
++  }
++  
++  // For fake CSR, try to set configuration explicitly
++  if (isFake) {
++    try {
++      // Get current configuration
++      var configValue = this._usbDevice.configDescriptor ? this._usbDevice.configDescriptor.bConfigurationValue : 1;
++      debug('Fake CSR: setting USB configuration %d', configValue);
++      this._usbDevice.setConfiguration(configValue, function(err) {
++        if (err) {
++          debug('setConfiguration warning: %s', err.message || err);
++        } else {
++          debug('USB configuration set successfully');
++        }
++      });
++    } catch (e) {
++      debug('setConfiguration error: %s', e.message || e);
++    }
++  }
++  
+   this._usbDeviceInterface = this._usbDevice.interfaces[0];
+ 
+-  this._aclDataOutEndpoint = this._usbDeviceInterface.endpoint(0x02);
+-  if (this._aclDataOutEndpoint === undefined) this._aclDataOutEndpoint = this._usbDeviceInterface.endpoint(0x01);
++  this._bindHciEndpoints(this._usbDeviceInterface);
++
++  // Try to detach kernel driver if present (needed on some platforms)
++  if (this._usbDeviceInterface.isKernelDriverActive && 
++      typeof this._usbDeviceInterface.isKernelDriverActive === 'function') {
++    try {
++      if (this._usbDeviceInterface.isKernelDriverActive()) {
++        debug('Detaching kernel driver from interface');
++        this._usbDeviceInterface.detachKernelDriver();
++      }
++    } catch (e) {
++      debug('Could not detach kernel driver: %s', e.message || e);
++    }
++  }
+ 
+-  this._hciEventEndpoint = this._usbDeviceInterface.endpoint(0x81);
+-  this._aclDataInEndpoint = this._usbDeviceInterface.endpoint(0x82);
++  // For fake CSR, try to set alternate setting before claiming
++  if (isFake) {
++    try {
++      debug('Fake CSR: setting interface alternate setting to 0');
++      this._usbDeviceInterface.setAltSetting(0, function(err) {
++        if (err) {
++          debug('setAltSetting error: %s', err.message || err);
++        }
++      });
++    } catch (e) {
++      debug('setAltSetting failed: %s', e.message || e);
++    }
++  }
+ 
+   this._usbDeviceInterface.claim();
++  debug('Interface claimed successfully');
++  
++  // Log claim success with device info for debugging
++  if (isFake) {
++    debug('Fake CSR claimed - if HCI commands fail with STALL, you may need WinUSB driver via Zadig');
++  }
+ };
+ 
+ BluetoothHciSocket.prototype._getUsbParams = function(params) {
+@@ -131,7 +379,7 @@ BluetoothHciSocket.prototype._getUsbParams = function(params) {
  };
  
  BluetoothHciSocket.prototype._findUsbDevice = function(devId, usbParams) {
@@ -38,7 +325,7 @@ index 85e2bc48a88c513bb6577688190b8c7d6fee8017..298a88cd421657819d5bfb8e28134a77
  
    for (var i = 0; i < usbDevices.length; i++) {
      var usbDevice = usbDevices[i];
-@@ -158,7 +160,7 @@ BluetoothHciSocket.prototype._findUsbDevice = function(devId, usbParams) {
+@@ -158,7 +406,7 @@ BluetoothHciSocket.prototype._findUsbDevice = function(devId, usbParams) {
  };
  
  BluetoothHciSocket.prototype.getDeviceList = function() {
@@ -47,11 +334,151 @@ index 85e2bc48a88c513bb6577688190b8c7d6fee8017..298a88cd421657819d5bfb8e28134a77
      .filter(dev => {
        return VENDOR_DEVICE_LIST.findIndex(d => {
          return dev.deviceDescriptor.idVendor == d.vid && dev.deviceDescriptor.idProduct == d.pid;
+@@ -184,11 +432,58 @@ BluetoothHciSocket.prototype.isDevUp = function() {
+ 
+ BluetoothHciSocket.prototype.start = function() {
+   if (this._mode === 'raw' || this._mode === 'user') {
++    var self = this;
++    debug('starting endpoint polling (event=0x%s, aclIn=0x%s)', 
++      this._hciEventEndpoint.address.toString(16),
++      this._aclDataInEndpoint.address.toString(16));
++    
+     this._hciEventEndpoint.on('data', this.onHciEventEndpointData.bind(this));
++    this._hciEventEndpoint.on('error', function(err) {
++      var errStr = err.message || String(err);
++      debug('event endpoint error: %s', errStr);
++      // Try to recover from stall by clearing halt
++      if (errStr.indexOf('STALL') !== -1) {
++        debug('Clearing halt on event endpoint...');
++        try {
++          self._hciEventEndpoint.clearHalt(function(clearErr) {
++            if (clearErr) {
++              debug('clearHalt error: %s', clearErr.message || clearErr);
++            } else {
++              debug('clearHalt succeeded, restarting poll');
++              self._hciEventEndpoint.startPoll();
++            }
++          });
++        } catch (e) {
++          debug('clearHalt exception: %s', e.message || e);
++        }
++      }
++    });
+     this._hciEventEndpoint.startPoll();
+ 
+     this._aclDataInEndpoint.on('data', this.onAclDataInEndpointData.bind(this));
++    this._aclDataInEndpoint.on('error', function(err) {
++      var errStr = err.message || String(err);
++      debug('ACL endpoint error: %s', errStr);
++      // Try to recover from stall
++      if (errStr.indexOf('STALL') !== -1) {
++        debug('Clearing halt on ACL endpoint...');
++        try {
++          self._aclDataInEndpoint.clearHalt(function(clearErr) {
++            if (clearErr) {
++              debug('ACL clearHalt error: %s', clearErr.message || clearErr);
++            } else {
++              debug('ACL clearHalt succeeded, restarting poll');
++              self._aclDataInEndpoint.startPoll();
++            }
++          });
++        } catch (e) {
++          debug('ACL clearHalt exception: %s', e.message || e);
++        }
++      }
++    });
+     this._aclDataInEndpoint.startPoll();
++    
++    debug('endpoint polling started');
+   }
+ };
+ 
+@@ -207,19 +502,53 @@ BluetoothHciSocket.prototype.write = function(data) {
+ 
+   if (this._mode === 'raw' || this._mode === 'user') {
+     var type = data.readUInt8(0);
++    var self = this;
+ 
+     if (HCI_COMMAND_PKT === type) {
+-      this._usbDevice.controlTransfer(usb.LIBUSB_REQUEST_TYPE_CLASS | usb.LIBUSB_RECIPIENT_INTERFACE, 0, 0, 0, data.slice(1), function() {});
++      // HCI commands are sent via USB control transfer to endpoint 0
++      // Standard: bmRequestType=0x21 (CLASS | INTERFACE), bRequest=0, wValue=0, wIndex=0
++      // Some fake CSR need: bmRequestType=0x20 (CLASS | DEVICE)
++      var bmRequestType;
++      var wIndex;
++      
++      if (this._isFakeCsr) {
++        // Fake CSR: try CLASS | DEVICE recipient
++        bmRequestType = usb.LIBUSB_REQUEST_TYPE_CLASS; // 0x20
++        wIndex = 0;
++        debug('Fake CSR: using bmRequestType=0x20 (CLASS|DEVICE)');
++      } else {
++        bmRequestType = usb.LIBUSB_REQUEST_TYPE_CLASS | usb.LIBUSB_RECIPIENT_INTERFACE; // 0x21
++        wIndex = 0;
++      }
++      
++      this._usbDevice.controlTransfer(
++        bmRequestType, 
++        0,      // bRequest
++        0,      // wValue  
++        wIndex, // wIndex
++        data.slice(1), 
++        function(err) {
++          if (err) {
++            debug('HCI command control transfer error (0x%s): %s', 
++              bmRequestType.toString(16), err.message || err);
++          }
++        }
++      );
+     } else if(HCI_ACLDATA_PKT === type) {
+-      this._aclDataOutEndpoint.transfer(data.slice(1));
++      this._aclDataOutEndpoint.transfer(data.slice(1), function(err) {
++        if (err) {
++          debug('ACL data transfer error: %s', err.message || err);
++        }
++      });
+     }
+   }
+ };
+ 
+ BluetoothHciSocket.prototype.onHciEventEndpointData = function(data) {
+-  debug('HCI event: ' + data.toString('hex'));
++  debug('HCI event received (%d bytes): %s', data.length, data.toString('hex'));
+ 
+   if (data.length === 0) {
++    debug('HCI event: empty data, ignoring');
+     return;
+   }
+ 
+@@ -239,9 +568,20 @@ BluetoothHciSocket.prototype.onHciEventEndpointData = function(data) {
+ 
+     var buf = this._hciEventEndpointBuffer.slice(0, pktLen + 2);
+ 
+-    if (this._mode === 'raw' && buf.length === 6 && ('0e0401030c00' === buf.toString('hex') || '0e0402030c00' === buf.toString('hex'))) {
+-      debug('reset complete');
+-      this._isUp = true;
++    /* HCI Reset complete: opcode 0x0C03 in Command Complete (clones vary ncmd / padding) */
++    if ((this._mode === 'raw' || this._mode === 'user') && buf.length >= 5 && buf.readUInt8(0) === 0x0e) {
++      var plen = buf.readUInt8(1);
++      debug('Command Complete event: plen=%d', plen);
++      if (plen >= 3) {
++        var opcode = buf.readUInt16LE(3);
++        debug('Command Complete opcode: 0x%s', opcode.toString(16));
++        if (opcode === 0x0c03) {
++          debug('HCI Reset complete - device is now UP');
++          this._isUp = true;
++        }
++      }
++    } else if (buf.length > 0) {
++      debug('HCI event type: 0x%s', buf.readUInt8(0).toString(16));
+     }
+ 
+     // fire event
 diff --git a/package-lock.json b/package-lock.json
 deleted file mode 100644
 index d196e8747c1a40c1484a4fd10a6050b8f0feed57..0000000000000000000000000000000000000000
 diff --git a/package.json b/package.json
-index b41402d05eeccb0d453f143d9aeece4bd7462d1f..96b1f1bc439febfdedd5704c8aee4b7d15f305bc 100644
+index b41402d05eeccb0d453f143d9aeece4bd7462d1f..62088085b5063b94074e281fa2ac9839b623f7e9 100644
 --- a/package.json
 +++ b/package.json
 @@ -33,7 +33,7 @@

@@ -9,7 +9,7 @@ overrides:
 
 patchedDependencies:
   '@abandonware/bluetooth-hci-socket':
-    hash: b8a3785d9bc5c4e945f444ff4402e57f444b6f6897e0983aec92b9492e02a84c
+    hash: 6cc44ecb130ef3ebe1bd9237e95ed02c67a1d3437a6e024487e2af65a539f472
     path: patches/@abandonware__bluetooth-hci-socket.patch
   '@abandonware/noble':
     hash: e90e136913f6966a39c12b0706b0a6172559d5b4a1b98de375d6ac14deb1ae19
@@ -1422,7 +1422,7 @@ packages:
 
 snapshots:
 
-  '@abandonware/bluetooth-hci-socket@0.5.3-12(patch_hash=b8a3785d9bc5c4e945f444ff4402e57f444b6f6897e0983aec92b9492e02a84c)(encoding@0.1.13)':
+  '@abandonware/bluetooth-hci-socket@0.5.3-12(patch_hash=6cc44ecb130ef3ebe1bd9237e95ed02c67a1d3437a6e024487e2af65a539f472)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 1.0.11(encoding@0.1.13)
       debug: 4.4.3
@@ -1442,7 +1442,7 @@ snapshots:
       node-addon-api: 8.6.0
       node-gyp-build: 4.8.4
     optionalDependencies:
-      '@abandonware/bluetooth-hci-socket': 0.5.3-12(patch_hash=b8a3785d9bc5c4e945f444ff4402e57f444b6f6897e0983aec92b9492e02a84c)(encoding@0.1.13)
+      '@abandonware/bluetooth-hci-socket': 0.5.3-12(patch_hash=6cc44ecb130ef3ebe1bd9237e95ed02c67a1d3437a6e024487e2af65a539f472)(encoding@0.1.13)
     transitivePeerDependencies:
       - encoding
       - supports-color
