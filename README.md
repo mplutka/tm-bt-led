@@ -40,10 +40,16 @@ Either you use _template.js and create your own game file or get in touch with m
  
 ## Recommended Bluetooth chipsets/sticks known to be working
 * Certain CSR 8510 A10 based devices (USB VID: 0x0a12, USB PID: 0x0001) [This one works fine for me](https://amzn.to/3Y9a8Li)
-  * **Warning:** There are many fake "CSR 4.0" dongles on the market. They may show the same USB IDs but are unreliable or do not work with this project. Prefer known-good hardware or one of the alternatives below.
 * Realtek Bluetooth 8761B (USB VID: 0x0bda, USB PID: 0x8771, e.g. MPOW Bluetooth 5.0 stick)
 * Intel Wireless Bluetooth 8265 (USB VID: 0x8087, USB PID: 0x0a2b)
 Others might work too, but again: No guarantee.  
+
+### Fake CSR 4.0 USB dongles (0x0a12:0x0001 clones)
+
+Many cheap adapters copy the same **VID/PID** as classic CSR sticks but use different silicon (often identifiable by odd `bcdDevice` values). **These are basically supported** in this project, but:
+**Do not expect the same performance as a genuine CSR or a quality chipset.** Clones often keep a **relatively slow BLE connection interval**; aggressive `--fps` / performance mode may not shorten the link as much as on better hardware, so effective display update rate can stay modest.
+
+For the smoothest experience, a **known-good** CSR is still preferable.
 
 ## Prerequisites
 1. You should be familiar with installing and using NodeJS application on Windows command line (cmd.exe).

@@ -173,3 +173,19 @@
 ## Version 4.1.0
 
 * Support for Assetto Corsa EVO and Assetto Corsa Rally
+
+## Version 4.1.1
+
+* `fallbackMaxRpm` tuning across game configs for consistent RPM bar scaling (`resolveMaxRpm`-style behaviour)
+* `assetto.bat`: use `--game=assetto` (replacing deprecated `assetto-sharedmemory`)
+
+## Version 4.1.2
+
+* README and download links aligned with release packaging
+* `revLightFlash`: `maxRpm` disabled by default in bundled config for better out-of-the-box performance
+
+## Version 4.2.0
+
+* **Fake CSR (0x0a12:0x0001) USB dongles:** Basically supported but with low fps
+* Bluetooth connection lifecycle: improved handling of connection parameter updates / performance vs power-save mode; start BLE update loop after init when appropriate so the app does not depend solely on the first HCI connection-update event
+* Assetto Corsa shared memory: refactored init and error handling around memory mapping
