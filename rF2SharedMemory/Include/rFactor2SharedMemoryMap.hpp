@@ -43,47 +43,13 @@ Website: thecrewchief.org
 
 #define SHARED_MEMORY_VERSION PLUGIN_VERSION_MAJOR "." PLUGIN_VERSION_MINOR
 
-#define DEBUG_MSG(lvl, src, msg, ...) SharedMemoryPlugin::WriteDebugMsg(lvl, src, __FUNCTION__, __LINE__, msg, __VA_ARGS__)
-#define RETURN_IF_FALSE(expression) if (!expression) { DEBUG_MSG(DebugLevel::Errors, DebugSource::General, "Operation failed"); return; }
-
+#include "DebugLogging.h"
 #include "rF2State.h"
 #include "MappedBuffer.h"
 #include "DirectMemoryReader.h"
 
-enum class DebugLevel : long
-{
-  Off = 0,
-  Errors = 1,
-  CriticalInfo = 2,
-  DevInfo = 4,
-  Warnings = 8,
-  Synchronization = 16,
-  Perf = 32,
-  Timing = 64,
-  Verbose = 128,
-  All = 255,
-};
-
-enum DebugSource : long
-{
-  General = 1,  // CriticalInfo, Error and Warning level messages go there as well as some core messages.
-  DMR = 2,
-  MappedBufferSource = 4,
-  Telemetry = 4,
-  Scoring = 8,
-  Rules = 16,
-  MultiRules = 32,
-  ForceFeedback = 64,
-  Graphics = 128,
-  Weather = 256,
-  Extended = 512,
-  HWControlInput = 1024,
-  WeatherControlInput = 2048,
-  RulesControlInput = 4096,
-  PluginControlInput = 8192,
-  PitInfo = 16384,
-  All = 32767,
-};
+#include <cstdarg>
+#include <algorithm>
 
 enum class SubscribedBuffer : long
 {
@@ -154,6 +120,13 @@ public:
     int line,
     char const* const msg,
     ...);
+  static void WriteDebugMsgV(
+    DebugLevel lvl,
+    long src,
+    char const* const functionName,
+    int line,
+    char const* const msg,
+    va_list argList);
 
   static void WriteToAllExampleOutputFiles(char const* const openStr, char const* const msg);
   static void WriteTelemetryInternals(TelemInfoV01 const& info);
@@ -183,7 +156,7 @@ private:
 
     void ProcessTelemetryUpdate(TelemInfoV01 const& info)
     {
-      auto const id = max(info.mID, 0L) % rF2Extended::MAX_MAPPED_IDS;
+      auto const id = (std::max)(info.mID, 0L) % rF2Extended::MAX_MAPPED_IDS;
 
       auto& dti = mDamageTrackingInfos[id];
       if (info.mLastImpactET > dti.mLastPitStopET  // Is this new impact since last pit stop?
@@ -191,7 +164,7 @@ private:
         // Ok, this is either new impact, or first impact since pit stop.
         // Update max and accumulated impact magnitudes.
         auto& td = mExtended.mTrackedDamages[id];
-        td.mMaxImpactMagnitude = max(td.mMaxImpactMagnitude, info.mLastImpactMagnitude);
+        td.mMaxImpactMagnitude = (std::max)(td.mMaxImpactMagnitude, info.mLastImpactMagnitude);
         td.mAccumulatedImpactMagnitude += info.mLastImpactMagnitude;
 
         dti.mLastImpactProcessedET = info.mLastImpactET;
@@ -203,7 +176,7 @@ private:
       for (int i = 0; i < info.mNumVehicles; ++i) {
         if (info.mVehicle[i].mPitState == static_cast<unsigned char>(rF2PitState::Stopped)) {
           // If this car is pitting, clear out any damage tracked.
-          auto const id = max(info.mVehicle[i].mID, 0L) % rF2Extended::MAX_MAPPED_IDS;
+          auto const id = (std::max)(info.mVehicle[i].mID, 0L) % rF2Extended::MAX_MAPPED_IDS;
 
           memset(&(mExtended.mTrackedDamages[id]), 0, sizeof(rF2TrackedDamage));
 
@@ -219,7 +192,8 @@ private:
       mExtended.mSessionTransitionCapture.mGamePhase = scoring.mScoringInfo.mGamePhase;
       mExtended.mSessionTransitionCapture.mSession = scoring.mScoringInfo.mSession;
 
-      auto const numScoringVehicles = min(scoring.mScoringInfo.mNumVehicles, rF2MappedBufferHeader::MAX_MAPPED_VEHICLES);
+      auto const numScoringVehicles = (std::min)(scoring.mScoringInfo.mNumVehicles,
+        static_cast<long>(rF2MappedBufferHeader::MAX_MAPPED_VEHICLES));
       mExtended.mSessionTransitionCapture.mNumScoringVehicles = numScoringVehicles;
 
       for (int i = 0; i < numScoringVehicles; ++i) {

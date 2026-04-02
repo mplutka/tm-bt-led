@@ -18,6 +18,7 @@ Description:
 #pragma once
 #include <sddl.h>
 #include "Utils.h"
+#include "DebugLogging.h"
 
 template <typename BuffT>
 class MappedBuffer
@@ -80,7 +81,7 @@ public:
 
     // Fix up out of sync situation.
     if (mpWriteBuffVersionBlock->mVersionUpdateBegin != mpWriteBuffVersionBlock->mVersionUpdateEnd) {
-      if (Utils::IsFlagOn(SharedMemoryPlugin::msDebugOutputLevel, DebugLevel::Synchronization)) {
+      if (RF2IsDebugOutputLevelOn(DebugLevel::Synchronization)) {
         DEBUG_MSG(DebugLevel::Synchronization, DebugSource::MappedBufferSource, "BeginUpdate: versions out of sync.  Version Begin:%ld  End:%ld",
           mpWriteBuffVersionBlock->mVersionUpdateBegin, mpWriteBuffVersionBlock->mVersionUpdateEnd);
       }
@@ -106,7 +107,7 @@ public:
 
     // Fix up out of sync situation.
     if (mpWriteBuffVersionBlock->mVersionUpdateBegin != mpWriteBuffVersionBlock->mVersionUpdateEnd) {
-      if (Utils::IsFlagOn(SharedMemoryPlugin::msDebugOutputLevel, DebugLevel::Synchronization)) {
+      if (RF2IsDebugOutputLevelOn(DebugLevel::Synchronization)) {
         DEBUG_MSG(DebugLevel::Synchronization, DebugSource::MappedBufferSource, "EndUpdate: versions out of sync.  Version Begin:%ld  End:%ld",
           mpWriteBuffVersionBlock->mVersionUpdateBegin, mpWriteBuffVersionBlock->mVersionUpdateEnd);
       }
@@ -141,7 +142,7 @@ public:
   {
     // Check busy or out of sync situation.
     if (versionUpdateBegin != versionUpdateEnd) {
-      if (Utils::IsFlagOn(SharedMemoryPlugin::msDebugOutputLevel, DebugLevel::Synchronization)) {
+      if (RF2IsDebugOutputLevelOn(DebugLevel::Synchronization)) {
         DEBUG_MSG(DebugLevel::Synchronization, DebugSource::MappedBufferSource, "VerifyBusyOrUnchanged: versions out of sync.  Version Begin:%ld  End:%ld",
           versionUpdateBegin, versionUpdateEnd);
       }
@@ -192,7 +193,7 @@ public:
     if (mpMappedView != nullptr
       && !::UnmapViewOfFile(mpMappedView)) {
       DEBUG_MSG(DebugLevel::Errors, DebugSource::General, "Failed to unmap mapped buffer view");
-      SharedMemoryPlugin::TraceLastWin32Error();
+      RF2TraceLastWin32Error();
     }
 
     mpMappedView = nullptr;
@@ -203,7 +204,7 @@ public:
     if (mhMap != nullptr
       && !::CloseHandle(mhMap)) {
       DEBUG_MSG(DebugLevel::Errors, DebugSource::General, "Failed to close mapped file handle.");
-      SharedMemoryPlugin::TraceLastWin32Error();
+      RF2TraceLastWin32Error();
     }
 
     mhMap = nullptr;
@@ -266,7 +267,7 @@ private:
 
       if (!ret) {
         DEBUG_MSG(DebugLevel::Errors, DebugSource::General, "Failed to create security descriptor for mapping: '%s'", mappingName);
-        SharedMemoryPlugin::TraceLastWin32Error();
+        RF2TraceLastWin32Error();
         return nullptr;
       }
 
@@ -282,7 +283,7 @@ private:
 
     if (hMap == nullptr) {
       DEBUG_MSG(DebugLevel::Errors, DebugSource::General, "Failed to create file mapping for file: '%s'", mappingName);
-      SharedMemoryPlugin::TraceLastWin32Error();
+      RF2TraceLastWin32Error();
       return nullptr;
     }
 
@@ -298,7 +299,7 @@ private:
 
     if (pMappedView == nullptr) {
       DEBUG_MSG(DebugLevel::Errors, DebugSource::General, "Failed to map buffer view.");
-      SharedMemoryPlugin::TraceLastWin32Error();
+      RF2TraceLastWin32Error();
       return nullptr;
     }
 
