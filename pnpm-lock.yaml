@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  nan: 2.18.0
+  nan: 2.26.2
 
 patchedDependencies:
   '@abandonware/bluetooth-hci-socket':
@@ -950,8 +950,8 @@ packages:
   multistream@4.1.0:
     resolution: {integrity: sha512-J1XDiAmmNpRCBfIWJv+n0ymC4ABcf/Pl+5YvC5B/D2f/2+8PtHvCNxMPKiQcZyi922Hq69J2YOpb1pTywfifyw==}
 
-  nan@2.18.0:
-    resolution: {integrity: sha512-W7tfG7vMOGtD30sHoZSSc/JVYiyDPEyQVso/Zz+/uQd0B0L46gtC+pHha5FFMRpil6fm/AoEcRWyOVi4+E/f8w==}
+  nan@2.26.2:
+    resolution: {integrity: sha512-0tTvBTYkt3tdGw22nrAy50x7gpbGCCFH3AFcyS5WiUu7Eu4vWlri1woE6qHBSfy11vksDqkiwjOnlR7WV8G1Hw==}
 
   napi-build-utils@1.0.2:
     resolution: {integrity: sha512-ONmRUqK7zj7DWX0D9ADe03wbwOBZxNAfF20PlGfCWQcD3+/MakShIHrMqx9YwPTfxDdF1zLeL+RGZiR9kGMLdg==}
@@ -1426,7 +1426,7 @@ snapshots:
     dependencies:
       '@mapbox/node-pre-gyp': 1.0.11(encoding@0.1.13)
       debug: 4.4.3
-      nan: 2.18.0
+      nan: 2.26.2
       node-gyp: 10.3.1
     optionalDependencies:
       usb: 2.17.0
@@ -2417,7 +2417,7 @@ snapshots:
       once: 1.4.0
       readable-stream: 3.6.2
 
-  nan@2.18.0: {}
+  nan@2.26.2: {}
 
   napi-build-utils@1.0.2: {}
 
@@ -2488,7 +2488,7 @@ snapshots:
   node-irsdk@2.1.6(patch_hash=257be99821ea2732ca5f8a073418f5f7104f02173b31e1d904519b0fb3a3f3d6):
     dependencies:
       js-yaml: 3.14.2
-      nan: 2.18.0
+      nan: 2.26.2
       prebuild-install: 5.3.6
 
   node-processlist@1.0.2: {}

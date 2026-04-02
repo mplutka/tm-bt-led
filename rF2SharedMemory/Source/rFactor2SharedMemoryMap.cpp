@@ -884,7 +884,7 @@ void SharedMemoryPlugin::UpdateTelemetry(TelemInfoV01 const& info)
     // to 50FPS (seems to be what game's doing anyway).  Alternatively, we could test position info changes.
 
     // We need to pick min ET for the frame because one of the vehicles in a frame might be slightly ahead of the rest.
-    mLastTelemetryUpdateET = min(mLastTelemetryUpdateET, info.mElapsedTime);
+    mLastTelemetryUpdateET = (std::min)(mLastTelemetryUpdateET, info.mElapsedTime);
   }
 
   if (isNewFrame
@@ -902,7 +902,7 @@ void SharedMemoryPlugin::UpdateTelemetry(TelemInfoV01 const& info)
   }
 
   // See if we are in a cycle.
-  auto const participantIndex = max(info.mID, 0L) % rF2Extended::MAX_MAPPED_IDS;
+  auto const participantIndex = (std::max)(info.mID, 0L) % rF2Extended::MAX_MAPPED_IDS;
   auto const alreadyUpdated = mParticipantTelemetryUpdated[participantIndex];
 
   if (!alreadyUpdated) {
@@ -1026,7 +1026,7 @@ void SharedMemoryPlugin::UpdateScoring(ScoringInfoV01 const& info)
   if (info.mNumVehicles >= rF2MappedBufferHeader::MAX_MAPPED_VEHICLES)
     DEBUG_MSG(DebugLevel::Errors, DebugSource::General, "Scoring exceeded maximum of allowed mapped vehicles.");
 
-  auto const numScoringVehicles = min(info.mNumVehicles, rF2MappedBufferHeader::MAX_MAPPED_VEHICLES);
+  auto const numScoringVehicles = (std::min)(info.mNumVehicles, static_cast<long>(rF2MappedBufferHeader::MAX_MAPPED_VEHICLES));
   for (int i = 0; i < numScoringVehicles; ++i)
     memcpy(&(mScoring.mpWriteBuff->mVehicles[i]), &(info.mVehicle[i]), sizeof(rF2VehicleScoring));
 
@@ -1307,7 +1307,7 @@ bool SharedMemoryPlugin::AccessTrackRules(TrackRulesV01& info)
   if (info.mNumActions >= rF2MappedBufferHeader::MAX_MAPPED_VEHICLES)
     DEBUG_MSG(DebugLevel::Errors, DebugSource::General, "Rules exceeded maximum of allowed actions.");
 
-  auto const numActions = min(info.mNumActions, rF2MappedBufferHeader::MAX_MAPPED_VEHICLES);
+  auto const numActions = (std::min)(info.mNumActions, static_cast<long>(rF2MappedBufferHeader::MAX_MAPPED_VEHICLES));
   for (int i = 0; i < numActions; ++i)
     memcpy(&(mRules.mpWriteBuff->mActions[i]), &(info.mAction[i]), sizeof(rF2TrackRulesAction));
 
@@ -1315,7 +1315,7 @@ bool SharedMemoryPlugin::AccessTrackRules(TrackRulesV01& info)
   if (info.mNumParticipants >= rF2MappedBufferHeader::MAX_MAPPED_VEHICLES)
     DEBUG_MSG(DebugLevel::Errors, DebugSource::General, "Rules exceeded maximum of allowed mapped vehicles.");
 
-  auto const numRulesVehicles = min(info.mNumParticipants, rF2MappedBufferHeader::MAX_MAPPED_VEHICLES);
+  auto const numRulesVehicles = (std::min)(info.mNumParticipants, static_cast<long>(rF2MappedBufferHeader::MAX_MAPPED_VEHICLES));
   for (int i = 0; i < numRulesVehicles; ++i)
     memcpy(&(mRules.mpWriteBuff->mParticipants[i]), &(info.mParticipant[i]), sizeof(rF2TrackRulesParticipant));
 
@@ -1357,15 +1357,15 @@ bool SharedMemoryPlugin::AccessTrackRules(TrackRulesV01& info)
     info.mParticipant = pParticipant;
 
     // Safely update arrays:
-    auto const numActionsToUpdate = min(
-      min(info.mNumActions, rF2MappedBufferHeader::MAX_MAPPED_VEHICLES), 
+    auto const numActionsToUpdate = (std::min)(
+      (std::min)(info.mNumActions, static_cast<long>(rF2MappedBufferHeader::MAX_MAPPED_VEHICLES)),
       mRulesControl.mReadBuff.mTrackRules.mNumActions);
 
     for (int i = 0; i < numActionsToUpdate; ++i)
       memcpy(&(info.mAction[i]), &(mRulesControl.mReadBuff.mActions[i]), sizeof(TrackRulesActionV01));  // Note: this overwrites mET, not sure if that's right.
 
-    auto const numParticipantsToUpdate = min(
-      min(info.mNumParticipants, rF2MappedBufferHeader::MAX_MAPPED_VEHICLES),
+    auto const numParticipantsToUpdate = (std::min)(
+      (std::min)(info.mNumParticipants, static_cast<long>(rF2MappedBufferHeader::MAX_MAPPED_VEHICLES)),
       mRulesControl.mReadBuff.mTrackRules.mNumParticipants);
 
     for (int i = 0; i < numParticipantsToUpdate; ++i) {
@@ -1429,7 +1429,7 @@ bool SharedMemoryPlugin::AccessMultiSessionRules(MultiSessionRulesV01& info)
   if (info.mNumParticipants >= rF2MappedBufferHeader::MAX_MAPPED_VEHICLES)
     DEBUG_MSG(DebugLevel::Errors, DebugSource::General, "Multi rules exceeded maximum of allowed mapped vehicles.");
 
-  auto const numMultiRulesVehicles = min(info.mNumParticipants, rF2MappedBufferHeader::MAX_MAPPED_VEHICLES);
+  auto const numMultiRulesVehicles = (std::min)(info.mNumParticipants, static_cast<long>(rF2MappedBufferHeader::MAX_MAPPED_VEHICLES));
   for (int i = 0; i < numMultiRulesVehicles; ++i)
     memcpy(&(mMultiRules.mpWriteBuff->mParticipants[i]), &(info.mParticipant[i]), sizeof(rF2MultiSessionParticipant));
 
@@ -1626,7 +1626,7 @@ void SharedMemoryPlugin::AccessCustomVariable(CustomVariableV01& var)
   if (_stricmp(var.mCaption, " Enabled") == 0)
     ; // Do nothing; this variable is just for rF2 to know whether to keep the plugin loaded.
   else if (_stricmp(var.mCaption, "DebugOutputLevel") == 0) {
-    auto sanitized = min(max(var.mCurrentSetting, 0L), static_cast<long>(DebugLevel::All));
+    auto sanitized = (std::min)((std::max)(var.mCurrentSetting, 0L), static_cast<long>(DebugLevel::All));
     SharedMemoryPlugin::msDebugOutputLevel = sanitized;
 
     // Remove previous debug output.
@@ -1640,7 +1640,7 @@ void SharedMemoryPlugin::AccessCustomVariable(CustomVariableV01& var)
   else if (_stricmp(var.mCaption, "EnableDirectMemoryAccess") == 0)
     SharedMemoryPlugin::msDirectMemoryAccessRequested = var.mCurrentSetting != 0;
   else if (_stricmp(var.mCaption, "UnsubscribedBuffersMask") == 0) {
-    auto sanitized = min(max(var.mCurrentSetting, 0L), static_cast<long>(SubscribedBuffer::All));
+    auto sanitized = (std::min)((std::max)(var.mCurrentSetting, 0L), static_cast<long>(SubscribedBuffer::All));
     SharedMemoryPlugin::msUnsubscribedBuffersMask = sanitized;
   }
   else if (_stricmp(var.mCaption, "EnableHWControlInput") == 0)
@@ -1650,7 +1650,7 @@ void SharedMemoryPlugin::AccessCustomVariable(CustomVariableV01& var)
   else if (_stricmp(var.mCaption, "EnableRulesControlInput") == 0)
     SharedMemoryPlugin::msRulesControlInputRequested = var.mCurrentSetting != 0;
   else if (_stricmp(var.mCaption, "DebugOutputSource") == 0) {
-    auto sanitized = min(max(var.mCurrentSetting, 1L), static_cast<long>(DebugSource::All));
+    auto sanitized = (std::min)((std::max)(var.mCurrentSetting, 1L), static_cast<long>(DebugSource::All));
     SharedMemoryPlugin::msDebugOutputSource = sanitized;
   }
 }
@@ -1728,6 +1728,24 @@ void SharedMemoryPlugin::WriteToAllExampleOutputFiles(char const* const openStr,
 }
 
 
+bool RF2IsDebugOutputLevelOn(DebugLevel flag)
+{
+  return Utils::IsFlagOn(SharedMemoryPlugin::msDebugOutputLevel, flag);
+}
+
+void RF2TraceLastWin32Error()
+{
+  SharedMemoryPlugin::TraceLastWin32Error();
+}
+
+void RF2WriteDebugMsg(DebugLevel lvl, long src, char const* const functionName, int line, char const* const msg, ...)
+{
+  va_list argList;
+  va_start(argList, msg);
+  SharedMemoryPlugin::WriteDebugMsgV(lvl, src, functionName, line, msg, argList);
+  va_end(argList);
+}
+
 void SharedMemoryPlugin::WriteDebugMsg(
   DebugLevel lvl,
   long src,
@@ -1736,11 +1754,24 @@ void SharedMemoryPlugin::WriteDebugMsg(
   char const* const msg,
   ...)
 {
+  va_list argList;
+  va_start(argList, msg);
+  WriteDebugMsgV(lvl, src, functionName, line, msg, argList);
+  va_end(argList);
+}
+
+void SharedMemoryPlugin::WriteDebugMsgV(
+  DebugLevel lvl,
+  long src,
+  char const* const functionName,
+  int line,
+  char const* const msg,
+  va_list argList)
+{
   if (Utils::IsFlagOff(SharedMemoryPlugin::msDebugOutputLevel, lvl)
     || Utils::IsFlagOff(SharedMemoryPlugin::msDebugOutputSource, src))
     return;
 
-  va_list argList;
   if (SharedMemoryPlugin::msDebugFile == nullptr) {
     SharedMemoryPlugin::msDebugFile = _fsopen(SharedMemoryPlugin::DEBUG_OUTPUT_FILENAME, "a", _SH_DENYNO);
     setvbuf(SharedMemoryPlugin::msDebugFile, nullptr, _IOFBF, SharedMemoryPlugin::BUFFER_IO_BYTES);
@@ -1758,9 +1789,7 @@ void SharedMemoryPlugin::WriteDebugMsg(
     fprintf_s(SharedMemoryPlugin::msDebugFile, "WARNING: ");
 
   if (SharedMemoryPlugin::msDebugFile != nullptr) {
-    va_start(argList, msg);
     vfprintf_s(SharedMemoryPlugin::msDebugFile, msg, argList);
-    va_end(argList);
   }
 
   fprintf_s(SharedMemoryPlugin::msDebugFile, "\n");

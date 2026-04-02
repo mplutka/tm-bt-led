@@ -37,11 +37,11 @@
   ],
   "main": "./lib/test.js",
   "engines": {
-    "node": ">=14 <=20"
+    "node": ">=24"
   },
   "pnpm": {
     "overrides": {
-      "nan": "2.18.0"
+      "nan": "2.26.2"
     },
     "patchedDependencies": {
       "@abandonware/bluetooth-hci-socket": "patches/@abandonware__bluetooth-hci-socket.patch",
@@ -80,7 +80,7 @@
       "clients/*.js"
     ],
     "targets": [
-      "node20-win"
+      "node24-win"
     ],
     "outputPath": "dist"
   },
