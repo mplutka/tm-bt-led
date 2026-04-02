@@ -173,3 +173,7 @@
 ## Version 4.1.0
 
 * Support for Assetto Corsa EVO and Assetto Corsa Rally
+
+## Version 4.2.0
+
+* Fake CSR 4.0–style Bluetooth USB adapters are supported; a low refresh rate is commonly observed with them.

