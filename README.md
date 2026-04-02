@@ -45,6 +45,13 @@ Either you use _template.js and create your own game file or get in touch with m
 * Intel Wireless Bluetooth 8265 (USB VID: 0x8087, USB PID: 0x0a2b)
 Others might work too, but again: No guarantee.  
 
+### Fake CSR 4.0 USB dongles (0x0a12:0x0001 clones)
+
+Many cheap adapters copy the same **VID/PID** as classic CSR sticks but use different silicon (often identifiable by odd `bcdDevice` values). **These are basically supported** in this project, but:
+**Do not expect the same performance as a genuine CSR or a quality chipset.** Clones often keep a **relatively slow BLE connection interval**; aggressive `--fps` / performance mode may not shorten the link as much as on better hardware, so effective display update rate can stay modest.
+
+For the smoothest experience, a **known-good** CSR is still preferable.
+
 ## Prerequisites
 1. You should be familiar with installing and using NodeJS application on Windows command line (cmd.exe).
 2. Thrustmaster BT LED ;-) (I won't guarantee that it works on your PC, so keep this in mind when buying one extra for this!)

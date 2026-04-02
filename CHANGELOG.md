@@ -174,6 +174,16 @@
 
 * Support for Assetto Corsa EVO and Assetto Corsa Rally
 
+## Version 4.1.1
+
+* `fallbackMaxRpm` tuning across game configs for consistent RPM bar scaling (`resolveMaxRpm`-style behaviour)
+* `assetto.bat`: use `--game=assetto` (replacing deprecated `assetto-sharedmemory`)
+
+## Version 4.1.2
+
+* README and download links aligned with release packaging
+* `revLightFlash`: `maxRpm` disabled by default in bundled config for better out-of-the-box performance
+
 ## Version 4.2.0
 
 * Fake CSR 4.0–style Bluetooth USB adapters are supported; a low refresh rate is commonly observed with them.
