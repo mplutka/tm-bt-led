@@ -187,3 +187,8 @@
 ## Version 4.2.0
 
 * Fake CSR 4.0–style Bluetooth USB adapters are supported; a low refresh rate is commonly observed with them.
+
+## Version 4.3.0
+
+* Added global `config.json` support for `global.additionalUsbVidPids` (array of extra Bluetooth USB VID/PID pairs).
+* Updated patched `@abandonware/bluetooth-hci-socket` USB detection to merge built-in adapters with configured additional VID/PID pairs.

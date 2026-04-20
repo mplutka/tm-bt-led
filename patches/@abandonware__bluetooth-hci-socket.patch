@@ -1,5 +1,5 @@
 diff --git a/lib/usb.js b/lib/usb.js
-index 85e2bc48a88c513bb6577688190b8c7d6fee8017..becda2c51de11e0150d8fc3eb5d48434d0ef0379 100644
+index 85e2bc48a88c513bb6577688190b8c7d6fee8017..57f6245bf232429b80dbe510eb14fbdf57088643 100644
 --- a/lib/usb.js
 +++ b/lib/usb.js
 @@ -2,7 +2,7 @@ var events = require('events');
@@ -22,7 +22,7 @@ index 85e2bc48a88c513bb6577688190b8c7d6fee8017..becda2c51de11e0150d8fc3eb5d48434
  var VENDOR_DEVICE_LIST = [
    {vid: 0x0CF3, pid: 0xE300 }, // Qualcomm Atheros QCA61x4
    {vid: 0x0a5c, pid: 0x21e8 }, // Broadcom BCM20702A0
-@@ -28,8 +32,19 @@ var VENDOR_DEVICE_LIST = [
+@@ -28,8 +32,50 @@ var VENDOR_DEVICE_LIST = [
    {vid: 0x050D, pid: 0x065A }, // Belkin BCM20702A0
    {vid: 0x1286, pid: 0x204C }, // Marvell AVASTAR
    {vid: 0x8087, pid: 0x0025 }, // Dell Precision 5530
@@ -39,17 +39,49 @@ index 85e2bc48a88c513bb6577688190b8c7d6fee8017..becda2c51de11e0150d8fc3eb5d48434
 +  return Number.isFinite(v) ? v : null;
 +}
 +
++function parseAdditionalVidPidList() {
++  var raw = process.env.BLUETOOTH_HCI_SOCKET_ADDITIONAL_VID_PIDS;
++  if (!raw) {
++    return [];
++  }
++
++  try {
++    var parsed = JSON.parse(raw);
++    if (!Array.isArray(parsed)) {
++      return [];
++    }
++
++    return parsed
++      .map(function(entry) {
++        if (!entry || typeof entry !== 'object') {
++          return null;
++        }
++        var vid = parseInt(String(entry.vid), 0);
++        var pid = parseInt(String(entry.pid), 0);
++        if (!Number.isFinite(vid) || !Number.isFinite(pid)) {
++          return null;
++        }
++        return { vid: vid, pid: pid };
++      })
++      .filter(function(entry) { return entry !== null; });
++  } catch (e) {
++    debug('Ignoring invalid BLUETOOTH_HCI_SOCKET_ADDITIONAL_VID_PIDS: %s', e.message || e);
++    return [];
++  }
++}
++
  function BluetoothHciSocket() {
    this._isUp = false;
  
-@@ -47,8 +62,74 @@ BluetoothHciSocket.prototype.bindRaw = function(devId, params) {
+@@ -47,8 +93,74 @@ BluetoothHciSocket.prototype.bindRaw = function(devId, params) {
    this.bindUser(devId, params);
  
    this._mode = 'raw';
-+  
++ 
 +  this.reset();  
 +};
-+
+ 
+-  this.reset();
 +/**
 + * Pick HCI interrupt-in (events) and bulk-in (ACL) endpoints. Clones often use
 + * non-default addresses; override with BLUETOOTH_HCI_SOCKET_USB_EP_EVENT,
@@ -106,8 +138,7 @@ index 85e2bc48a88c513bb6577688190b8c7d6fee8017..becda2c51de11e0150d8fc3eb5d48434
 +      this._aclDataInEndpoint = bulkIn[0];
 +    }
 +  }
- 
--  this.reset();
++
 +  if (!this._aclDataOutEndpoint || !this._hciEventEndpoint || !this._aclDataInEndpoint) {
 +    throw new Error(
 +      'Could not resolve HCI USB endpoints (aclOut / interrupt-in events / bulk-in ACL). ' +
@@ -118,21 +149,21 @@ index 85e2bc48a88c513bb6577688190b8c7d6fee8017..becda2c51de11e0150d8fc3eb5d48434
  };
  
  BluetoothHciSocket.prototype.bindUser = function(devId, params) {
-@@ -70,7 +151,7 @@ BluetoothHciSocket.prototype.bindUser = function(devId, params) {
+@@ -69,9 +181,9 @@ BluetoothHciSocket.prototype.bindUser = function(devId, params) {
+       this._usbDevice = this._findUsbDevice(devId, usbParams);
      }
    } else {
-     this._usbDevice = VENDOR_DEVICE_LIST
+-    this._usbDevice = VENDOR_DEVICE_LIST
 -      .map(d => usb.findByIds(d.vid, d.pid))
-+      .map(d => findByIds(d.vid, d.pid))
-       .find(d => d != null);
+-      .find(d => d != null);
++    this._usbDevice = VENDOR_DEVICE_LIST.concat(parseAdditionalVidPidList())
++       .map(d => findByIds(d.vid, d.pid))
++       .find(d => d != null);
    }
  
-@@ -79,14 +160,23 @@ BluetoothHciSocket.prototype.bindUser = function(devId, params) {
-   }
+   if (!this._usbDevice) {
+@@ -82,11 +194,20 @@ BluetoothHciSocket.prototype.bindUser = function(devId, params) {
  
-   this._usbDevice.open();
--
-+  
    this._usbDeviceInterface = this._usbDevice.interfaces[0];
  
 -  this._aclDataOutEndpoint = this._usbDeviceInterface.endpoint(0x02);
@@ -157,7 +188,7 @@ index 85e2bc48a88c513bb6577688190b8c7d6fee8017..becda2c51de11e0150d8fc3eb5d48434
  
    this._usbDeviceInterface.claim();
  };
-@@ -131,7 +221,7 @@ BluetoothHciSocket.prototype._getUsbParams = function(params) {
+@@ -131,7 +252,7 @@ BluetoothHciSocket.prototype._getUsbParams = function(params) {
  };
  
  BluetoothHciSocket.prototype._findUsbDevice = function(devId, usbParams) {
@@ -166,16 +197,19 @@ index 85e2bc48a88c513bb6577688190b8c7d6fee8017..becda2c51de11e0150d8fc3eb5d48434
  
    for (var i = 0; i < usbDevices.length; i++) {
      var usbDevice = usbDevices[i];
-@@ -158,7 +248,7 @@ BluetoothHciSocket.prototype._findUsbDevice = function(devId, usbParams) {
+@@ -158,9 +279,9 @@ BluetoothHciSocket.prototype._findUsbDevice = function(devId, usbParams) {
  };
  
  BluetoothHciSocket.prototype.getDeviceList = function() {
 -  return usb.getDeviceList()
 +  return getDeviceList()
      .filter(dev => {
-       return VENDOR_DEVICE_LIST.findIndex(d => {
+-      return VENDOR_DEVICE_LIST.findIndex(d => {
++      return VENDOR_DEVICE_LIST.concat(parseAdditionalVidPidList()).findIndex(d => {
          return dev.deviceDescriptor.idVendor == d.vid && dev.deviceDescriptor.idProduct == d.pid;
-@@ -184,11 +274,58 @@ BluetoothHciSocket.prototype.isDevUp = function() {
+       }) !== -1;
+     })
+@@ -184,11 +305,58 @@ BluetoothHciSocket.prototype.isDevUp = function() {
  
  BluetoothHciSocket.prototype.start = function() {
    if (this._mode === 'raw' || this._mode === 'user') {
@@ -206,7 +240,8 @@ index 85e2bc48a88c513bb6577688190b8c7d6fee8017..becda2c51de11e0150d8fc3eb5d48434
 +      }
 +    });
      this._hciEventEndpoint.startPoll();
- 
+-
++  
      this._aclDataInEndpoint.on('data', this.onAclDataInEndpointData.bind(this));
 +    this._aclDataInEndpoint.on('error', function(err) {
 +      var errStr = err.message || String(err);
@@ -234,11 +269,12 @@ index 85e2bc48a88c513bb6577688190b8c7d6fee8017..becda2c51de11e0150d8fc3eb5d48434
    }
  };
  
-@@ -207,19 +344,46 @@ BluetoothHciSocket.prototype.write = function(data) {
+@@ -206,20 +374,47 @@ BluetoothHciSocket.prototype.write = function(data) {
+   debug('write: ' + data.toString('hex'));
  
    if (this._mode === 'raw' || this._mode === 'user') {
-     var type = data.readUInt8(0);
 +    var self = this;
+     var type = data.readUInt8(0);
  
      if (HCI_COMMAND_PKT === type) {
 -      this._usbDevice.controlTransfer(usb.LIBUSB_REQUEST_TYPE_CLASS | usb.LIBUSB_RECIPIENT_INTERFACE, 0, 0, 0, data.slice(1), function() {});
@@ -263,7 +299,7 @@ index 85e2bc48a88c513bb6577688190b8c7d6fee8017..becda2c51de11e0150d8fc3eb5d48434
 +              bmRequestType.toString(16), err.message || err);
 +          }
 +        }
-+      );
++      );      
      } else if(HCI_ACLDATA_PKT === type) {
 -      this._aclDataOutEndpoint.transfer(data.slice(1));
 +      this._aclDataOutEndpoint.transfer(data.slice(1), function(err) {
@@ -284,7 +320,7 @@ index 85e2bc48a88c513bb6577688190b8c7d6fee8017..becda2c51de11e0150d8fc3eb5d48434
      return;
    }
  
-@@ -239,9 +403,20 @@ BluetoothHciSocket.prototype.onHciEventEndpointData = function(data) {
+@@ -239,9 +434,20 @@ BluetoothHciSocket.prototype.onHciEventEndpointData = function(data) {
  
      var buf = this._hciEventEndpointBuffer.slice(0, pktLen + 2);
  
@@ -312,7 +348,7 @@ diff --git a/package-lock.json b/package-lock.json
 deleted file mode 100644
 index d196e8747c1a40c1484a4fd10a6050b8f0feed57..0000000000000000000000000000000000000000
 diff --git a/package.json b/package.json
-index b41402d05eeccb0d453f143d9aeece4bd7462d1f..62088085b5063b94074e281fa2ac9839b623f7e9 100644
+index b41402d05eeccb0d453f143d9aeece4bd7462d1f..96b1f1bc439febfdedd5704c8aee4b7d15f305bc 100644
 --- a/package.json
 +++ b/package.json
 @@ -33,7 +33,7 @@
