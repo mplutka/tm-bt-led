@@ -41,7 +41,11 @@
   },
   "pnpm": {
     "overrides": {
-      "nan": "2.26.2"
+      "nan": "2.26.2",
+      "tar": "7.5.16",
+      "picomatch": "4.0.4",
+      "brace-expansion": "2.0.3",
+      "ip-address": "10.1.1"
     },
     "patchedDependencies": {
       "@abandonware/bluetooth-hci-socket": "patches/@abandonware__bluetooth-hci-socket.patch",
@@ -64,13 +68,13 @@
   "dependencies": {
     "@abandonware/noble": "1.9.2-26",
     "@racehub-io/f1-telemetry-client": "^0.2.12",
-    "@yao-pkg/pkg": "^6.14.1",
+    "@yao-pkg/pkg": "^6.20.0",
     "binary-parser": "^2.2.1",
     "convert-units": "^2.3.4",
-    "lodash": "^4.17.21",
+    "lodash": "^4.18.1",
     "node-addon-api": "^5.1.0",
     "node-bitarray": "^0.1.0",
-    "node-gyp": "^12.2.0",
+    "node-gyp": "^12.4.0",
     "node-irsdk": "^2.1.6",
     "node-processlist": "^1.0.2",
     "yargs": "^17.6.2"
