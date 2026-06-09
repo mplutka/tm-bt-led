@@ -187,3 +187,8 @@
 ## Version 4.2.0
 
 * Fake CSR 4.0–style Bluetooth USB adapters are supported; a low refresh rate is commonly observed with them.
+
+## Version 4.2.1
+
+* Update usb package
+

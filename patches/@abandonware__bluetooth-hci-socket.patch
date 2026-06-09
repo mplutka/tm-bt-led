@@ -320,7 +320,7 @@ index b41402d05eeccb0d453f143d9aeece4bd7462d1f..62088085b5063b94074e281fa2ac9839
    },
    "optionalDependencies": {
 -    "usb": "^2.11.0"
-+    "usb": "^2.17.0"
++    "usb": "^2.18.0"
    },
    "devDependencies": {
      "jshint": "^2.13.6"

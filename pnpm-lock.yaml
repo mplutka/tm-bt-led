@@ -9,7 +9,7 @@ overrides:
 
 patchedDependencies:
   '@abandonware/bluetooth-hci-socket':
-    hash: f01ee3bbe6287257fc2037792ca70005099e388dcaff348b8f44cfa379000223
+    hash: 84c4026518d3f81e27018d681e864ce0354d3f47302fd8647e7c1717c8589006
     path: patches/@abandonware__bluetooth-hci-socket.patch
   '@abandonware/noble':
     hash: e90e136913f6966a39c12b0706b0a6172559d5b4a1b98de375d6ac14deb1ae19
@@ -1347,8 +1347,8 @@ packages:
   unzipper@0.12.3:
     resolution: {integrity: sha512-PZ8hTS+AqcGxsaQntl3IRBw65QrBI6lxzqDEL7IAo/XCEqRTKGfOX56Vea5TH9SZczRVxuzk1re04z/YjuYCJA==}
 
-  usb@2.17.0:
-    resolution: {integrity: sha512-UuFgrlglgDn5ll6d5l7kl3nDb2Yx43qLUGcDq+7UNLZLtbNug0HZBb2Xodhgx2JZB1LqvU+dOGqLEeYUeZqsHg==}
+  usb@2.18.0:
+    resolution: {integrity: sha512-klAJPUTaSxRvTgrIh7om6UTrgRxdzioD+rJc/MaoiN8+OGdqRzai39tR00asnoCesPNikItWB9zBZoo0pJsWaA==}
     engines: {node: '>=12.22.0 <13.0 || >=14.17.0'}
 
   util-deprecate@1.0.2:
@@ -1422,14 +1422,14 @@ packages:
 
 snapshots:
 
-  '@abandonware/bluetooth-hci-socket@0.5.3-12(patch_hash=f01ee3bbe6287257fc2037792ca70005099e388dcaff348b8f44cfa379000223)(encoding@0.1.13)':
+  '@abandonware/bluetooth-hci-socket@0.5.3-12(patch_hash=84c4026518d3f81e27018d681e864ce0354d3f47302fd8647e7c1717c8589006)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 1.0.11(encoding@0.1.13)
       debug: 4.4.3
       nan: 2.26.2
       node-gyp: 10.3.1
     optionalDependencies:
-      usb: 2.17.0
+      usb: 2.18.0
     transitivePeerDependencies:
       - encoding
       - supports-color
@@ -1442,7 +1442,7 @@ snapshots:
       node-addon-api: 8.6.0
       node-gyp-build: 4.8.4
     optionalDependencies:
-      '@abandonware/bluetooth-hci-socket': 0.5.3-12(patch_hash=f01ee3bbe6287257fc2037792ca70005099e388dcaff348b8f44cfa379000223)(encoding@0.1.13)
+      '@abandonware/bluetooth-hci-socket': 0.5.3-12(patch_hash=84c4026518d3f81e27018d681e864ce0354d3f47302fd8647e7c1717c8589006)(encoding@0.1.13)
     transitivePeerDependencies:
       - encoding
       - supports-color
@@ -2897,7 +2897,7 @@ snapshots:
       graceful-fs: 4.2.11
       node-int64: 0.4.0
 
-  usb@2.17.0:
+  usb@2.18.0:
     dependencies:
       '@types/w3c-web-usb': 1.0.13
       node-addon-api: 8.6.0
