@@ -192,3 +192,7 @@
 
 * Update usb package
 
+## Version 4.3.0
+
+* Added global `config.json` support for `global.additionalUsbVidPids` (array of extra Bluetooth USB VID/PID pairs).
+* Updated patched `@abandonware/bluetooth-hci-socket` USB detection to merge built-in adapters with configured additional VID/PID pairs.

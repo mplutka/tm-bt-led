@@ -170,6 +170,21 @@ You can change the order and type of data displayed on the left and right displa
 
 Game defaults can also be merged from **`config.json`** in that same folder (see `dist/config.json` in the repo for a full template, and **`dist/config.demo.json`** for a smaller example with rev lights, forwarding, and WRC notes). Values under each game key (e.g. `"assetto"`, `"f1"`, `"wrc"`) override the built-in defaults; `xxx.config.js` still applies where used.
 
+### Additional Bluetooth USB VID/PID pairs
+
+If your Bluetooth adapter works with tm-bt-led but is not part of the built-in USB list, you can add one or more extra VID/PID pairs in `config.json` under the `global` section:
+
+```json
+"global": {
+    "additionalUsbVidPids": [
+        { "vid": "0x0bda", "pid": "0x8771" },
+        { "vid": 0x2357, "pid": 0x0604 }
+    ]
+}
+```
+
+Both decimal and hex values are accepted for `vid` and `pid`.
+
 ### Rev lights (shift / max RPM flash)
 
 RPM strip behaviour for supported clients (e.g. **Assetto Corsa**, **WRC**, **F1** classic cars, **iRacing**) is controlled by the optional **`revLightFlash`** object inside the game section of `config.json`. Flash timing uses **wall-clock phases** (no separate `setInterval` per effect), so it stays in sync with the BLE update loop.

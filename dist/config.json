@@ -9,7 +9,9 @@
         "queueDepth": 2,
         "metric": false,
         "imperial": false,
-        "message": ""
+        "message": "",
+        "_usbNote": "Additional Bluetooth USB adapters by VID/PID. vid/pid can be decimal or hex (e.g. 0x0bda).",
+        "additionalUsbVidPids": []
     },
 
     "f1": {
