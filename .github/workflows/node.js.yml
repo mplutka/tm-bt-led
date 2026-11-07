@@ -95,21 +95,60 @@ jobs:
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
+    needs: [build, linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-    - name: Download artifacts
+    - uses: actions/checkout@v7
+
+    - name: Download x64 build
       uses: actions/download-artifact@v8
       with:
-        pattern: tm-bt-led-*-${{ github.sha }}
-        path: release
-        merge-multiple: true
+        name: tm-bt-led-x64-${{ github.sha }}
+        path: build/x64
+
+    # The arm64 build is experimental and may be missing.
+    - name: Download arm64 build
+      continue-on-error: true
+      uses: actions/download-artifact@v8
+      with:
+        name: tm-bt-led-arm64-${{ github.sha }}
+        path: build/arm64
+
+    - name: Create zip files
+      run: |
+        version="${GITHUB_REF_NAME#v}"
+        mkdir release
+        (cd build/x64 && zip -r "../../release/tm-bt-led-${version}-x64.zip" .)
+        if [ -f build/arm64/tm-bt-led-arm64.exe ]; then
+          # The batch files call tm-bt-led.exe
+          mv build/arm64/tm-bt-led-arm64.exe build/arm64/tm-bt-led.exe
+          (cd build/arm64 && zip -r "../../release/tm-bt-led-${version}-arm64.zip" .)
+        fi
+
+    - name: Create release notes from CHANGELOG.md
+      run: |
+        version="${GITHUB_REF_NAME#v}"
+        awk -v heading="## Version ${version}" '
+          { sub(/[ \t\r]+$/, "") }
+          $0 == heading { found = 1; next }
+          found && /^## / { exit }
+          found { print }
+        ' CHANGELOG.md > changes.md
+        if ! grep -q '[^[:space:]]' changes.md; then
+          echo "::error::CHANGELOG.md has no section '## Version ${version}'"
+          exit 1
+        fi
+        {
+          echo "Download \`tm-bt-led-${version}-x64.zip\` (or \`tm-bt-led-${version}-arm64.zip\` for Windows on ARM, experimental), extract it into an empty folder and follow the [usage steps](https://github.com/mplutka/tm-bt-led#usage). Linux runs from source, see [LINUX.md](https://github.com/mplutka/tm-bt-led/blob/main/LINUX.md)."
+          cat changes.md
+        } > release-notes.md
 
     - name: Publish GitHub release
       uses: softprops/action-gh-release@v3
       with:
-        files: release/*
-        generate_release_notes: true
+        name: ${{ github.ref_name }}
+        body_path: release-notes.md
+        files: release/*.zip

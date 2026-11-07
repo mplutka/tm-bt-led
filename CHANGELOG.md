@@ -198,20 +198,35 @@
 * Updated patched `@abandonware/bluetooth-hci-socket` USB detection to merge built-in adapters with configured additional VID/PID pairs.
 * Security fixes
 
-## Unreleased
+## Version 5.0.0
 
+### New
+
+* No more Zadig: `install-driver.bat` (`tm-bt-led.exe --installDriver`) switches the Bluetooth stick to Microsoft's inbox WinUSB driver, `restore-driver.bat` (`--restoreDriver`) gives it back to Windows
+* F1 24, F1 25 and F1 26 / F1 25 2026 Season Pack (2026 UDP format, experimental). Cars built to the 2026 regulations show active aero and Overtake Mode on the green rev lights instead of DRS
 * Automatic rescan and reconnect when the device disconnects; clean disconnect on Ctrl+C / console close
-* Game client errors no longer crash the program; a busy UDP port shows `PORT BUSY` instead of exiting
-* Lower CPU usage: hybrid timer instead of a busy loop, display frame only recomposed when it changed
-* Fixed lap times with milliseconds below 100 (e.g. `1:01.005`) and time spacer handling
-* iRacing: rev lights use the car's shift-light/redline RPM, listeners are no longer registered twice
+* Experimental Windows on ARM build (`tm-bt-led-<version>-arm64.zip`); the native USB binding is selected by CPU architecture
+* Experimental Linux support (UDP games only, run from source): the Bluetooth adapter is driven over the HCI user channel, bypassing BlueZ; games are detected from `/proc` (Proton aware); new `global.hciDeviceId` setting. See `LINUX.md`
+
+### Changes
+
 * `config.json` now applies to all games (iRacing, rFactor 2, RaceRoom, ETS2/ATS included); `TM_BT_LED_HOME` overrides the data folder
-* American Truck Simulator is detected in auto mode
 * Units: `en-GB` uses mph, more imperial locales; `metric`/`imperial` can be set in `config.json`
 * Output report handle detected from the device dump, overridable with `global.outputHandle`
-* Native USB binding selected by CPU architecture; experimental Windows on ARM build
-* Unit tests, ESLint and tagged releases in CI
-* `tm-bt-led.exe --installDriver` switches the Bluetooth stick to Microsoft's inbox WinUSB driver, `--restoreDriver` reverts it
-* Build: noble's unused WinRT native binding is no longer compiled (fails with Visual Studio 2026)
+* Lower CPU usage: hybrid timer instead of a busy loop, display frame only recomposed when it changed
 * Unknown command line arguments now exit with an error and print the list of supported options
-* Experimental Linux support (UDP games only, run from source): the Bluetooth adapter is driven over the HCI user channel, bypassing BlueZ; games are detected from `/proc` (Proton aware); new `global.hciDeviceId` setting. See `LINUX.md`
+* American Truck Simulator is detected in auto mode
+
+### Fixes
+
+* Game client errors no longer crash the program; a busy UDP port shows `PORT BUSY` instead of exiting
+* Fixed lap times with milliseconds below 100 (e.g. `1:01.005`) and time spacer handling
+* F1: lap times read from the renamed fields of the updated telemetry library
+* iRacing: rev lights use the car's shift-light/redline RPM, listeners are no longer registered twice
+* Security fixes for vulnerable dependencies (tar, brace-expansion, ip-address, js-yaml, glob, minimatch)
+
+### Build (only relevant when building from source)
+
+* Requires Node.js 26 and pnpm 10, see "Building from source" in the README
+* noble's unused WinRT native binding is no longer compiled (fails with Visual Studio 2026); rFactor 2 shared memory addon builds for ARM64
+* Unit tests, ESLint, a Linux test job and tagged releases with release notes from this changelog in CI
