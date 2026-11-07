@@ -174,7 +174,7 @@ Only needed to change the code; the release zip contains everything to run tm-bt
 3. `pnpm run build` compiles the shared memory addons (Assetto Corsa, rFactor 2, RaceRoom, ETS2/ATS).
 4. `pnpm test` and `pnpm run lint` run the unit tests and ESLint.
 5. Run from the `dist` folder: `cd dist`, then `node ../lib/launcher.js --help`.
-6. `pnpm run pack` builds `dist/tm-bt-led.exe`, which the batch files use, so run it again after code changes.
+6. `pnpm run pack` builds `dist/tm-bt-led.exe`, which the batch files use, so run it again after code changes. `pnpm run pack:arm64` builds the experimental ARM64 exe and has to run on Windows on ARM.
 Releases are built by GitHub Actions when a `v*` tag is pushed, with release notes from the matching `## Version x.y.z` section in [CHANGELOG.md](CHANGELOG.md).
 
 ## Special thanks

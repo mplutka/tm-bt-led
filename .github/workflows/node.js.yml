@@ -6,6 +6,12 @@ on:
     tags: [ 'v*' ]
   pull_request:
     branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      arm64:
+        description: 'Also build the experimental Windows on ARM exe'
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -46,6 +52,39 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: tm-bt-led-${{ github.sha }}
+        path: dist/*
+
+  # Experimental, only on manual runs; native addons are compiled on the arm64 runner itself.
+  build-arm64:
+    if: github.event_name == 'workflow_dispatch' && inputs.arm64
+    runs-on: windows-11-arm
+
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        submodules: true
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v6
+
+    - name: Use Node.js 26.x
+      uses: actions/setup-node@v7
+      with:
+        node-version: 26.x
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Build native modules
+      run: pnpm run build
+
+    - name: Package executable
+      run: pnpm run pack:arm64
+
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v7
+      with:
+        name: tm-bt-led-arm64-${{ github.sha }}
         path: dist/*
 
   linux:

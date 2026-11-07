@@ -103,6 +103,7 @@
     "start": "node lib/launcher.js",
     "build": "node-gyp rebuild -C AssettoCorsaSharedMemory && node-gyp rebuild -C rF2SharedMemory && node-gyp rebuild -C r3e-api && node-gyp rebuild -C SCSSharedMemory",
     "pack": "pkg . -C GZip",
+    "pack:arm64": "pkg . -C GZip -t node26-win-arm64 -o dist/tm-bt-led-arm64.exe",
     "test": "node --test \"test/**/*.test.js\"",
     "lint": "eslint lib clients test"
   }
