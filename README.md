@@ -42,17 +42,23 @@ Either you use _template.js and create your own game file or get in touch with m
  
 ## Recommended Bluetooth chipsets/sticks known to be working
 * Certain CSR 8510 A10 based devices (USB VID: 0x0a12, USB PID: 0x0001) [This one works fine for me](https://amzn.to/3Y9a8Li)
-* **Fake / budget "CSR 4.0" USB adapters** are supported by this project. **A low refresh rate is commonly observed** with those sticks. Identical-looking dongles can still behave differently; when in doubt, prefer a stick from the list below that is known to work well.
+* **Fake / budget "CSR 4.0" USB adapters** may work fine since version 5.0.0, but there is no guarantee, see [below](#fake-csr-40-usb-dongles-0x0a120x0001-clones).
 * Realtek Bluetooth 8761B (USB VID: 0x0bda, USB PID: 0x8771, e.g. MPOW Bluetooth 5.0 stick)
 * Intel Wireless Bluetooth 8265 (USB VID: 0x8087, USB PID: 0x0a2b)
 Others might work too, but again: No guarantee.  
 
 ### Fake CSR 4.0 USB dongles (0x0a12:0x0001 clones)
 
-Many cheap adapters copy the same **VID/PID** as classic CSR sticks but use different silicon (often identifiable by odd `bcdDevice` values). **These are basically supported** in this project, but:
-**Do not expect the same performance as a genuine CSR or a quality chipset.** Clones often keep a **relatively slow BLE connection interval**; aggressive `--fps` / performance mode may not shorten the link as much as on better hardware, so effective display update rate can stay modest.
+Many cheap adapters copy the same **VID/PID** as classic CSR sticks but use different silicon (often identifiable by odd `bcdDevice` values, e.g. a stick named "BT DONGLE10" with revision `8891`).
 
-For the smoothest experience, a **known-good** CSR is still preferable.
+Before version 5.0.0 these sticks often stayed at a very low refresh rate. A large part of that was a bug in tm-bt-led, not the stick: performance mode was ignored on some connections. With 5.0.0 a tested clone connects within a few seconds and runs at the default 61.5 FPS.
+
+**There is still no guarantee.** Clones differ even when they look identical, and they are less robust than a genuine CSR or a quality chipset:
+* The link can drop now and then; tm-bt-led reconnects automatically.
+* Plug the stick into a USB 2.0 port or use a short USB extension cable, away from USB 3 ports (they interfere with 2.4 GHz).
+* If the display stutters, lower the refresh rate, e.g. `--fps=50` or `"fps": 50` in `config.json`.
+
+For the smoothest experience, a **known-good** stick from the list above is still preferable.
 
 ## Prerequisites
 1. You should be familiar with the Windows command line (cmd.exe). Node.js is only needed when [building from source](#building-from-source).
@@ -166,7 +172,7 @@ BLE connection intervals must be multiples of 1.25ms. Common presets:
 | 66 | 15ms | 66.7 | Higher refresh |
 | 80 | 12.5ms | 80.0 | Maximum (may be unstable) |
 | 40 | 25ms | 40.0 | Power save |
-| 15 | 66ms | 14.1 | Compatibility; low refresh is common on fake CSR 4.0 adapters 
+| 15 | 66ms | 14.1 | Compatibility, e.g. for unstable fake CSR 4.0 adapters 
 
 Run `--listFps` to see all valid options.
 
