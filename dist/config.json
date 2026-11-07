@@ -16,7 +16,7 @@
 
     "f1": {
         "_availableModes": ["SPEED", "RPM", "FUEL", "TYRETEMP", "BRAKETEMP", "ENGINETEMP", "ERSLEVEL", "LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"],
-        "_note": "For F1 25, set UDP Format to '2024' in the game's telemetry settings!",
+        "_note": "F1 26 (F1 25 with the 2026 Season Pack) uses f1_25.exe; set UDP Format to '2026' in the game's telemetry settings.",
         "executables": ["f1_2019.exe", "f1_2019_dx12.exe", "f1_2020.exe", "f1_2020_dx12.exe", "f1_2021_dx12.exe", "f1_2022_dx12.exe", "f1_23.exe", "f1_24.exe", "f1_25.exe"],
         "port": 20777,
         "internalPort": 20778,

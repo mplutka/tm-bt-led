@@ -21,7 +21,7 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 
 ## Currently supported games 
 
-* F1 2019-25 (f1.bat)
+* F1 2019-25 and F1 26 / F1 25 2026 Season Pack (f1.bat)
 * Assetto Corsa, Assetto Corsa Competizione, Assetto Corsa EVO, Assetto Corsa Rally (assetto.bat)
 * iRacing (iracing.bat)
 * Richard Burns Rally by Rallysimfans (rbr.bat)
@@ -341,10 +341,12 @@ The system now includes automatic backoff when USB errors occur, which helps pre
 
 ## Game specific settings
 
-### F1 2019-2025
+### F1 2019-2026
 Enable UDP telemetry in the game settings. The telemetry is sent to port 20777 by default.
 
-All UDP formats from 2018 to 2025 are supported, so F1 25 can use its native **2025** UDP format.
+All UDP formats from 2018 to 2026 are supported, so F1 25 can use its native **2025** UDP format, and F1 26 (F1 25 with the 2026 Season Pack) its **2026** format. Support for the 2026 format is experimental.
+
+Cars built to the 2026 regulations have no DRS. For them the green rev lights show active aero and Overtake Mode instead: lit halfway when one is available, fully lit when straight-line mode or Overtake Mode is active.
 
 ### Assetto Corsa, Competizione, EVO, Rally
 Telemetry uses the game’s **shared memory** (default client; no UDP setup required).

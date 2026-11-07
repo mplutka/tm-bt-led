@@ -262,7 +262,15 @@ class F1 extends AbstractClient {
         let drsAvailable = false;
 
         let ersDeployMode = null;
-        const ersDeployModes = ["NONE", "LOW ","MEDIUM", "HIGH", "OVERTAKE", "HOTLAP"];
+        const ersDeployModeNames = (packetFormat) => {
+            if (packetFormat <= 2019) {
+                return ["NONE", "LOW ", "MEDIUM", "HIGH", "OVERTAKE", "HOTLAP"];
+            }
+            return ["NONE", "MEDIUM", "HOTLAP", packetFormat >= 2026 ? "BOOST" : "OVERTAKE"];
+        };
+
+        // Cars built to the 2026 regulations have no DRS; active aero and Overtake Mode take its place.
+        let aero2026 = null;
 
         let fuelMix = null;
         const fuelMixes = ["LEAN", "STANDARD", "RICH", "MAX"];
@@ -275,7 +283,7 @@ class F1 extends AbstractClient {
 
             if (carStatus.m_ersDeployMode !== ersDeployMode) {
                 if (ersDeployMode >= 0) {
-                    this.tmBtLed.showTemporary("ERSMODE", ersDeployModes[carStatus.m_ersDeployMode]);
+                    this.tmBtLed.showTemporary("ERSMODE", ersDeployModeNames(d.m_header.m_packetFormat)[carStatus.m_ersDeployMode]);
                 }
                 ersDeployMode = carStatus.m_ersDeployMode;
             }
@@ -294,7 +302,9 @@ class F1 extends AbstractClient {
                 frontBrakeBias = carStatus.m_frontBrakeBias;
             }            
 
-            drsAvailable = carStatus.m_drsAllowed === 1;
+            drsAvailable = aero2026
+                ? aero2026.m_activeAeroAvailable === 1 || aero2026.m_overtakeAvailable === 1
+                : carStatus.m_drsAllowed === 1;
 
             switch(carStatus.m_vehicleFiaFlags) {
                 case 2:
@@ -328,12 +338,19 @@ class F1 extends AbstractClient {
             }
         });
 
+        this.client.on(PACKETS.carTelemetry2, d => {
+            const data = d.m_carTelemetry2Data[d.m_header.m_playerCarIndex];
+            aero2026 = data && data.m_2026Regulations === 1 ? data : null;
+        });
+
         this.client.on(PACKETS.carTelemetry, d => {
             const myIndex = d.m_header.m_playerCarIndex;
             carTelemetry = d.m_carTelemetryData[myIndex];
             this.tmBtLed.setGear(carTelemetry.m_gear);
         
-            drsOn = carTelemetry.m_drs === 1;
+            drsOn = aero2026
+                ? aero2026.m_activeAeroMode === 1 || aero2026.m_overtakeActive === 1
+                : carTelemetry.m_drs === 1;
             if (this.tmBtLed.shouldApplyClientRevLights()) {
                 if (drsOn) {
                     this.tmBtLed.setRevLightsGreen(4);
