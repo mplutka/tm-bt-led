@@ -51,7 +51,7 @@ Others might work too ([full list](https://github.com/abandonware/node-bluetooth
 ## Usage
 
 ### 1. Download
-Download the [current version](https://cju3ax1.short.gy/tm-bt-led) and extract it into an empty folder: `tm-bt-led-<version>-x64.zip` for a normal Windows PC, `tm-bt-led-<version>-arm64.zip` for Windows on ARM (experimental).
+Download the [current version](https://cju3ax1.short.gy/tm-bt-led) and extract `tmbtled_<version>.zip` into an empty folder.
 
 ### 2. Switch the stick to the WinUSB driver (once per stick)
 The Windows Bluetooth stack can't be used: the TM BT LED pairs with a well-known debug key that Windows rejects, and Windows denies apps access to the HID service. So the stick is driven directly through Microsoft's WinUSB driver.
@@ -174,8 +174,7 @@ Only needed to change the code; the release zip contains everything to run tm-bt
 3. `pnpm run build` compiles the shared memory addons (Assetto Corsa, rFactor 2, RaceRoom, ETS2/ATS).
 4. `pnpm test` and `pnpm run lint` run the unit tests and ESLint.
 5. Run from the `dist` folder: `cd dist`, then `node ../lib/launcher.js --help`.
-6. `pnpm run pack` builds `dist/tm-bt-led.exe`, which the batch files use, so run it again after code changes. `pnpm run pack:arm64` builds the ARM64 exe and has to run on Windows on ARM.
-
+6. `pnpm run pack` builds `dist/tm-bt-led.exe`, which the batch files use, so run it again after code changes.
 Releases are built by GitHub Actions when a `v*` tag is pushed, with release notes from the matching `## Version x.y.z` section in [CHANGELOG.md](CHANGELOG.md).
 
 ## Special thanks

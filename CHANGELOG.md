@@ -205,7 +205,6 @@
 * No more Zadig: `install-driver.bat` (`tm-bt-led.exe --installDriver`) switches the Bluetooth stick to Microsoft's inbox WinUSB driver, `restore-driver.bat` (`--restoreDriver`) gives it back to Windows
 * F1 24, F1 25 and F1 26 / F1 25 2026 Season Pack (2026 UDP format, experimental). Cars built to the 2026 regulations show active aero and Overtake Mode on the green rev lights instead of DRS
 * Automatic rescan and reconnect when the device disconnects; clean disconnect on Ctrl+C / console close
-* Experimental Windows on ARM build (`tm-bt-led-<version>-arm64.zip`); the native USB binding is selected by CPU architecture
 * Experimental Linux support (UDP games only, run from source): the Bluetooth adapter is driven over the HCI user channel, bypassing BlueZ; games are detected from `/proc` (Proton aware); new `global.hciDeviceId` setting. See `LINUX.md`
 
 ### Changes
@@ -232,5 +231,5 @@
 ### Build (only relevant when building from source)
 
 * Requires Node.js 26 and pnpm 10, see "Building from source" in the README
-* noble's unused WinRT native binding is no longer compiled (fails with Visual Studio 2026); rFactor 2 shared memory addon builds for ARM64
+* noble's unused WinRT native binding is no longer compiled (fails with Visual Studio 2026)
 * Unit tests, ESLint, a Linux test job and tagged releases with release notes from this changelog in CI

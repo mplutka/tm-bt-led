@@ -9,23 +9,7 @@ on:
 
 jobs:
   build:
-    name: build (${{ matrix.arch }})
-    runs-on: ${{ matrix.runner }}
-    # Windows on ARM is experimental: native addons are compiled on the arm64 runner itself.
-    continue-on-error: ${{ matrix.experimental }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: x64
-            runner: windows-latest
-            pack: pack
-            experimental: false
-          - arch: arm64
-            runner: windows-11-arm
-            pack: pack:arm64
-            experimental: true
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v7
@@ -56,12 +40,12 @@ jobs:
       run: pnpm run build
 
     - name: Package executable
-      run: pnpm run ${{ matrix.pack }}
+      run: pnpm run pack
 
     - name: Archive production artifacts
       uses: actions/upload-artifact@v7
       with:
-        name: tm-bt-led-${{ matrix.arch }}-${{ github.sha }}
+        name: tm-bt-led-${{ github.sha }}
         path: dist/*
 
   linux:
@@ -103,30 +87,17 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
-    - name: Download x64 build
+    - name: Download build
       uses: actions/download-artifact@v8
       with:
-        name: tm-bt-led-x64-${{ github.sha }}
-        path: build/x64
+        name: tm-bt-led-${{ github.sha }}
+        path: build
 
-    # The arm64 build is experimental and may be missing.
-    - name: Download arm64 build
-      continue-on-error: true
-      uses: actions/download-artifact@v8
-      with:
-        name: tm-bt-led-arm64-${{ github.sha }}
-        path: build/arm64
-
-    - name: Create zip files
+    - name: Create zip file
       run: |
         version="${GITHUB_REF_NAME#v}"
         mkdir release
-        (cd build/x64 && zip -r "../../release/tm-bt-led-${version}-x64.zip" .)
-        if [ -f build/arm64/tm-bt-led-arm64.exe ]; then
-          # The batch files call tm-bt-led.exe
-          mv build/arm64/tm-bt-led-arm64.exe build/arm64/tm-bt-led.exe
-          (cd build/arm64 && zip -r "../../release/tm-bt-led-${version}-arm64.zip" .)
-        fi
+        (cd build && zip -r "../release/tmbtled_${version}.zip" .)
 
     - name: Create release notes from CHANGELOG.md
       run: |
@@ -142,7 +113,7 @@ jobs:
           exit 1
         fi
         {
-          echo "Download \`tm-bt-led-${version}-x64.zip\` (or \`tm-bt-led-${version}-arm64.zip\` for Windows on ARM, experimental), extract it into an empty folder and follow the [usage steps](https://github.com/mplutka/tm-bt-led#usage). Linux runs from source, see [LINUX.md](https://github.com/mplutka/tm-bt-led/blob/main/LINUX.md)."
+          echo "Download \`tmbtled_${version}.zip\`, extract it into an empty folder and follow the [usage steps](https://github.com/mplutka/tm-bt-led#usage). Linux runs from source, see [LINUX.md](https://github.com/mplutka/tm-bt-led/blob/main/LINUX.md)."
           cat changes.md
         } > release-notes.md
 
