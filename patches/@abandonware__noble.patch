@@ -1,5 +1,5 @@
 diff --git a/lib/characteristic.js b/lib/characteristic.js
-index 18e7c1e0b94c8e11a938b35910c8d073a92c913e..de0214384b1f7a262f130fdd47cc1d2516ef06c1 100644
+index 18e7c1e0b94c8e11a938b35910c8d073a92c913e..434d6f4d60cf9016dd73b5cd6daed371706cd598 100644
 --- a/lib/characteristic.js
 +++ b/lib/characteristic.js
 @@ -3,7 +3,7 @@ const util = require('util');
@@ -103,7 +103,7 @@ index 18e7c1e0b94c8e11a938b35910c8d073a92c913e..de0214384b1f7a262f130fdd47cc1d25
  };
  
 diff --git a/lib/descriptor.js b/lib/descriptor.js
-index 5539222b47f5276ba309ef5ddedd7ad5160ad315..d12b670eb9372bc7cfb6de69e98e8961d88f9350 100644
+index 5539222b47f5276ba309ef5ddedd7ad5160ad315..abffb0360578e48e0ef0ad7b5e725741351b8cee 100644
 --- a/lib/descriptor.js
 +++ b/lib/descriptor.js
 @@ -3,7 +3,7 @@ const util = require('util');
@@ -144,7 +144,7 @@ index 5539222b47f5276ba309ef5ddedd7ad5160ad315..d12b670eb9372bc7cfb6de69e98e8961
  };
  
 diff --git a/lib/hci-socket/bindings.js b/lib/hci-socket/bindings.js
-index fb892943d6f8eb3bf3c2c1099ddf17299e4b99ee..d3a35ebc83d1a90e16bb27d1d6e347c21635eaaa 100644
+index fb892943d6f8eb3bf3c2c1099ddf17299e4b99ee..c1e64b1c73fd0120e6fa9d75460613fcd235964e 100644
 --- a/lib/hci-socket/bindings.js
 +++ b/lib/hci-socket/bindings.js
 @@ -7,14 +7,12 @@ const Gap = require('./gap');
@@ -842,7 +842,7 @@ index fb892943d6f8eb3bf3c2c1099ddf17299e4b99ee..d3a35ebc83d1a90e16bb27d1d6e347c2
 +NobleBindings.prototype.connUpdateLe = function (peripheralUuid, minInterval, maxInterval, latency, supervisionTimeout) {
 +  const handle = this._handles[peripheralUuid];
 +
-+  if (handle) {
++  if (handle !== undefined) {
 +    this._hci.connUpdateLe(handle, minInterval, maxInterval, latency, supervisionTimeout);
 +  }
 +}
@@ -857,7 +857,7 @@ index fb892943d6f8eb3bf3c2c1099ddf17299e4b99ee..d3a35ebc83d1a90e16bb27d1d6e347c2
 +module.exports = new NobleBindings();
 \ No newline at end of file
 diff --git a/lib/hci-socket/gatt.js b/lib/hci-socket/gatt.js
-index 03c08f39ef32645aab03a4f54cba67448645b793..bcb035379581c0321f8db7d0f5e1edc5d0ad6a4b 100644
+index 03c08f39ef32645aab03a4f54cba67448645b793..447cd5156530e1984d0ae0a413d5ed1e6f342dfe 100644
 --- a/lib/hci-socket/gatt.js
 +++ b/lib/hci-socket/gatt.js
 @@ -69,7 +69,6 @@ const Gatt = function (address, aclStream) {
@@ -1173,7 +1173,7 @@ index 03c08f39ef32645aab03a4f54cba67448645b793..bcb035379581c0321f8db7d0f5e1edc5
    });
  };
 diff --git a/lib/noble.js b/lib/noble.js
-index 1678b587482d5d056408ad43fd939e9ac47f15a8..b2b3a7107f41c7f231639fd87607504c6964dc39 100644
+index 1678b587482d5d056408ad43fd939e9ac47f15a8..7c34962ea0e7be5b427f27ccfdb125731e3d4428 100644
 --- a/lib/noble.js
 +++ b/lib/noble.js
 @@ -18,11 +18,10 @@ function Noble (bindings) {
@@ -1525,9 +1525,8 @@ index 1678b587482d5d056408ad43fd939e9ac47f15a8..b2b3a7107f41c7f231639fd87607504c
 +}
 +
  module.exports = Noble;
-\ No newline at end of file
 diff --git a/lib/peripheral.js b/lib/peripheral.js
-index 1bd6987c82189050b8fe6214cfe7c5cf66bedea8..95e889315bbac1b7a6c8f5caa81c84596139e052 100644
+index 1bd6987c82189050b8fe6214cfe7c5cf66bedea8..5ded5cd3978fb94e0ed6f00234f3ab21c1bc9aa6 100644
 --- a/lib/peripheral.js
 +++ b/lib/peripheral.js
 @@ -1,7 +1,7 @@
@@ -1595,7 +1594,6 @@ index 1bd6987c82189050b8fe6214cfe7c5cf66bedea8..95e889315bbac1b7a6c8f5caa81c8459
 +Peripheral.prototype.connUpdateLe = connUpdateLe;
 +
  module.exports = Peripheral;
-\ No newline at end of file
 diff --git a/package-lock.json b/package-lock.json
 deleted file mode 100644
 index 1930574e300fed43fb4d24f6b9e6efc3aebfaf48..0000000000000000000000000000000000000000

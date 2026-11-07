@@ -230,3 +230,11 @@
 * Requires Node.js 26 and pnpm 10, see "Building from source" in the README
 * noble's unused WinRT native binding is no longer compiled (fails with Visual Studio 2026); rFactor 2 shared memory addon builds for ARM64
 * Unit tests, ESLint, a Linux test job and tagged releases with release notes from this changelog in CI
+
+## Unreleased
+
+### Fixes
+
+* Performance mode was silently ignored when the Bluetooth stick assigned connection handle 0, leaving the display at the slow interval it requested (about 4-7 FPS)
+* Faster connect: the redundant GATT service discovery is skipped, all handles come from the device dump
+* Performance mode is requested again if the display's own slow-interval request overrides it right after connecting

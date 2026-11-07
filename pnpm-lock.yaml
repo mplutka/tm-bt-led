@@ -19,7 +19,7 @@ patchedDependencies:
     hash: 88c5d5af10f8c4c6441ec44adfdd13b8dfdb46ba8448501628e229b1e350b0d6
     path: patches/@abandonware__bluetooth-hci-socket.patch
   '@abandonware/noble':
-    hash: e90e136913f6966a39c12b0706b0a6172559d5b4a1b98de375d6ac14deb1ae19
+    hash: 6f8f566ae45015c76aac96fd9304eceec0851a262bf85130345761701c3f1ec5
     path: patches/@abandonware__noble.patch
   node-irsdk:
     hash: 257be99821ea2732ca5f8a073418f5f7104f02173b31e1d904519b0fb3a3f3d6
@@ -31,7 +31,7 @@ importers:
     dependencies:
       '@abandonware/noble':
         specifier: 1.9.2-26
-        version: 1.9.2-26(patch_hash=e90e136913f6966a39c12b0706b0a6172559d5b4a1b98de375d6ac14deb1ae19)(encoding@0.1.13)
+        version: 1.9.2-26(patch_hash=6f8f566ae45015c76aac96fd9304eceec0851a262bf85130345761701c3f1ec5)(encoding@0.1.13)
       '@racehub-io/f1-telemetry-client':
         specifier: ^0.3.0
         version: 0.3.0
@@ -1578,7 +1578,7 @@ snapshots:
       - supports-color
     optional: true
 
-  '@abandonware/noble@1.9.2-26(patch_hash=e90e136913f6966a39c12b0706b0a6172559d5b4a1b98de375d6ac14deb1ae19)(encoding@0.1.13)':
+  '@abandonware/noble@1.9.2-26(patch_hash=6f8f566ae45015c76aac96fd9304eceec0851a262bf85130345761701c3f1ec5)(encoding@0.1.13)':
     dependencies:
       debug: 4.4.3
       napi-thread-safe-callback: 0.0.6
