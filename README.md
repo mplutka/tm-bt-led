@@ -19,19 +19,21 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 ### Latest version
 [Download](https://cju3ax1.short.gy/tm-bt-led)
 
+**Linux (experimental, UDP games only):** see [LINUX.md](LINUX.md). The rest of this README describes Windows.
+
 ## Currently supported games 
 
 * F1 2019-25 and F1 26 / F1 25 2026 Season Pack (f1.bat)
-* Assetto Corsa, Assetto Corsa Competizione, Assetto Corsa EVO, Assetto Corsa Rally (assetto.bat)
-* iRacing (iracing.bat)
+* Assetto Corsa, Assetto Corsa Competizione, Assetto Corsa EVO, Assetto Corsa Rally (assetto.bat, Windows only)
+* iRacing (iracing.bat, Windows only)
 * Richard Burns Rally by Rallysimfans (rbr.bat)
 * Dirt 3, Dirt 4, Dirt Rally, Dirt Rally 2 (dirt.bat)
 * EA Sports WRC (wrc.bat)
 * Project Cars 2, Project Cars 3, Automobilista 2 (pcars2.bat)
 * Forza Motorsport 7, Forza Horizon 4, Forza Horizon 5 (forza.bat)
-* rFactor2 (rF2.bat)
-* Raceroom (raceroom.bat)
-* Euro Truck Simulator 2, American Truck Simulator (ets2.bat)
+* rFactor2 (rF2.bat, Windows only)
+* Raceroom (raceroom.bat, Windows only)
+* Euro Truck Simulator 2, American Truck Simulator (ets2.bat, Windows only)
 * Live for Speed (lfs.bat)
 
 If you would like to add a game that uses udp port 20777 to the list, you can use `dump_udp.bat` to create a dumpfile with recorded telemetry data.
@@ -56,7 +58,7 @@ For the smoothest experience, a **known-good** CSR is still preferable.
 1. You should be familiar with installing and using NodeJS application on Windows command line (cmd.exe).
 2. Thrustmaster BT LED ;-) (I won't guarantee that it works on your PC, so keep this in mind when buying one extra for this!)
 3. Compatible game with enabled telemetry data
-4. Windows 10 19042 or higher (might work on other but not tested)
+4. Windows 10 19042 or higher (might work on other but not tested), or Linux (experimental, see [LINUX.md](LINUX.md))
 5. A dedicated USB stick or chipset that provides Bluetooth LE with supported chipset! [List of supported devices](https://github.com/abandonware/node-bluetooth-hci-socket#windows)
 
 ## Usage
@@ -93,6 +95,9 @@ To go back to the Windows Bluetooth driver run `restore-driver.bat` (or `tm-bt-l
 `run.bat` automatically listens for the launch of any supported game, switches to performance mode (higher refresh rates) and steps down to power save mode after you exit the game. Keep it running in the background to automatically switch between supported games without the need to stop/start the shortcut batch files.
 
 If you encounter false detections or any other problems, please let me know.
+
+## Linux (experimental)
+tm-bt-led also runs on Linux, including the Raspberry Pi, from source and with the UDP based games only. Installation, adapter handling and troubleshooting are described in [LINUX.md](LINUX.md).
 
 ## Command-Line Options
 
