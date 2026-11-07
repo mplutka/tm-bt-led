@@ -55,7 +55,7 @@ Many cheap adapters copy the same **VID/PID** as classic CSR sticks but use diff
 For the smoothest experience, a **known-good** CSR is still preferable.
 
 ## Prerequisites
-1. You should be familiar with installing and using NodeJS application on Windows command line (cmd.exe).
+1. You should be familiar with the Windows command line (cmd.exe). Node.js is only needed when [building from source](#building-from-source).
 2. Thrustmaster BT LED ;-) (I won't guarantee that it works on your PC, so keep this in mind when buying one extra for this!)
 3. Compatible game with enabled telemetry data
 4. Windows 10 19042 or higher (might work on other but not tested), or Linux (experimental, see [LINUX.md](LINUX.md))
@@ -64,7 +64,7 @@ For the smoothest experience, a **known-good** CSR is still preferable.
 ## Usage
 
 ### Step 1. Download
-Download current version [here](https://cju3ax1.short.gy/tm-bt-led) and extract the files into an empty folder.
+Download current version [here](https://cju3ax1.short.gy/tm-bt-led) and extract the files into an empty folder. Take `tm-bt-led-<version>-x64.zip` for a normal Windows PC, or `tm-bt-led-<version>-arm64.zip` for Windows on ARM devices (Snapdragon laptops, Surface Pro X etc., experimental).
 
 ### Step 2. Switch the Bluetooth stick to the WinUSB driver (once per stick)
 The Windows Bluetooth stack can't be used: the TM BT LED pairs with a well-known debug key, which Windows rejects since 2019 (Event 22 `BTHPORT_DEBUG_LINK_KEY_NOT_ALLOWED`), and Windows also denies apps access to the 0x1812 HID service it needs. So the stick has to be driven directly via the WinUSB driver.
@@ -98,6 +98,18 @@ If you encounter false detections or any other problems, please let me know.
 
 ## Linux (experimental)
 tm-bt-led also runs on Linux, including the Raspberry Pi, from source and with the UDP based games only. Installation, adapter handling and troubleshooting are described in [LINUX.md](LINUX.md).
+
+## Building from source
+Only needed if you want to change the code; the release zip contains everything to run tm-bt-led.
+
+1. Install [Node.js](https://nodejs.org/) 26 or newer, pnpm 10 (`corepack enable` picks the version from `package.json`), Python 3 and Visual Studio 2022 or 2026 (the Build Tools are enough) with the "Desktop development with C++" workload.
+2. `git clone https://github.com/mplutka/tm-bt-led.git` and run `pnpm install` in that folder.
+3. `pnpm run build` compiles the shared memory addons for Assetto Corsa, rFactor 2, RaceRoom and ETS2/ATS.
+4. `pnpm test` and `pnpm run lint` run the unit tests and ESLint.
+5. Run it from the `dist` folder, which holds `config.json` and the batch files: `cd dist`, then `node ../lib/launcher.js --help`.
+6. `pnpm run pack` builds `dist/tm-bt-led.exe`. `pnpm run pack:arm64` builds `dist/tm-bt-led-arm64.exe` and has to run on Windows on ARM, as the native addons are compiled for the machine they are built on.
+
+Releases are built by GitHub Actions when a `v*` tag is pushed. The release notes are taken from the matching `## Version x.y.z` section in [CHANGELOG.md](CHANGELOG.md), so add that section before tagging.
 
 ## Command-Line Options
 
