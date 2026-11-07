@@ -20,7 +20,7 @@ Website: thecrewchief.org
 #include "InternalsPlugin.hpp"
 #pragma warning(pop)
 
-#ifdef _AMD64_
+#ifdef _WIN64
 #define PLUGIN_64BIT true
 #else
 #define PLUGIN_64BIT false

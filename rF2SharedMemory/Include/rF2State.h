@@ -1,4 +1,4 @@
-﻿/*
+/*
 Definition of mapped rF2 structures and related types.
 
 Author: The Iron Wolf (vleonavicius@hotmail.com)
@@ -330,11 +330,7 @@ struct rF2ScoringInfo
   // MM_NOT_USED
   //char *mResultsStream;          // results stream additions since last update (newline-delimited and NULL-terminated)
   // MM_NEW
-#ifdef _AMD64_
-  unsigned char pointer1[8];
-#else
-  unsigned char pointer1[4];
-#endif
+  unsigned char pointer1[sizeof(void*)];
 
   long mNumVehicles;             // current number of vehicles
 
@@ -397,11 +393,7 @@ struct rF2ScoringInfo
   // keeping this at the end of the structure to make it easier to replace in future versions
   // VehicleScoringInfoV01 *mVehicle; // array of vehicle scoring info's
   // MM_NEW
-#ifdef _AMD64_
-  unsigned char pointer2[8];
-#else
-  unsigned char pointer2[4];
-#endif
+  unsigned char pointer2[sizeof(void*)];
 };
 static_assert(sizeof(rF2ScoringInfo) == sizeof(ScoringInfoV01), "rF2ScoringInfo and ScoringInfoV01 structures are out of sync");
 
@@ -676,11 +668,7 @@ struct rF2TrackRules
   // MM_NOT_USED
   // TrackRulesActionV01 *mAction;         // array of recent actions
   // MM_NEW
-#ifdef _AMD64_
-  unsigned char pointer1[8];
-#else
-  unsigned char pointer1[4];
-#endif
+  unsigned char pointer1[sizeof(void*)];
 
   long mNumParticipants;                // number of participants (vehicles)
 
@@ -720,11 +708,7 @@ struct rF2TrackRules
   // MM_NOT_USED
   // TrackRulesParticipantV01 *mParticipant;         // array of partipants (vehicles)
   // MM_NEW
-#ifdef _AMD64_
-  unsigned char pointer2[8];
-#else
-  unsigned char pointer2[4];
-#endif
+  unsigned char pointer2[sizeof(void*)];
 
   // future input/output expansion
   unsigned char mInputOutputExpansion[ 256 ];
@@ -776,11 +760,7 @@ struct rF2MultiSessionRules
   // MM_NOT_USED
   // MultiSessionParticipantV01 *mParticipant;       // array of partipants (vehicles)
   // MM_NEW
-#ifdef _AMD64_
-  unsigned char pointer1[8];
-#else
-  unsigned char pointer1[4];
-#endif
+  unsigned char pointer1[sizeof(void*)];
 
   long mNumQualSessions;                // number of qualifying sessions configured
   long mNumRaceSessions;                // number of race sessions configured
