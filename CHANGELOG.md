@@ -211,3 +211,6 @@
 * Output report handle detected from the device dump, overridable with `global.outputHandle`
 * Native USB binding selected by CPU architecture; experimental Windows on ARM build
 * Unit tests, ESLint and tagged releases in CI
+* `tm-bt-led.exe --installDriver` switches the Bluetooth stick to Microsoft's inbox WinUSB driver, `--restoreDriver` reverts it
+* Build: noble's unused WinRT native binding is no longer compiled (fails with Visual Studio 2026)
+* Unknown command line arguments now exit with an error and print the list of supported options

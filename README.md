@@ -57,25 +57,32 @@ For the smoothest experience, a **known-good** CSR is still preferable.
 2. Thrustmaster BT LED ;-) (I won't guarantee that it works on your PC, so keep this in mind when buying one extra for this!)
 3. Compatible game with enabled telemetry data
 4. Windows 10 19042 or higher (might work on other but not tested)
-5.  [Zadig](https://zadig.akeo.ie/)
-6. USB stick or chipset that provides Bluetooth LE with supported chipset! [List of supported devices](https://github.com/abandonware/node-bluetooth-hci-socket#windows)
+5. A dedicated USB stick or chipset that provides Bluetooth LE with supported chipset! [List of supported devices](https://github.com/abandonware/node-bluetooth-hci-socket#windows)
 
 ## Usage
 
-### Step 1. Install alternate Bluetooth USB driver
-As stated in Prerequisites#5, the Windows Bluetooth driver can't be used because it blocks access to the 0x1812 input service on the device. Therefore an alternate USB driver for your bluetooth device is needed which can be installed with Zadig. WinUSB should be the one to use but you could also try the other ones if you have no success. If scanning or device discovery doesn't start, kill the script with Ctrl+C and start it again.
+### Step 1. Download
+Download current version [here](https://cju3ax1.short.gy/tm-bt-led) and extract the files into an empty folder.
 
-**Please note that you loose general bluetooth connectivity in Windows by changing the driver!**
+### Step 2. Switch the Bluetooth stick to the WinUSB driver (once per stick)
+The Windows Bluetooth stack can't be used: the TM BT LED pairs with a well-known debug key, which Windows rejects since 2019 (Event 22 `BTHPORT_DEBUG_LINK_KEY_NOT_ALLOWED`), and Windows also denies apps access to the 0x1812 HID service it needs. So the stick has to be driven directly via the WinUSB driver.
 
-If you need the Windows bluetooth stack for your headset, keyboard, you need an extra stick for this.
-If you wish to go back to the stock drivers, simply do an automatic driver update in the device manager.
+1. Plug in the stick.
+2. Run `install-driver.bat` (or `tm-bt-led.exe --installDriver`).
+3. It lists the supported adapters it found. Pick yours if there are several, confirm with `y` and accept the Windows administrator prompt.
+4. Wait for "WinUSB installed". If the stick isn't found later, unplug and replug it.
 
-### Step 2. Download and setup connector
-1. Download current version [here](https://cju3ax1.short.gy/tm-bt-led) and extract the files into an empty folder.
-2. Run `setup.bat` to detect your device and write its data to a file for faster reconnects (necessary).
-3. (Optional) You can start `test.bat` to run demo mode.
+This installs Microsoft's own signed WinUSB driver that ships with Windows (the same as Device Manager → "Let me pick" → "Universal Serial Bus devices" → "WinUsb Device"). No extra tool, driver package or certificate needed.
 
-### Step 3. Launch 
+**Please note that this adapter can no longer be used for other Bluetooth devices in Windows!** Use a dedicated stick and keep your built-in Bluetooth for headsets, keyboards etc. Never switch the built-in adapter of a laptop or mainboard you still need.
+
+To go back to the Windows Bluetooth driver run `restore-driver.bat` (or `tm-bt-led.exe --restoreDriver`). If Windows ever puts its Bluetooth driver back on its own, the app can't find the stick anymore. Just run `install-driver.bat` again.
+
+### Step 3. Device setup
+1. Run `setup.bat` to detect your device and write its data to a file for faster reconnects (necessary).
+2. (Optional) You can start `test.bat` to run demo mode.
+
+### Step 4. Launch 
 1. Launch `run.bat` (recommended, see below) or use the provided game files.
 2. Press both upper buttons on the TM BT and let it connect when prompted to do so. It shouldn't be paired to your PC or any other device before doing this!
 3. If it is not picking up any devices ("Discovering devices" or "Starting scan..." never shows up), try restarting the script. If still no success, also try to unplug and replug the USB stick and start over.
@@ -123,6 +130,13 @@ Run `tm-bt-led.exe --help` for the full list. Common options:
 | `--game=NAME` | Force specific game client (assetto, f1, iracing, etc.) |
 | `--test` | Run in test/demo mode |
 | `--setup` | Run device setup/pairing mode |
+
+### Bluetooth Stick Driver
+
+| Option | Description |
+|--------|-------------|
+| `--installDriver` | Switch the Bluetooth stick to the WinUSB driver and exit |
+| `--restoreDriver` | Give the Bluetooth stick back to the Windows Bluetooth driver and exit |
 
 ### Valid FPS Values
 

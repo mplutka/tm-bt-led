@@ -54,10 +54,12 @@
     },
     "onlyBuiltDependencies": [
       "@abandonware/bluetooth-hci-socket",
-      "@abandonware/noble",
       "esbuild",
       "node-irsdk",
       "usb"
+    ],
+    "ignoredBuiltDependencies": [
+      "@abandonware/noble"
     ]
   },
   "os": [
