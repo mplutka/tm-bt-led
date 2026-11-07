@@ -216,6 +216,7 @@
 * Lower CPU usage: hybrid timer instead of a busy loop, display frame only recomposed when it changed
 * Unknown command line arguments now exit with an error and print the list of supported options
 * American Truck Simulator is detected in auto mode
+* README rewritten in a more compact form; settings are documented for `config.json`
 
 ### Fixes
 
@@ -224,7 +225,7 @@
 * F1: lap times read from the renamed fields of the updated telemetry library
 * iRacing: rev lights use the car's shift-light/redline RPM, listeners are no longer registered twice
 * Security fixes for vulnerable dependencies (tar, brace-expansion, ip-address, js-yaml, glob, minimatch)
-* Performance mode was silently ignored when the Bluetooth stick assigned connection handle 0, leaving the display at the slow interval it asked for (about 4-7 FPS). This was the usual cause of the low refresh rate on fake CSR sticks
+* Performance mode was silently ignored when the Bluetooth stick assigned connection handle 0, leaving the display at the slow interval it asked for (about 4-7 FPS). This affected every stick and caused the slow LED updates that were often blamed on the stick; fake CSR clones and the ASUS BT400 now run at the full refresh rate too
 * Faster connect: the redundant GATT service discovery is skipped, all handles come from the device dump
 * Performance mode is requested again if the display's own slow-interval request overrides it right after connecting
 

@@ -7,7 +7,7 @@ The TM BT LED pairs with a well-known Bluetooth debug key. Like Windows, the Lin
 
 Instead, tm-bt-led takes the Bluetooth adapter over completely through the kernel's HCI user channel and runs its own Bluetooth LE stack, the same one it uses on Windows. While it runs, the adapter is not available to BlueZ or any other application.
 
-Use a dedicated adapter if you need Bluetooth for headsets, keyboards etc. at the same time. Any adapter the Linux kernel supports works (built-in, USB or the Raspberry Pi's on-board one); the USB stick list in the [README](README.md#recommended-bluetooth-chipsetssticks-known-to-be-working) only matters on Windows.
+Use a dedicated adapter if you need Bluetooth for headsets, keyboards etc. at the same time. Any adapter the Linux kernel supports works (built-in, USB or the Raspberry Pi's on-board one); the USB stick list in the [README](README.md#bluetooth-sticks) only matters on Windows.
 
 ## Supported games
 Only games that send telemetry over UDP work on Linux:
@@ -75,7 +75,7 @@ All commands are run from the `dist` folder. It holds `config.json` and the devi
    (or `sudo systemctl start bluetooth`).
 
 ## Configuration
-Everything in `dist/config.json` works as described in the [README](README.md#customization). One setting is Linux only:
+Everything in `dist/config.json` works as described in the [README](README.md#configuration). One setting is Linux only:
 
 | Setting (`global` section) | Default | Description |
 |---|---|---|

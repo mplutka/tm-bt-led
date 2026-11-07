@@ -1,257 +1,122 @@
 
 # PC Support for Thrustmaster BT LED
-## Disclaimer
 
-**I do not work for Thrustmaster and thus this is no official release. It comes with no guarantee or liability for any harm or damage to hardware or software. Use it at your own risk!**
- 
-I bought the device as part of a set and didn't notice before that it was for PS4 only. :-( So I played around with it a bit and discovered that it was basically working as a Bluetooth LE HID over GATT device, spent many many hours figuring out how it works internally and can be communicated with and wrote some horrible code to be able to address all the leds and led segments and to make it display whatever I like.
+**I do not work for Thrustmaster and this is no official release. It comes with no guarantee or liability for any harm or damage to hardware or software. Use it at your own risk!**
 
-Combined it with telemetry plugins for some games and it is in a state now that I'm happy to share with you. Yes, this is WIP and very yes, this is quite hacky and might crash on your side or don't work at all.
+I bought the device as part of a set without noticing it was for PS4 only. It turned out to be a Bluetooth LE HID over GATT device, so after many hours of reverse engineering tm-bt-led can drive all its LEDs and segments and feed them with game telemetry. It is hacky and might not work on your setup, and **I can't provide specific support** for your environment.
 
-Please note that **I can't provide any specific support** for your environment or setup. I will do my best to document anything special you need to know to make it work.
-
-I hope that I'm not hurting any copyrights or trademarks here. If so please tell me. Just wanted to help out the community. If you like it, feedback and donations are very welcome.  
-
+If I'm hurting any copyrights or trademarks here, please tell me. Feedback and donations are very welcome:
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/mplutka)
 
-**Please don't buy a Thrustmaster BT LED for this only to use it with your PC!** This method works now but could easily break because of future updates etc. I also don't recommend to do any firmware updates on the device if it works as intended. 
+**Please don't buy a Thrustmaster BT LED only to use it with your PC!** This works now but could break with future updates. I also don't recommend firmware updates on the device if it works as intended.
 
-### Latest version
-[Download](https://cju3ax1.short.gy/tm-bt-led)
+**[Download the latest version](https://cju3ax1.short.gy/tm-bt-led)** · Linux (experimental, UDP games only): see [LINUX.md](LINUX.md), the rest of this README describes Windows · [Video](https://www.youtube.com/watch?v=gbmkHltH9ts)
 
-**Linux (experimental, UDP games only):** see [LINUX.md](LINUX.md). The rest of this README describes Windows.
+## Supported games
 
-## Currently supported games 
+* F1 2019-25 and F1 26 / F1 25 2026 Season Pack (`f1.bat`)
+* Assetto Corsa, Assetto Corsa Competizione, Assetto Corsa EVO, Assetto Corsa Rally (`assetto.bat`, Windows only)
+* iRacing (`iracing.bat`, Windows only)
+* Richard Burns Rally by Rallysimfans (`rbr.bat`)
+* Dirt 3, Dirt 4, Dirt Rally, Dirt Rally 2, GRID Legends (`dirt.bat`)
+* EA Sports WRC (`wrc.bat`)
+* Project Cars 2, Project Cars 3, Automobilista 2 (`pcars2.bat`)
+* Forza Motorsport 7, Forza Horizon 4, Forza Horizon 5 (`forza.bat`)
+* rFactor 2 (`rF2.bat`, Windows only)
+* RaceRoom (`raceroom.bat`, Windows only)
+* Euro Truck Simulator 2, American Truck Simulator (`ets2.bat`, Windows only)
+* Live for Speed (`lfs.bat`)
 
-* F1 2019-25 and F1 26 / F1 25 2026 Season Pack (f1.bat)
-* Assetto Corsa, Assetto Corsa Competizione, Assetto Corsa EVO, Assetto Corsa Rally (assetto.bat, Windows only)
-* iRacing (iracing.bat, Windows only)
-* Richard Burns Rally by Rallysimfans (rbr.bat)
-* Dirt 3, Dirt 4, Dirt Rally, Dirt Rally 2 (dirt.bat)
-* EA Sports WRC (wrc.bat)
-* Project Cars 2, Project Cars 3, Automobilista 2 (pcars2.bat)
-* Forza Motorsport 7, Forza Horizon 4, Forza Horizon 5 (forza.bat)
-* rFactor2 (rF2.bat, Windows only)
-* Raceroom (raceroom.bat, Windows only)
-* Euro Truck Simulator 2, American Truck Simulator (ets2.bat, Windows only)
-* Live for Speed (lfs.bat)
+To add a game that sends UDP on port 20777, record its telemetry with `dump_udp.bat`. Then either write a client based on `clients/_template.js` or open an issue on GitHub and attach the dump.
 
-If you would like to add a game that uses udp port 20777 to the list, you can use `dump_udp.bat` to create a dumpfile with recorded telemetry data.
+## Bluetooth sticks
 
-Either you use _template.js and create your own game file or get in touch with me by creating an issue here on Github and attach the dump.
- 
-## Recommended Bluetooth chipsets/sticks known to be working
-* Certain CSR 8510 A10 based devices (USB VID: 0x0a12, USB PID: 0x0001) [This one works fine for me](https://amzn.to/3Y9a8Li)
-* **Fake / budget "CSR 4.0" USB adapters** may work fine since version 5.0.0, but there is no guarantee, see [below](#fake-csr-40-usb-dongles-0x0a120x0001-clones).
-* Realtek Bluetooth 8761B (USB VID: 0x0bda, USB PID: 0x8771, e.g. MPOW Bluetooth 5.0 stick)
-* Intel Wireless Bluetooth 8265 (USB VID: 0x8087, USB PID: 0x0a2b)
-Others might work too, but again: No guarantee.  
+tm-bt-led drives the Bluetooth stick directly, so it needs a dedicated USB stick with Bluetooth LE. Known to work:
 
-### Fake CSR 4.0 USB dongles (0x0a12:0x0001 clones)
+* CSR 8510 A10 (VID 0x0a12, PID 0x0001), including cheap "CSR 4.0" clones, [e.g. this one](https://amzn.to/3Y9a8Li)
+* ASUS BT400 (VID 0x0b05, PID 0x17cb)
+* Realtek 8761B (VID 0x0bda, PID 0x8771, e.g. MPOW Bluetooth 5.0)
+* TP-Link UB500 / UB400 Nano (VID 0x2357, PID 0x0604)
+* Intel Wireless Bluetooth 8265 (VID 0x8087, PID 0x0a2b)
 
-Many cheap adapters copy the same **VID/PID** as classic CSR sticks but use different silicon (often identifiable by odd `bcdDevice` values, e.g. a stick named "BT DONGLE10" with revision `8891`).
-
-Before version 5.0.0 these sticks often stayed at a very low refresh rate. A large part of that was a bug in tm-bt-led, not the stick: performance mode was ignored on some connections. With 5.0.0 a tested clone connects within a few seconds and runs at the default 61.5 FPS.
-
-**There is still no guarantee.** Clones differ even when they look identical, and they are less robust than a genuine CSR or a quality chipset:
-* The link can drop now and then; tm-bt-led reconnects automatically.
-* Plug the stick into a USB 2.0 port or use a short USB extension cable, away from USB 3 ports (they interfere with 2.4 GHz).
-* If the display stutters, lower the refresh rate, e.g. `--fps=50` or `"fps": 50` in `config.json`.
-
-For the smoothest experience, a **known-good** stick from the list above is still preferable.
+Others might work too ([full list](https://github.com/abandonware/node-bluetooth-hci-socket#windows), more can be added in `config.json`, see [Configuration](#configuration)). Some sticks behave better than others, even identical-looking ones. If the link drops often, try another USB port (USB 2.0, or a short extension cable away from USB 3 ports) or a different stick.
 
 ## Prerequisites
-1. You should be familiar with the Windows command line (cmd.exe). Node.js is only needed when [building from source](#building-from-source).
-2. Thrustmaster BT LED ;-) (I won't guarantee that it works on your PC, so keep this in mind when buying one extra for this!)
-3. Compatible game with enabled telemetry data
-4. Windows 10 19042 or higher (might work on other but not tested), or Linux (experimental, see [LINUX.md](LINUX.md))
-5. A dedicated USB stick or chipset that provides Bluetooth LE with supported chipset! [List of supported devices](https://github.com/abandonware/node-bluetooth-hci-socket#windows)
+
+1. Windows 10 19042 or higher, or Linux (experimental, see [LINUX.md](LINUX.md)). Node.js is only needed when [building from source](#building-from-source).
+2. A Thrustmaster BT LED and a supported Bluetooth stick (see above).
+3. A supported game with telemetry enabled (see [Game specific settings](#game-specific-settings)).
+4. Basic knowledge of the Windows command line.
 
 ## Usage
 
-### Step 1. Download
-Download current version [here](https://cju3ax1.short.gy/tm-bt-led) and extract the files into an empty folder. Take `tm-bt-led-<version>-x64.zip` for a normal Windows PC, or `tm-bt-led-<version>-arm64.zip` for Windows on ARM devices (Snapdragon laptops, Surface Pro X etc., experimental).
+### 1. Download
+Download the [current version](https://cju3ax1.short.gy/tm-bt-led) and extract it into an empty folder: `tm-bt-led-<version>-x64.zip` for a normal Windows PC, `tm-bt-led-<version>-arm64.zip` for Windows on ARM (experimental).
 
-### Step 2. Switch the Bluetooth stick to the WinUSB driver (once per stick)
-The Windows Bluetooth stack can't be used: the TM BT LED pairs with a well-known debug key, which Windows rejects since 2019 (Event 22 `BTHPORT_DEBUG_LINK_KEY_NOT_ALLOWED`), and Windows also denies apps access to the 0x1812 HID service it needs. So the stick has to be driven directly via the WinUSB driver.
+### 2. Switch the stick to the WinUSB driver (once per stick)
+The Windows Bluetooth stack can't be used: the TM BT LED pairs with a well-known debug key that Windows rejects, and Windows denies apps access to the HID service. So the stick is driven directly through Microsoft's WinUSB driver.
 
-1. Plug in the stick.
-2. Run `install-driver.bat` (or `tm-bt-led.exe --installDriver`).
-3. It lists the supported adapters it found. Pick yours if there are several, confirm with `y` and accept the Windows administrator prompt.
-4. Wait for "WinUSB installed". If the stick isn't found later, unplug and replug it.
+1. Plug in the stick and run `install-driver.bat` (or `tm-bt-led.exe --installDriver`).
+2. Pick your adapter if several are listed, confirm with `y` and accept the administrator prompt.
+3. Wait for "WinUSB installed". If the stick isn't found later, unplug and replug it.
 
-This installs Microsoft's own signed WinUSB driver that ships with Windows (the same as Device Manager → "Let me pick" → "Universal Serial Bus devices" → "WinUsb Device"). No extra tool, driver package or certificate needed.
+**The stick can no longer be used for other Bluetooth devices in Windows.** Never switch the built-in adapter of a laptop or mainboard you still need. `restore-driver.bat` (or `--restoreDriver`) gives the stick back to Windows. If Windows puts its own driver back, run `install-driver.bat` again.
 
-**Please note that this adapter can no longer be used for other Bluetooth devices in Windows!** Use a dedicated stick and keep your built-in Bluetooth for headsets, keyboards etc. Never switch the built-in adapter of a laptop or mainboard you still need.
+### 3. Device setup
+1. Run `setup.bat` and press both upper buttons on the display. It writes a dump of the device for fast connects (necessary once).
+2. Optional: `test.bat` runs a demo.
 
-To go back to the Windows Bluetooth driver run `restore-driver.bat` (or `tm-bt-led.exe --restoreDriver`). If Windows ever puts its Bluetooth driver back on its own, the app can't find the stick anymore. Just run `install-driver.bat` again.
+### 4. Launch
+1. Start `run.bat` (auto detect mode, recommended) or one of the game batch files.
+2. Press both upper buttons on the display when prompted. It must not be paired to your PC or any other device.
+3. Wait for "Waiting for data...", then start the game.
 
-### Step 3. Device setup
-1. Run `setup.bat` to detect your device and write its data to a file for faster reconnects (necessary).
-2. (Optional) You can start `test.bat` to run demo mode.
+If no device is found, restart the script, and if that doesn't help, unplug and replug the stick.
 
-### Step 4. Launch 
-1. Launch `run.bat` (recommended, see below) or use the provided game files.
-2. Press both upper buttons on the TM BT and let it connect when prompted to do so. It shouldn't be paired to your PC or any other device before doing this!
-3. If it is not picking up any devices ("Discovering devices" or "Starting scan..." never shows up), try restarting the script. If still no success, also try to unplug and replug the USB stick and start over.
-4. It should say "Waiting for data..." if all went well.
-5. Start the game itself and enjoy.
+**Auto detect mode:** `run.bat` waits for any supported game to start, switches to performance mode while it runs and back to power save mode after you exit, so it can stay in the background.
 
-### More on "Auto detect mode"
-`run.bat` automatically listens for the launch of any supported game, switches to performance mode (higher refresh rates) and steps down to power save mode after you exit the game. Keep it running in the background to automatically switch between supported games without the need to stop/start the shortcut batch files.
+**Reconnects:** if the display turns off or the link drops, tm-bt-led scans again and reconnects automatically. Ctrl+C or closing the console disconnects cleanly. If a game client fails to start, the display shows `ERR` with the game name.
 
-If you encounter false detections or any other problems, please let me know.
+## Command-line options
 
-## Linux (experimental)
-tm-bt-led also runs on Linux, including the Raspberry Pi, from source and with the UDP based games only. Installation, adapter handling and troubleshooting are described in [LINUX.md](LINUX.md).
-
-## Building from source
-Only needed if you want to change the code; the release zip contains everything to run tm-bt-led.
-
-1. Install [Node.js](https://nodejs.org/) 26 or newer, pnpm 10 (`corepack enable` picks the version from `package.json`), Python 3 and Visual Studio 2022 or 2026 (the Build Tools are enough) with the "Desktop development with C++" workload.
-2. `git clone https://github.com/mplutka/tm-bt-led.git` and run `pnpm install` in that folder.
-3. `pnpm run build` compiles the shared memory addons for Assetto Corsa, rFactor 2, RaceRoom and ETS2/ATS.
-4. `pnpm test` and `pnpm run lint` run the unit tests and ESLint.
-5. Run it from the `dist` folder, which holds `config.json` and the batch files: `cd dist`, then `node ../lib/launcher.js --help`.
-6. `pnpm run pack` builds `dist/tm-bt-led.exe`. `pnpm run pack:arm64` builds `dist/tm-bt-led-arm64.exe` and has to run on Windows on ARM, as the native addons are compiled for the machine they are built on.
-
-Releases are built by GitHub Actions when a `v*` tag is pushed. The release notes are taken from the matching `## Version x.y.z` section in [CHANGELOG.md](CHANGELOG.md), so add that section before tagging.
-
-## Command-Line Options
-
-Run `tm-bt-led.exe --help` for the full list. Common options:
-
-### Performance Tuning
-
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--fps=N` | Target FPS (auto-converts to valid BLE interval) | 60 |
-| `--interval=N` | Target interval in ms (rounds to nearest valid) | 16.25 |
-| `--queueDepth=N` | Max pending BLE writes (1-5, higher = more aggressive) | 2 |
-| `--legacyTimer` | Use setInterval instead of high-resolution timer | false |
-
-### Debugging
+Run `tm-bt-led.exe --help` for the full list.
 
 | Option | Description |
 |--------|-------------|
-| `--debug` | Show detailed BLE stats every 2 seconds |
-| `--listFps` | Show all valid FPS/interval combinations and exit |
+| `--game=NAME` | Force a game client (`assetto`, `f1`, `iracing`, ...) |
+| `--test` / `--setup` | Demo mode / device setup |
+| `--installDriver` / `--restoreDriver` | Switch the stick to WinUSB / back to Windows |
+| `--fps=N` | Target refresh rate, default 60 (16.25 ms). BLE intervals are multiples of 1.25 ms, `--listFps` shows all valid values |
+| `--interval=N` | Target interval in ms instead of `--fps` |
+| `--queueDepth=N` | Max pending BLE writes (1-5), default 2 |
+| `--legacyTimer` | Use `setInterval` instead of the high-resolution timer |
+| `--debug` | Print BLE stats every 2 seconds |
+| `--metric` / `--imperial` | Force units (default: from the OS locale) |
+| `--message="TEXT"` | Scrolling message while no game is running |
+| `--messagelights` | All LEDs on while no game is running |
 
-### Display Settings
+If the display freezes or stutters, try `--fps=50` or `--fps=40`, `--queueDepth=1`, and `--debug` to see dropped writes or errors.
 
-| Option | Description |
-|--------|-------------|
-| `--metric` | Force metric units (km/h, kg, °C) |
-| `--imperial` | Force imperial units (mph, lb, °F) |
-| `--message="TEXT"` | Display scrolling message when no game running |
-| `--messagelights` | Enable all LEDs when no game running |
+## Configuration
 
-### Mode Selection
+Settings live in `config.json` next to `tm-bt-led.exe` (see [dist/config.json](dist/config.json) for all options). The `global` section applies to all games, each game section (`f1`, `assetto`, `iracing`, `rF2`, `raceroom`, `ets2`, `dirt`, `wrc`, `forza`, `rbr`, `pcars2`, `lfs`) overrides that game's defaults, e.g. the display modes (`leftModes`, `rightModes`), the UDP `port` and the executables for auto detect mode. Command-line options override `config.json`.
 
-| Option | Description |
-|--------|-------------|
-| `--game=NAME` | Force specific game client (assetto, f1, iracing, etc.) |
-| `--test` | Run in test/demo mode |
-| `--setup` | Run device setup/pairing mode |
+`config.json`, device dumps and `udp_data.txt` are read from and written to the folder of `tm-bt-led.exe`, or the current folder when running from source. The environment variable `TM_BT_LED_HOME` sets a different folder.
 
-### Bluetooth Stick Driver
+**Units:** `en-US`, `en-LR` and `my-MM` use mph/°F/lb, `en-GB` mph with °C/kg, all other locales are metric. Force them with `"metric": true` or `"imperial": true` in `global`.
 
-| Option | Description |
-|--------|-------------|
-| `--installDriver` | Switch the Bluetooth stick to the WinUSB driver and exit |
-| `--restoreDriver` | Give the Bluetooth stick back to the Windows Bluetooth driver and exit |
-
-### Valid FPS Values
-
-BLE connection intervals must be multiples of 1.25ms. Common presets:
-
-| FPS | Interval | Actual FPS | Notes |
-|-----|----------|------------|-------|
-| 60 | 16.25ms | 61.5 | Default, smooth gaming |
-| 50 | 20ms | 50.0 | Conservative |
-| 66 | 15ms | 66.7 | Higher refresh |
-| 80 | 12.5ms | 80.0 | Maximum (may be unstable) |
-| 40 | 25ms | 40.0 | Power save |
-| 15 | 66ms | 14.1 | Compatibility, e.g. for unstable fake CSR 4.0 adapters 
-
-Run `--listFps` to see all valid options.
-
-### Examples
-
-```batch
-:: Standard 60 FPS mode
-tm-bt-led.exe
-
-:: Higher refresh rate with deeper queue
-tm-bt-led.exe --fps=80 --queueDepth=3
-
-:: Debug mode to monitor performance
-tm-bt-led.exe --debug
-
-:: Conservative mode for stability
-tm-bt-led.exe --fps=40 --queueDepth=1
-
-:: Force specific game
-tm-bt-led.exe --game=assetto
-
-:: Show help
-tm-bt-led.exe --help
-
-:: Show valid FPS options
-tm-bt-led.exe --listFps
-```
-
-## Customization
-You can change the order and type of data displayed on the left and right display (and sometimes the used UDP port) by editing the corresponding 
-`xxx.config.js` file in the same folder as `tm-bt-led.exe`.
-
-Game defaults can also be merged from **`config.json`** in that same folder (see `dist/config.json` in the repo for a full template, and **`dist/config.demo.json`** for a smaller example with rev lights, forwarding, and WRC notes). Values under each game key override the built-in defaults. This works for **every** game (`f1`, `assetto`, `iracing`, `rF2`, `raceroom`, `ets2`, `dirt`, `wrc`, `forza`, `rbr`, `pcars2`, `lfs`). A legacy `xxx.config.js` is only used when `config.json` has no section for that game.
-
-`config.json`, legacy config files, device dumps (`setup.bat`) and `udp_data.txt` are read from and written to the folder of `tm-bt-led.exe`. When running from source (`node lib/launcher.js`) the current working directory is used instead. Set the environment variable **`TM_BT_LED_HOME`** to use a different folder.
-
-### Output report handle
-
-The display frame is written to HID report handle **58**, the output report of all known devices. If your device's dump lists a different layout, tm-bt-led automatically picks the last writable HID report instead. You can force a handle in `config.json`:
-
+**Additional Bluetooth sticks:** add VID/PID pairs (decimal or hex) in `global`:
 ```json
-"global": {
-    "outputHandle": 58
-}
+"additionalUsbVidPids": [ { "vid": "0x0bda", "pid": "0x8771" } ]
 ```
 
-### UDP games and port conflicts
+**Output report handle:** frames go to HID report handle 58, the output report of all known devices. With a different layout in the dump, the last writable HID report is used. Force one with `"outputHandle": 58` in `global`.
 
-If another program (e.g. SimHub or a second tm-bt-led) already listens on a game's UDP port, the display shows **`PORT BUSY`** for a few seconds and the console explains the problem; tm-bt-led keeps running. Either close the other program, or let one program receive the port and forward to the other via `forwardPorts`. UDP clients other than F1 also accept `"reuseAddr": true` in their game section to share a port, but Windows then delivers each packet to only one of the listeners, so forwarding is preferred.
+**UDP forwarding:** UDP games (F1, Dirt, WRC, Forza, RBR, Project Cars 2/AMS2, Live for Speed) can forward their telemetry to other local apps or devices (SimHub, CrewChief, haptics), e.g. `"forwardPorts": [29373]` in the game section. Default ports: 20777 (F1, Dirt, WRC), 20127 (Forza), 6776 (RBR), 5606 (Project Cars 2/AMS2), 30000 (LFS).
 
-### Additional Bluetooth USB VID/PID pairs
+**Port conflicts:** if another program already listens on the game's port, the display shows `PORT BUSY` and tm-bt-led keeps running. Close the other program or let one of them forward to the other. Non-F1 UDP clients also accept `"reuseAddr": true`, but Windows then delivers each packet to only one listener.
 
-If your Bluetooth adapter works with tm-bt-led but is not part of the built-in USB list, you can add one or more extra VID/PID pairs in `config.json` under the `global` section:
-
-```json
-"global": {
-    "additionalUsbVidPids": [
-        { "vid": "0x0bda", "pid": "0x8771" },
-        { "vid": 0x2357, "pid": 0x0604 }
-    ]
-}
-```
-
-Both decimal and hex values are accepted for `vid` and `pid`.
-
-### Rev lights (shift / max RPM flash)
-
-RPM strip behaviour for supported clients (e.g. **Assetto Corsa**, **WRC**, **F1** classic cars, **iRacing**) is controlled by the optional **`revLightFlash`** object inside the game section of `config.json`. Flash timing uses **wall-clock phases** (no separate `setInterval` per effect), so it stays in sync with the BLE update loop.
-
-**Speeds** (half-period of each on/off phase; full blink cycle is twice as long):
-
-| Value | Half-period | Full cycle (approx.) |
-|-------|-------------|----------------------|
-| `slow` | 250 ms | 500 ms |
-| `medium` | 125 ms | 250 ms |
-| `fast` | 50 ms | 100 ms |
-
-**Structure:**
-
+**Rev light flashing** (Assetto Corsa, WRC, F1, iRacing): the `revLightFlash` object in the game section.
 ```json
 "revLightFlash": {
     "pitLimiterSpeed": "slow",
@@ -259,166 +124,60 @@ RPM strip behaviour for supported clients (e.g. **Assetto Corsa**, **WRC**, **F1
     "maxRpm": { "enabled": false, "colors": ["all"], "speed": "fast" }
 }
 ```
+* Speeds: `slow` (250 ms per phase), `medium` (125 ms), `fast` (50 ms).
+* `pitLimiterSpeed`: full-bar flash with the pit limiter.
+* `shift.style`: `off`, `blue_late` (blue flash near the shift point) or `blue_early` (starts earlier).
+* `maxRpm`: flash at max RPM. `colors: ["all"]` flashes the whole bar, a list like `["red", "blue"]` only those colour groups. Don't combine a blue `maxRpm` flash with a shift flash, both use the blue LEDs.
 
-- **`pitLimiterSpeed`** – Blink rate when the game triggers **pit limiter** full-bar flash (built-in behaviour, not tied to RPM config).
-- **`shift.style`** – `off` | `blue_late` | `blue_early`  
-  - **blue_late**: blue segment flashes near the shift point (e.g. ~99% RPM on Assetto / iRacing, high shift fraction on WRC).  
-  - **blue_early**: starts earlier (e.g. above ~90% RPM on Assetto, from ~80% shift fraction on WRC).  
-- **`shift.speed`** – Blink rate for that blue shift flash.
-- **`maxRpm`** – At high RPM (game-specific threshold, e.g. 98%+ on Assetto, max shift on WRC):  
-  - **`enabled`**: turn max-RPM flash on or off.  
-  - **`colors`**: `["all"]` blinks the **entire** RPM bar between empty and full. A list like `["blue"]`, `["red","blue"]`, etc. keeps the normal bar drawn by the game and only **blinks those colour groups** (off phase clears those segments).  
-  - **`speed`**: blink rate for max-RPM flash.
-
-**Avoid at the same time:** combining **max-RPM blue flash** with **shift blue flash** (both drive the blue LEDs); using **partial `maxRpm.colors`** together with the **combined** `setRevLights`-style bar only—partial colours align best with the “without blue / without green” style used by the shift helpers.
-
-Older `config.json` files may still list deprecated top-level keys (`blueRevLightsIndicateShift`, `flashingRevLightsIndicateShift`, `flashAllLedsAtMaxRpm`); those are still read for backward compatibility if present.
-
-### Max RPM for rev-light percentage (`fallbackMaxRpm` games)
-
-Several clients scale the **RPM LED bar** from a **maximum RPM** value. For **Assetto Corsa** (shared memory), **Richard Burns Rally**, **Live for Speed**, **DiRT** (UDP), and **EA Sports WRC** (UDP, only when shift-light RPM data is *not* used for the bar), that maximum is chosen with the same rules (implemented in `lib/resolveMaxRpm.js`):
-
-1. **Game telemetry** – If the title reports a max RPM and it looks sane (**strictly between 500 and 50000**), that value is used.  
-   - *Assetto:* `maxRpm` from static memory.  
-   - *DiRT:* `max_rpm` from the packet (internally compared after converting to the same scale as displayed RPM).  
-   - *WRC:* `vehicle_engine_rpm_max` on the **fallback** path (when shift lights are not driving the bar from `shiftlights_rpm_*`).  
-   - *RBR / LFS:* no max-RPM field in the packet, so this step is skipped.
-
-2. **Config fallback** – Otherwise, if **`fallbackMaxRpm`** under that game in **`config.json`** (or merged defaults from the repo) is **greater than zero**, that value is used. Defaults are typically **7500** where the game defines them.
-
-3. **Learned peak** – If there is still no value, the client uses an internal **learned maximum** (`detectedMaxRpm`, starting around **5000**), updated **every frame** whenever current RPM exceeds the stored peak.
-
-4. **Never below what you have seen** – After the above, if the learned peak is **higher** than the chosen maximum (for example the game under-reports redline but you have revved higher), the effective maximum is **raised** to that peak so the bar does not saturate early.
-
-You can still set **`fallbackMaxRpm`** per game in **`config.json`** when telemetry is missing or wrong. **WRC** continues to use the **shift-light RPM range** when the game marks it valid; the logic above applies only to the **plain RPM-fraction** bar in that case.
-
-## UDP Port Forwarding
-
-For UDP-based games (F1, Dirt, EA Sports WRC, Forza, RBR, Project Cars 2/AMS2, Live for Speed), you can forward telemetry data to additional applications or devices. This is useful when you want to use tm-bt-led alongside other telemetry consumers, such as:
-
-- **Software**: SimHub, CrewChief, or other dashboard apps
-- **Hardware**: Rumble motors, buttkickers, jet seats, or other haptic feedback devices that receive UDP telemetry
-
-### Configuration
-
-Edit the game's config file (e.g., `f1.config.js`) and add ports to the `forwardPorts` array:
-
-```javascript
-const config = {
-    port: 20777,                // Port to listen on (game sends UDP here)
-    forwardPorts: [29373],      // Forward to SimHub (or any other port)
-    // ... other settings
-};
-```
-
-For **EA Sports WRC**, set `forwardPorts` in the same folder’s **`config.json`**, inside the `"wrc"` object next to `"port"` (there is no separate `wrc.config.js` by default).
-
-You can forward to multiple ports:
-```javascript
-forwardPorts: [29373, 30000],   // Forward to SimHub AND another app
-```
-
-### Supported Games
-
-| Game | Default Port | Config File |
-|------|-------------|-------------|
-| F1 Series | 20777 | f1.config.js |
-| Dirt Series | 20777 | dirt.config.js |
-| EA Sports WRC | 20777 | `config.json` (`wrc` section) |
-| Forza Series | 20127 | forza.config.js |
-| Richard Burns Rally | 6776 | rbr.config.js |
-| Project Cars 2/AMS2 | 5606 | pcars2.config.js |
-| Live for Speed (OutGauge) | 30000 | lfs.config.js |
-
-### Notes
-
-- The original port continues to work normally - data is duplicated to forward ports
-- Forward ports are local only (127.0.0.1)
-- Leave `forwardPorts: []` empty if you don't need forwarding (default)
-
-## Video
-
-Here is a little video showing the device in action: [Youtube](https://www.youtube.com/watch?v=gbmkHltH9ts)
-
-## Important notes
-### Localization
-
-The script reads your OS's locale to pick measurement units: `en-US`, `en-LR` and `my-MM` use mph/°F/lb, `en-GB` uses mph with °C/kg, all other locales are metric. The chosen units are printed at startup. You can force measurement units by running `run_imperial.bat` or `run_metric.bat` or by adding `--imperial` or `--metric` after the game batch file (e.g. assetto.bat --metric), or with `"metric": true` / `"imperial": true` in the `global` section of `config.json`.
-
-### Reconnects and shutdown
-
-If the device turns off or the Bluetooth link drops, tm-bt-led keeps running, scans again and reconnects automatically; the game client and display modes stay as they were. Ctrl+C or closing the console window disconnects the device cleanly, so it can be reconnected right away. If a game client fails to start, the display shows `ERR` with the game name instead of the whole program crashing.
-
-### Instability
-Stability has been improved with the high-resolution timer and write queue system. The default is 60 FPS (16.25ms interval). If your device freezes or USB errors occur:
-
-1. **Try lower FPS**: `--fps=40` or `--fps=50`
-2. **Reduce queue depth**: `--queueDepth=1` (most conservative)
-3. **Use debug mode**: `--debug` to monitor for dropped writes or errors
-4. **Legacy timer**: `--legacyTimer` if high-res timer causes issues
-5. **Restart**: Kill the script, restart the TM BT LED, and unplug/replug the USB stick
-
-The system now includes automatic backoff when USB errors occur, which helps prevent disconnects.
-
-**Note**: BLE intervals must be multiples of 1.25ms. Run `--listFps` to see valid options.
+**Max RPM for the rev lights** (Assetto Corsa, RBR, LFS, Dirt, WRC): the game's max RPM is used if it reports a plausible value (500-50000), otherwise `fallbackMaxRpm` from the game section (default 7500), otherwise the highest RPM seen so far. The bar never scales below the highest RPM seen.
 
 ## Game specific settings
 
 ### F1 2019-2026
-Enable UDP telemetry in the game settings. The telemetry is sent to port 20777 by default.
-
-All UDP formats from 2018 to 2026 are supported, so F1 25 can use its native **2025** UDP format, and F1 26 (F1 25 with the 2026 Season Pack) its **2026** format. Support for the 2026 format is experimental.
-
-Cars built to the 2026 regulations have no DRS. For them the green rev lights show active aero and Overtake Mode instead: lit halfway when one is available, fully lit when straight-line mode or Overtake Mode is active.
+Enable UDP telemetry in the game (port 20777). All UDP formats from 2018 to 2026 are supported, so use the game's native format (F1 26 / 2026 Season Pack: format **2026**, experimental). Cars built to the 2026 regulations have no DRS; the green rev lights show active aero and Overtake Mode instead (half lit when available, fully lit when active).
 
 ### Assetto Corsa, Competizione, EVO, Rally
-Telemetry uses the game’s **shared memory** (default client; no UDP setup required).
+Uses the game's shared memory, no setup needed. The right-display mode `DISTANCE` (experimental) shows the approximate distance remaining on the lap or stage from the track spline; some tracks or mods report 0 or wrong values. Add it to `rightModesAcc` / `rightModesAssetto` in `config.json`.
 
-**Right display — `DISTANCE` (experimental):** Optional mode that shows an approximate **distance remaining** along the current lap or stage, in **metres**, using spline length from static memory plus either **normalized car position** or, when that field stays at zero (seen on some builds), **`distanceTraveled`** session metres modulo spline length. Treat this as **experimental**: it depends entirely on what the title reports for spline length and position. Some layouts or mods may show **0**, **jumps**, or **obviously wrong** values; it is **not** a co-driver or pacenote distance—only geometry exposed on the internal track spline. Available for both **ACC** and **original Assetto**-family titles when you add **`DISTANCE`** to `rightModesAcc` / `rightModesAssetto` in `config.json` (see `dist/config.json`). If you **build from source**, rebuild the **`AssettoCorsaSharedMemory`** native addon so `trackSPlineLength` is available to the client.
+### iRacing
+No setup needed.
 
-### Forza Horizon 4 and Forza Motorsport 7
-Please follow these tutorials and set port to 20127. Also make sure that you disable network isolation (checknetisolation command) as mentioned.
+### Forza
+* Forza Horizon 5: in "HUD AND GAMEPLAY" enable "DATA OUT", set the IP to 127.0.0.1 and the port to 20127.
+* Forza Horizon 4 / Forza Motorsport 7: follow [FH4RP](https://github.com/zackdevine/FH4RP) or [RS Dash FM7](https://www.pocketplayground.net/rs-dash-fm7) with port 20127, including disabling network isolation (`checknetisolation`).
 
-Forza Horizon 4: https://github.com/zackdevine/FH4RP
-Forza Motorsport 7: https://www.pocketplayground.net/rs-dash-fm7
-
-### Forza Horizon 5
-Please enable "DATA OUT" in the "HUD AND GAMEPLAY" settings and set "DATA OUT IP ADDRESS" to 127.0.0.1 AND "DATA OUT IP PORT" to 20127.
-
-### DiRT Rally 1 & 2, GRID Legends
-Enable UDP telemetry in Documents\My Games\DiRT Rally...\hardwaresettings\hardware_settings_config.xml by editing the motion_platform node as shown here:
-https://c4z3q2x8.rocketcdn.me/wp/wp-content/uploads/2020/03/fanaleds_xml_after.jpg
-
-### DiRT 3, DiRT Rally, GRID Legends, etc.
-UDP may omit or expose an unreliable **`max_rpm`**. The client uses **`max_rpm`** when it falls in the **500–50000 RPM** range (after scaling), otherwise **`fallbackMaxRpm`** from **`config.json`** / **`dirt.config.js`** (default **7500**), and it **learns** a higher peak while you drive. Override **`fallbackMaxRpm`** if the bar still feels wrong for a specific title or car.
+### DiRT, DiRT Rally 1 & 2, GRID Legends
+Enable UDP telemetry in `Documents\My Games\<game>\hardwaresettings\hardware_settings_config.xml` by editing the `motion_platform` node [as shown here](https://c4z3q2x8.rocketcdn.me/wp/wp-content/uploads/2020/03/fanaleds_xml_after.jpg). If the rev lights feel wrong for a car, set `fallbackMaxRpm`.
 
 ### EA Sports WRC
-Telemetry is **off until you configure it** in the game’s telemetry JSON (not in tm-bt-led).
+1. Start the game once so it creates `Documents\My Games\WRC\telemetry\config.json`.
+2. Under `udp` → `packets`, add or enable an entry with `"structure": "wrc"`, `"packet": "session_update"`, `"ip": "127.0.0.1"`, `"port": 20777` (must match `wrc.port` in tm-bt-led's `config.json`), `"bEnabled": true` and `"frequencyHz": -1`.
+3. Restart the game. If no data arrives, check `telemetry\log.txt`.
 
-#### Enable UDP output (standard `wrc` structure)
+Use the standard `wrc` structure, `wrc_experimental` is not supported.
 
-1. **Launch EA Sports WRC once** and reach at least the first interactive screen, then quit. The game creates **`Documents\My Games\WRC\telemetry\`** with **`config.json`** and a **`readme\`** folder (channel definitions and packet layouts). If anything is missing, delete the `telemetry` folder and launch the game again so it is regenerated.
-2. Open **`Documents\My Games\WRC\telemetry\config.json`**. Under **`udp` → `packets`**, ensure there is an entry that uses:
-   - **`structure`**: **`"wrc"`** (the standard fixed packet layout — this is what tm-bt-led parses),
-   - **`packet`**: **`"session_update"`** (per-frame driving data),
-   - **`ip`**: **`127.0.0.1`** (or your PC’s address if the listener is elsewhere),
-   - **`port`**: **`20777`** (must match **`port`** in tm-bt-led’s **`config.json`** under **`"wrc"`**),
-   - **`bEnabled`**: **`true`**,
-   - **`frequencyHz`**: **`-1`** for no limit (full rate), or a positive value to cap update rate.
-3. Save the file and **restart the game** so it reloads the config. Check **`telemetry\log.txt`** if telemetry does not start.
-4. Start tm-bt-led with **`wrc.bat`** or **`tm-bt-led.exe --game=wrc`** before or while the game is running.
+### rFactor 2
+Copy `rF2SharedMemory/plugin/rFactor2SharedMemoryMapPlugin64.dll` into the rF2 plugins folder and enable the plugin in the game.
 
-**Use the standard `wrc` structure, not `wrc_experimental`.** Experimental mode uses a different packet split (start/update on different ports and merged state); tm-bt-led only supports the **`wrc`** **`session_update`** stream described in **`telemetry\readme\udp\wrc.json`** and **`telemetry\readme\channels.json`**. If a game update changes that layout, the client may need to be updated to match.
-
-### rFactor2
-Copy "rF2SharedMemory/plugin/rFactor2SharedMemoryMapPlugin64.dll" into rF2 plugins folder and activate the plugin in the game.
-
-### Euro Truck Simulator 2/American Truck Simulator
-Copy "SCSSharedMemory/plugin/scs-telemetry.dll" into "<GAME_DIR>/bin/win_x64/plugins". Create the plugins folder if needed.
+### Euro Truck Simulator 2 / American Truck Simulator
+Copy `SCSSharedMemory/plugin/scs-telemetry.dll` into `<GAME_DIR>/bin/win_x64/plugins` (create the folder if needed).
 
 ### Live for Speed
-Edit `LFS\cfg.txt` and set **OutGauge** to send to this PC, for example: `OutGauge Mode 1` (or `2` to include replay), `OutGauge IP 127.0.0.1`, and `OutGauge Port` to the same value as in `config.json` / `lfs.config.js` (default **30000**). OutGauge packets are only sent when you are in **cockpit** view. If you set **OutGauge ID** in `cfg.txt`, packets include four extra bytes at the end; the client accepts both sizes.
+In `LFS\cfg.txt` set `OutGauge Mode 1` (or `2` including replays), `OutGauge IP 127.0.0.1` and `OutGauge Port` to the `port` in `config.json` (default 30000). OutGauge is only sent in cockpit view.
 
-## SPECIAL THANKS
+## Building from source
+
+Only needed to change the code; the release zip contains everything to run tm-bt-led.
+
+1. Install [Node.js](https://nodejs.org/) 26 or newer, pnpm 10 (`corepack enable`), Python 3 and Visual Studio 2022 or 2026 (Build Tools are enough) with the "Desktop development with C++" workload.
+2. `git clone https://github.com/mplutka/tm-bt-led.git`, then `pnpm install`.
+3. `pnpm run build` compiles the shared memory addons (Assetto Corsa, rFactor 2, RaceRoom, ETS2/ATS).
+4. `pnpm test` and `pnpm run lint` run the unit tests and ESLint.
+5. Run from the `dist` folder: `cd dist`, then `node ../lib/launcher.js --help`.
+6. `pnpm run pack` builds `dist/tm-bt-led.exe`, which the batch files use, so run it again after code changes. `pnpm run pack:arm64` builds the ARM64 exe and has to run on Windows on ARM.
+
+Releases are built by GitHub Actions when a `v*` tag is pushed, with release notes from the matching `## Version x.y.z` section in [CHANGELOG.md](CHANGELOG.md).
+
+## Special thanks
 Thank you, Dave Cook aka cooknn, for your great support, testing and precious feedback!
 Also thanks to Calvin from https://clvnhd.com/ for your testing and feedback.
