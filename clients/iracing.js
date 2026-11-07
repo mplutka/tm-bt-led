@@ -9,18 +9,32 @@
 
 const irsdk = require('node-irsdk');
 const AbstractClient = require('../lib/abstractClient.js');
-const path = require('path');
+const { getClientConfig } = require('../lib/configLoader.js');
 const { resolveRevLightFlash } = require('../lib/revLightFlash.js');
+const { resolveMaxRpmForRevLights } = require('../lib/resolveMaxRpm.js');
 
-const loadableConfigName = "iracing.config.js";
-const defaultConfig = {
-  leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "OILTEMP", "WATERTEMP"],
-  rightModes: ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"]
-};
+/**
+ * Max RPM for the rev bar from session info: shift-light RPM when a shift style is configured,
+ * otherwise the redline. iRacing reports these as numbers or strings like "7800.000".
+ */
+function maxRpmFromSession(session, preferShiftRpm) {
+  const driverInfo = session?.DriverInfo || {};
+  const shiftRpm = parseFloat(driverInfo.DriverCarSLShiftRPM);
+  const redLine = parseFloat(driverInfo.DriverCarRedLine);
+  if (preferShiftRpm && shiftRpm > 0) {
+    return shiftRpm;
+  }
+  if (redLine > 0) {
+    return redLine;
+  }
+  return shiftRpm > 0 ? shiftRpm : null;
+}
 
 class iRacing extends AbstractClient {
     config;
     modeMapping;
+    sessionMaxRpm = null;
+    detectedMaxRpm = 5000;
 
     constructor(tmBtLed) {
         if (!tmBtLed) {
@@ -46,16 +60,7 @@ class iRacing extends AbstractClient {
           "LAPS LEFT": this.showLapsLeft
         };
   
-        try {
-            this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
-            if (this.config?.leftModes && this.config?.rightModes) {
-                console.log("Found custom config");
-            } else {
-                throw "No custom config";
-            }
-        } catch (e) {
-            this.config = defaultConfig;
-        }
+        this.config = getClientConfig('iracing', 'iracing.config.js');
 
         this.revFlashProfile = resolveRevLightFlash(this.config);
         this.tmBtLed.setRevLightFlashProfile(this.revFlashProfile);
@@ -74,15 +79,41 @@ class iRacing extends AbstractClient {
         });
           
         this.client = irsdk.getInstance();
-        this.startClient();
     }
 
-    startClient = () =>  {          
-        let maxRpm = 7500;
-        
-        this.client.on('Telemetry', data => {
+    startClient = () =>  {
+        this.stopClient();
+        this.client.on('Telemetry', this.onTelemetry);
+        this.client.on('SessionInfo', this.onSessionInfo);
+    }
 
+    // irsdk is a process-wide singleton that cannot be restarted, so only detach our listeners.
+    stopClient = () => {
+        this.client.removeListener('Telemetry', this.onTelemetry);
+        this.client.removeListener('SessionInfo', this.onSessionInfo);
+    }
+
+    onSessionInfo = (data) => {
+        const preferShiftRpm = this.revFlashProfile.shift.style !== 'off';
+        const maxRpm = maxRpmFromSession(data?.data, preferShiftRpm);
+        if (maxRpm && maxRpm !== this.sessionMaxRpm) {
+          console.log(`iRacing max RPM for rev lights: ${maxRpm}`);
+          this.sessionMaxRpm = maxRpm;
+        }
+    }
+
+    onTelemetry = (data) => this.guard(this.handleTelemetry)(data);
+
+    handleTelemetry = (data) => {
           const telemetry = data.values;
+          const maxRpm = resolveMaxRpmForRevLights(
+            {
+              telemetryMaxRpm: this.sessionMaxRpm,
+              fallbackMaxRpm: this.config?.fallbackMaxRpm,
+              currentRpm: telemetry.RPM
+            },
+            this
+          );
 
           this.tmBtLed.setGear(telemetry.Gear);
 
@@ -141,16 +172,6 @@ class iRacing extends AbstractClient {
                   rightDataProcessor(telemetry, true);
               }
           }
-        });
-        
-        this.client.on('SessionInfo', function (data) {
-          const session = data.data;
-          if (this.revFlashProfile.shift.style !== 'off' && session.DriverInfo.DriverCarSLShiftRPM > 0) {
-            maxRpm = session.DriverInfo.DriverCarSLShiftRPM;
-          } else if (session.DriverInfo.DriverCarRedLine > 0) {
-            maxRpm = session.DriverInfo.DriverCarRedLine;
-          }
-        })
     }
 
     showSpeed = (telemetry, onRight) => {
@@ -216,3 +237,4 @@ class iRacing extends AbstractClient {
 }
 
 module.exports = iRacing;
+module.exports.maxRpmFromSession = maxRpmFromSession;

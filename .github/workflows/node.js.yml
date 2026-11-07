@@ -3,26 +3,39 @@ name: Node.js CI
 on:
   push:
     branches: [ main, develop ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main, develop ]
 
 jobs:
   build:
-    runs-on: windows-latest
+    name: build (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    # Windows on ARM is experimental: native addons are compiled on the arm64 runner itself.
+    continue-on-error: ${{ matrix.experimental }}
 
     strategy:
+      fail-fast: false
       matrix:
-        node-version: [24.x]
+        include:
+          - arch: x64
+            runner: windows-latest
+            pack: pack
+            experimental: false
+          - arch: arm64
+            runner: windows-11-arm
+            pack: pack:arm64
+            experimental: true
 
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
 
-    - name: Use Node.js ${{ matrix.node-version }}
+    - name: Use Node.js 24.x
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: 24.x
 
     - name: Install pnpm
       uses: pnpm/action-setup@v4
@@ -31,18 +44,47 @@ jobs:
 
     - name: Setup Windows Build Tools
       uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: ${{ matrix.arch == 'arm64' && 'arm64' || 'x64' }}
 
     - name: Install dependencies
-      run: pnpm install
+      run: pnpm install --frozen-lockfile
+
+    - name: Lint
+      run: pnpm run lint
+
+    - name: Unit tests
+      run: pnpm test
 
     - name: Build native modules
       run: pnpm run build
 
     - name: Package executable
-      run: pnpm run pack
+      run: pnpm run ${{ matrix.pack }}
 
     - name: Archive production artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: tm-bt-led-${{ github.sha }}
+        name: tm-bt-led-${{ matrix.arch }}-${{ github.sha }}
         path: dist/*
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: tm-bt-led-*-${{ github.sha }}
+        path: release
+        merge-multiple: true
+
+    - name: Publish GitHub release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: release/*
+        generate_release_notes: true

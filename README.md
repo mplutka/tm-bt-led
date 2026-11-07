@@ -168,7 +168,23 @@ tm-bt-led.exe --listFps
 You can change the order and type of data displayed on the left and right display (and sometimes the used UDP port) by editing the corresponding 
 `xxx.config.js` file in the same folder as `tm-bt-led.exe`.
 
-Game defaults can also be merged from **`config.json`** in that same folder (see `dist/config.json` in the repo for a full template, and **`dist/config.demo.json`** for a smaller example with rev lights, forwarding, and WRC notes). Values under each game key (e.g. `"assetto"`, `"f1"`, `"wrc"`) override the built-in defaults; `xxx.config.js` still applies where used.
+Game defaults can also be merged from **`config.json`** in that same folder (see `dist/config.json` in the repo for a full template, and **`dist/config.demo.json`** for a smaller example with rev lights, forwarding, and WRC notes). Values under each game key override the built-in defaults. This works for **every** game (`f1`, `assetto`, `iracing`, `rF2`, `raceroom`, `ets2`, `dirt`, `wrc`, `forza`, `rbr`, `pcars2`, `lfs`). A legacy `xxx.config.js` is only used when `config.json` has no section for that game.
+
+`config.json`, legacy config files, device dumps (`setup.bat`) and `udp_data.txt` are read from and written to the folder of `tm-bt-led.exe`. When running from source (`node lib/launcher.js`) the current working directory is used instead. Set the environment variable **`TM_BT_LED_HOME`** to use a different folder.
+
+### Output report handle
+
+The display frame is written to HID report handle **58**, the output report of all known devices. If your device's dump lists a different layout, tm-bt-led automatically picks the last writable HID report instead. You can force a handle in `config.json`:
+
+```json
+"global": {
+    "outputHandle": 58
+}
+```
+
+### UDP games and port conflicts
+
+If another program (e.g. SimHub or a second tm-bt-led) already listens on a game's UDP port, the display shows **`PORT BUSY`** for a few seconds and the console explains the problem; tm-bt-led keeps running. Either close the other program, or let one program receive the port and forward to the other via `forwardPorts`. UDP clients other than F1 also accept `"reuseAddr": true` in their game section to share a port, but Windows then delivers each packet to only one of the listeners, so forwarding is preferred.
 
 ### Additional Bluetooth USB VID/PID pairs
 
@@ -290,7 +306,11 @@ Here is a little video showing the device in action: [Youtube](https://www.youtu
 ## Important notes
 ### Localization
 
-The script tries to read your OS's locale to automatically switch to MPH/F/LB if "en-us" is selected. To can force measurement units by running `run_imperial.bat` or `run_metric.bat` or by adding `--imperial` or `--metric` after the game batch file (e.g. assetto.bat --metric).
+The script reads your OS's locale to pick measurement units: `en-US`, `en-LR` and `my-MM` use mph/°F/lb, `en-GB` uses mph with °C/kg, all other locales are metric. The chosen units are printed at startup. You can force measurement units by running `run_imperial.bat` or `run_metric.bat` or by adding `--imperial` or `--metric` after the game batch file (e.g. assetto.bat --metric), or with `"metric": true` / `"imperial": true` in the `global` section of `config.json`.
+
+### Reconnects and shutdown
+
+If the device turns off or the Bluetooth link drops, tm-bt-led keeps running, scans again and reconnects automatically; the game client and display modes stay as they were. Ctrl+C or closing the console window disconnects the device cleanly, so it can be reconnected right away. If a game client fails to start, the display shows `ERR` with the game name instead of the whole program crashing.
 
 ### Instability
 Stability has been improved with the high-resolution timer and write queue system. The default is 60 FPS (16.25ms interval). If your device freezes or USB errors occur:

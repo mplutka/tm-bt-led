@@ -11,6 +11,7 @@ const { F1TelemetryClient, constants } = require('@racehub-io/f1-telemetry-clien
 const AbstractClient = require('../lib/abstractClient.js');
 const { getClientConfig } = require('../lib/configLoader.js');
 const { resolveRevLightFlash } = require('../lib/revLightFlash.js');
+const { describeSocketError } = require('../lib/udpListener.js');
 const { PACKETS } = constants;
 const dgram = require('dgram');
 
@@ -41,21 +42,29 @@ class F1 extends AbstractClient {
         const listenPort = this.config.port || 20777;
         const forwardPorts = this.config.forwardPorts || [];
 
+        let clientPort = listenPort;
         if (forwardPorts.length > 0) {
-            const internalPort = this.config.internalPort || 20778;
-            this.setupUdpForwarder(listenPort, internalPort, forwardPorts);
-            this.client = new F1TelemetryClient({ port: internalPort, bigintEnabled: true });
-        } else {
-            this.client = new F1TelemetryClient({ port: listenPort, bigintEnabled: true });
+            clientPort = this.config.internalPort || 20778;
+            this.setupUdpForwarder(listenPort, clientPort, forwardPorts);
         }
+        this.client = new F1TelemetryClient({ port: clientPort, bigintEnabled: true });
+        this.client.handleMessage = this.guard(this.client.handleMessage.bind(this.client));
+        this.client.socket.on('error', (err) => {
+            console.error(describeSocketError(err, clientPort));
+            this.handleListenerError(err);
+        });
     }
 
     setupUdpForwarder(listenPort, internalPort, forwardPorts) {
         this.udpServer = dgram.createSocket('udp4');
 
         this.udpServer.on('error', (err) => {
-            console.error(`UDP Server error:\n${err.stack}`);
-            this.udpServer.close();
+            console.error(describeSocketError(err, listenPort));
+            this.handleListenerError(err);
+            if (this.udpServer) {
+                this.udpServer.close();
+                this.udpServer = null;
+            }
         });
         
         this.udpServer.on('message', (msg, rinfo) => {
@@ -80,7 +89,11 @@ class F1 extends AbstractClient {
     }
 
     stopClient = () => {
-        this.client.stop();
+        try {
+            this.client.stop();
+        } catch (e) {
+            // socket already closed after an error
+        }
         if (this.udpServer) {
             this.udpServer.close();
             this.udpServer = null;

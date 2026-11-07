@@ -9,13 +9,7 @@
 
 const r3e = require("../r3e-api/build/Release/r3e.node");
 const AbstractClient = require('../lib/abstractClient.js');
-const path = require('path');
-
-const loadableConfigName = "raceroom.config.js";
-const defaultConfig = {
-  leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "TYREPRESS", "BRAKETEMP", "OILTEMP"],
-  rightModes: ["LAPTIME", "DELTA", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"]
-};
+const { getClientConfig } = require('../lib/configLoader.js');
 
 class Raceroom extends AbstractClient {
     data = {};
@@ -51,16 +45,7 @@ class Raceroom extends AbstractClient {
         "LAPS LEFT": this.showLapsLeft
       };
 
-      try {
-          this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
-          if (this.config?.leftModes && this.config?.rightModes) {
-              console.log("Found custom config");
-          } else {
-              throw "No custom config";
-          }
-      } catch (e) {
-          this.config = defaultConfig;
-      }
+      this.config = getClientConfig('raceroom', 'raceroom.config.js');
 
       this.setCallbacks({
           onLeftPreviousMode: this.leftPreviousMode,
@@ -84,11 +69,11 @@ class Raceroom extends AbstractClient {
     }
 
     startClient = () =>  {
-        this.refreshInterval = setInterval(() => {
+        this.refreshInterval = setInterval(this.guard(() => {
           if (this.initDone) {
             this.updateValues();
           }
-        }, 1000 / 60); // 60 Hz
+        }), 1000 / 60); // 60 Hz
     }
 
     stopClient = () => {

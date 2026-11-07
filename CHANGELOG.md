@@ -197,3 +197,17 @@
 * Added global `config.json` support for `global.additionalUsbVidPids` (array of extra Bluetooth USB VID/PID pairs).
 * Updated patched `@abandonware/bluetooth-hci-socket` USB detection to merge built-in adapters with configured additional VID/PID pairs.
 * Security fixes
+
+## Unreleased
+
+* Automatic rescan and reconnect when the device disconnects; clean disconnect on Ctrl+C / console close
+* Game client errors no longer crash the program; a busy UDP port shows `PORT BUSY` instead of exiting
+* Lower CPU usage: hybrid timer instead of a busy loop, display frame only recomposed when it changed
+* Fixed lap times with milliseconds below 100 (e.g. `1:01.005`) and time spacer handling
+* iRacing: rev lights use the car's shift-light/redline RPM, listeners are no longer registered twice
+* `config.json` now applies to all games (iRacing, rFactor 2, RaceRoom, ETS2/ATS included); `TM_BT_LED_HOME` overrides the data folder
+* American Truck Simulator is detected in auto mode
+* Units: `en-GB` uses mph, more imperial locales; `metric`/`imperial` can be set in `config.json`
+* Output report handle detected from the device dump, overridable with `global.outputHandle`
+* Native USB binding selected by CPU architecture; experimental Windows on ARM build
+* Unit tests, ESLint and tagged releases in CI

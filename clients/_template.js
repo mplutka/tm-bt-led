@@ -44,6 +44,7 @@ class Game extends AbstractClient {
 
         this.client = new UdpListener({ port: this.port, bigintEnabled: true });
         this.client.on("data", this.parseData);
+        this.watchUdpListener(this.client);
     }
 
     startClient = () =>  {

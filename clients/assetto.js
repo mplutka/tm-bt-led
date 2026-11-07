@@ -69,9 +69,7 @@ class ACC extends AbstractClient {
     }
 
     startClient = () =>  {
-        this.refreshInterval = setInterval(() => {
-            this.updateValues();
-        }, 1000 / 60); // 60 Hz
+        this.refreshInterval = setInterval(this.guard(this.updateValues), 1000 / 60); // 60 Hz
     }
 
     stopClient = () => {
