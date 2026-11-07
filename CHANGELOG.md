@@ -214,3 +214,4 @@
 * `tm-bt-led.exe --installDriver` switches the Bluetooth stick to Microsoft's inbox WinUSB driver, `--restoreDriver` reverts it
 * Build: noble's unused WinRT native binding is no longer compiled (fails with Visual Studio 2026)
 * Unknown command line arguments now exit with an error and print the list of supported options
+* Experimental Linux support (UDP games only, run from source): the Bluetooth adapter is driven over the HCI user channel, bypassing BlueZ; games are detected from `/proc` (Proton aware); new `global.hciDeviceId` setting. See `LINUX.md`
