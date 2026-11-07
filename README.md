@@ -344,7 +344,7 @@ The system now includes automatic backoff when USB errors occur, which helps pre
 ### F1 2019-2025
 Enable UDP telemetry in the game settings. The telemetry is sent to port 20777 by default.
 
-**Important for F1 25:** You must set the **UDP Format** to **2024** or earlier in the game's telemetry settings. The 2025 format is not yet supported by the telemetry parser.
+All UDP formats from 2018 to 2025 are supported, so F1 25 can use its native **2025** UDP format.
 
 ### Assetto Corsa, Competizione, EVO, Rally
 Telemetry uses the game’s **shared memory** (default client; no UDP setup required).

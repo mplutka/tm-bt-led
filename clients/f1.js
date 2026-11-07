@@ -112,6 +112,11 @@ class F1 extends AbstractClient {
         let carTelemetry;
         let delta;       
 
+        // UDP formats 2021+ report lap times in milliseconds and no longer include a best lap time.
+        const currentLapSeconds = () => lapData.m_currentLapTimeInMS !== undefined ? lapData.m_currentLapTimeInMS / 1000 : lapData.m_currentLapTime;
+        const lastLapSeconds = () => lapData.m_lastLapTimeInMS !== undefined ? lapData.m_lastLapTimeInMS / 1000 : lapData.m_lastLapTime;
+        const bestLapSeconds = () => lapData.m_bestLapTime !== undefined ? lapData.m_bestLapTime : bestLapTime;
+
         const showSpeed = (onRight) => {
             this.tmBtLed.setSpeed(carTelemetry.m_speed, onRight);
         };
@@ -141,7 +146,7 @@ class F1 extends AbstractClient {
         };
     
         const showCurrentLap = (onRight) => {
-            this.tmBtLed.setTime(lapData.m_currentLapTime * 1000, onRight);
+            this.tmBtLed.setTime(currentLapSeconds() * 1000, onRight);
         };
     
         const showDelta = (onRight) => {
@@ -149,11 +154,11 @@ class F1 extends AbstractClient {
         };
     
         const showLastLap = (onRight) => {
-            this.tmBtLed.setTime(lapData.m_lastLapTime * 1000 , onRight);
+            this.tmBtLed.setTime(lastLapSeconds() * 1000 , onRight);
         };
     
         const showBestLap = (onRight) => {
-            this.tmBtLed.setTime(lapData.m_bestLapTime * 1000, onRight);
+            this.tmBtLed.setTime(bestLapSeconds() * 1000, onRight);
         };
     
         const showPosition = (onRight) => {
@@ -223,10 +228,10 @@ class F1 extends AbstractClient {
 
             const fractionOfLap = trackLength === 0 || lapData.m_lapDistance < 0 ? 0 : (lapData.m_lapDistance / trackLength).toFixed(6);
             if (fractionOfLap >= 0.997 && currentDeltaData.size > 1000) {
-                if (lapData.m_currentLapInvalid !== 1 && (lapData.m_currentLapTime <= bestLapTime || !bestLapTime)) {
+                if (lapData.m_currentLapInvalid !== 1 && (currentLapSeconds() <= bestLapTime || !bestLapTime)) {
                     bestDeltaData.clear();
                     bestDeltaData = new Map(currentDeltaData);
-                    bestLapTime = lapData.m_currentLapTime;
+                    bestLapTime = currentLapSeconds();
                 }
                 currentDeltaData.clear();
             }
@@ -241,10 +246,10 @@ class F1 extends AbstractClient {
                 });
 
                 if (bestTimeForFraction) {
-                    delta = lapData.m_currentLapTime - bestTimeForFraction;
+                    delta = currentLapSeconds() - bestTimeForFraction;
                 }
             }
-            currentDeltaData.set(fractionOfLap, lapData.m_currentLapTime);
+            currentDeltaData.set(fractionOfLap, currentLapSeconds());
 
             if (lapData.m_currentLapInvalid === 1) {
                 this.tmBtLed.setFlashingRightRed(true);
