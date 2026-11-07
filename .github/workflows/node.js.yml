@@ -3,46 +3,113 @@ name: Node.js CI
 on:
   push:
     branches: [ main, develop ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main, develop ]
 
 jobs:
   build:
-    runs-on: windows-latest
+    name: build (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    # Windows on ARM is experimental: native addons are compiled on the arm64 runner itself.
+    continue-on-error: ${{ matrix.experimental }}
 
     strategy:
+      fail-fast: false
       matrix:
-        node-version: [24.x]
+        include:
+          - arch: x64
+            runner: windows-latest
+            pack: pack
+            experimental: false
+          - arch: arm64
+            runner: windows-11-arm
+            pack: pack:arm64
+            experimental: true
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         submodules: true
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-
     - name: Install pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        version: 10.30.3
+      uses: pnpm/action-setup@v6
 
-    - name: Setup Windows Build Tools
-      uses: ilammy/msvc-dev-cmd@v1
+    - name: Use Node.js 26.x
+      uses: actions/setup-node@v7
+      with:
+        node-version: 26.x
 
     - name: Install dependencies
-      run: pnpm install
+      run: pnpm install --frozen-lockfile
+
+    - name: Check optional iRacing SDK binding
+      run: node -e "require('node-irsdk')"
+
+    - name: Lint
+      run: pnpm run lint
+
+    - name: Unit tests
+      run: pnpm test
 
     - name: Build native modules
       run: pnpm run build
 
     - name: Package executable
-      run: pnpm run pack
+      run: pnpm run ${{ matrix.pack }}
 
     - name: Archive production artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
-        name: tm-bt-led-${{ github.sha }}
+        name: tm-bt-led-${{ matrix.arch }}-${{ github.sha }}
         path: dist/*
+
+  linux:
+    name: linux (lint + tests)
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        submodules: true
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v6
+
+    - name: Use Node.js 26.x
+      uses: actions/setup-node@v7
+      with:
+        node-version: 26.x
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Check Bluetooth HCI binding
+      run: node -e "require('@abandonware/bluetooth-hci-socket')"
+
+    - name: Lint
+      run: pnpm run lint
+
+    - name: Unit tests
+      run: pnpm test
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v8
+      with:
+        pattern: tm-bt-led-*-${{ github.sha }}
+        path: release
+        merge-multiple: true
+
+    - name: Publish GitHub release
+      uses: softprops/action-gh-release@v3
+      with:
+        files: release/*
+        generate_release_notes: true

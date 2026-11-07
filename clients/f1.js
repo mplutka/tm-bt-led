@@ -11,6 +11,7 @@ const { F1TelemetryClient, constants } = require('@racehub-io/f1-telemetry-clien
 const AbstractClient = require('../lib/abstractClient.js');
 const { getClientConfig } = require('../lib/configLoader.js');
 const { resolveRevLightFlash } = require('../lib/revLightFlash.js');
+const { describeSocketError } = require('../lib/udpListener.js');
 const { PACKETS } = constants;
 const dgram = require('dgram');
 
@@ -41,21 +42,29 @@ class F1 extends AbstractClient {
         const listenPort = this.config.port || 20777;
         const forwardPorts = this.config.forwardPorts || [];
 
+        let clientPort = listenPort;
         if (forwardPorts.length > 0) {
-            const internalPort = this.config.internalPort || 20778;
-            this.setupUdpForwarder(listenPort, internalPort, forwardPorts);
-            this.client = new F1TelemetryClient({ port: internalPort, bigintEnabled: true });
-        } else {
-            this.client = new F1TelemetryClient({ port: listenPort, bigintEnabled: true });
+            clientPort = this.config.internalPort || 20778;
+            this.setupUdpForwarder(listenPort, clientPort, forwardPorts);
         }
+        this.client = new F1TelemetryClient({ port: clientPort, bigintEnabled: true });
+        this.client.handleMessage = this.guard(this.client.handleMessage.bind(this.client));
+        this.client.socket.on('error', (err) => {
+            console.error(describeSocketError(err, clientPort));
+            this.handleListenerError(err);
+        });
     }
 
     setupUdpForwarder(listenPort, internalPort, forwardPorts) {
         this.udpServer = dgram.createSocket('udp4');
 
         this.udpServer.on('error', (err) => {
-            console.error(`UDP Server error:\n${err.stack}`);
-            this.udpServer.close();
+            console.error(describeSocketError(err, listenPort));
+            this.handleListenerError(err);
+            if (this.udpServer) {
+                this.udpServer.close();
+                this.udpServer = null;
+            }
         });
         
         this.udpServer.on('message', (msg, rinfo) => {
@@ -80,7 +89,11 @@ class F1 extends AbstractClient {
     }
 
     stopClient = () => {
-        this.client.stop();
+        try {
+            this.client.stop();
+        } catch (e) {
+            // socket already closed after an error
+        }
         if (this.udpServer) {
             this.udpServer.close();
             this.udpServer = null;
@@ -98,6 +111,11 @@ class F1 extends AbstractClient {
         let carStatus;
         let carTelemetry;
         let delta;       
+
+        // UDP formats 2021+ report lap times in milliseconds and no longer include a best lap time.
+        const currentLapSeconds = () => lapData.m_currentLapTimeInMS !== undefined ? lapData.m_currentLapTimeInMS / 1000 : lapData.m_currentLapTime;
+        const lastLapSeconds = () => lapData.m_lastLapTimeInMS !== undefined ? lapData.m_lastLapTimeInMS / 1000 : lapData.m_lastLapTime;
+        const bestLapSeconds = () => lapData.m_bestLapTime !== undefined ? lapData.m_bestLapTime : bestLapTime;
 
         const showSpeed = (onRight) => {
             this.tmBtLed.setSpeed(carTelemetry.m_speed, onRight);
@@ -128,7 +146,7 @@ class F1 extends AbstractClient {
         };
     
         const showCurrentLap = (onRight) => {
-            this.tmBtLed.setTime(lapData.m_currentLapTime * 1000, onRight);
+            this.tmBtLed.setTime(currentLapSeconds() * 1000, onRight);
         };
     
         const showDelta = (onRight) => {
@@ -136,11 +154,11 @@ class F1 extends AbstractClient {
         };
     
         const showLastLap = (onRight) => {
-            this.tmBtLed.setTime(lapData.m_lastLapTime * 1000 , onRight);
+            this.tmBtLed.setTime(lastLapSeconds() * 1000 , onRight);
         };
     
         const showBestLap = (onRight) => {
-            this.tmBtLed.setTime(lapData.m_bestLapTime * 1000, onRight);
+            this.tmBtLed.setTime(bestLapSeconds() * 1000, onRight);
         };
     
         const showPosition = (onRight) => {
@@ -210,10 +228,10 @@ class F1 extends AbstractClient {
 
             const fractionOfLap = trackLength === 0 || lapData.m_lapDistance < 0 ? 0 : (lapData.m_lapDistance / trackLength).toFixed(6);
             if (fractionOfLap >= 0.997 && currentDeltaData.size > 1000) {
-                if (lapData.m_currentLapInvalid !== 1 && (lapData.m_currentLapTime <= bestLapTime || !bestLapTime)) {
+                if (lapData.m_currentLapInvalid !== 1 && (currentLapSeconds() <= bestLapTime || !bestLapTime)) {
                     bestDeltaData.clear();
                     bestDeltaData = new Map(currentDeltaData);
-                    bestLapTime = lapData.m_currentLapTime;
+                    bestLapTime = currentLapSeconds();
                 }
                 currentDeltaData.clear();
             }
@@ -228,10 +246,10 @@ class F1 extends AbstractClient {
                 });
 
                 if (bestTimeForFraction) {
-                    delta = lapData.m_currentLapTime - bestTimeForFraction;
+                    delta = currentLapSeconds() - bestTimeForFraction;
                 }
             }
-            currentDeltaData.set(fractionOfLap, lapData.m_currentLapTime);
+            currentDeltaData.set(fractionOfLap, currentLapSeconds());
 
             if (lapData.m_currentLapInvalid === 1) {
                 this.tmBtLed.setFlashingRightRed(true);
@@ -244,7 +262,15 @@ class F1 extends AbstractClient {
         let drsAvailable = false;
 
         let ersDeployMode = null;
-        const ersDeployModes = ["NONE", "LOW ","MEDIUM", "HIGH", "OVERTAKE", "HOTLAP"];
+        const ersDeployModeNames = (packetFormat) => {
+            if (packetFormat <= 2019) {
+                return ["NONE", "LOW ", "MEDIUM", "HIGH", "OVERTAKE", "HOTLAP"];
+            }
+            return ["NONE", "MEDIUM", "HOTLAP", packetFormat >= 2026 ? "BOOST" : "OVERTAKE"];
+        };
+
+        // Cars built to the 2026 regulations have no DRS; active aero and Overtake Mode take its place.
+        let aero2026 = null;
 
         let fuelMix = null;
         const fuelMixes = ["LEAN", "STANDARD", "RICH", "MAX"];
@@ -257,7 +283,7 @@ class F1 extends AbstractClient {
 
             if (carStatus.m_ersDeployMode !== ersDeployMode) {
                 if (ersDeployMode >= 0) {
-                    this.tmBtLed.showTemporary("ERSMODE", ersDeployModes[carStatus.m_ersDeployMode]);
+                    this.tmBtLed.showTemporary("ERSMODE", ersDeployModeNames(d.m_header.m_packetFormat)[carStatus.m_ersDeployMode]);
                 }
                 ersDeployMode = carStatus.m_ersDeployMode;
             }
@@ -276,7 +302,9 @@ class F1 extends AbstractClient {
                 frontBrakeBias = carStatus.m_frontBrakeBias;
             }            
 
-            drsAvailable = carStatus.m_drsAllowed === 1;
+            drsAvailable = aero2026
+                ? aero2026.m_activeAeroAvailable === 1 || aero2026.m_overtakeAvailable === 1
+                : carStatus.m_drsAllowed === 1;
 
             switch(carStatus.m_vehicleFiaFlags) {
                 case 2:
@@ -310,12 +338,19 @@ class F1 extends AbstractClient {
             }
         });
 
+        this.client.on(PACKETS.carTelemetry2, d => {
+            const data = d.m_carTelemetry2Data[d.m_header.m_playerCarIndex];
+            aero2026 = data && data.m_2026Regulations === 1 ? data : null;
+        });
+
         this.client.on(PACKETS.carTelemetry, d => {
             const myIndex = d.m_header.m_playerCarIndex;
             carTelemetry = d.m_carTelemetryData[myIndex];
             this.tmBtLed.setGear(carTelemetry.m_gear);
         
-            drsOn = carTelemetry.m_drs === 1;
+            drsOn = aero2026
+                ? aero2026.m_activeAeroMode === 1 || aero2026.m_overtakeActive === 1
+                : carTelemetry.m_drs === 1;
             if (this.tmBtLed.shouldApplyClientRevLights()) {
                 if (drsOn) {
                     this.tmBtLed.setRevLightsGreen(4);

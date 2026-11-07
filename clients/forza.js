@@ -50,9 +50,11 @@ class Forza extends AbstractClient {
         this.client = new UdpListener({ 
             port: this.config.port, 
             forwardPorts: this.config.forwardPorts || [],
+            reuseAddr: this.config.reuseAddr,
             bigintEnabled: true 
         });
         this.client.on("data", this.parseData);
+        this.watchUdpListener(this.client);
     }
 
     startClient = () =>  {

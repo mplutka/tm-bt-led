@@ -10,6 +10,9 @@
 const UdpListener = require('../lib/udpListener.js');
 const AbstractClient = require('../lib/abstractClient.js');
 const fs = require("fs");
+const { resolveAppPath } = require('../lib/configLoader.js');
+
+const dumpFile = resolveAppPath('udp_data.txt');
 
 const yargs = require("yargs");
 const { hideBin } = require('yargs/helpers');
@@ -38,12 +41,14 @@ class DumpUdp extends AbstractClient {
 
         this.client = new UdpListener({ port: this.port, bigintEnabled: true });
         this.client.on("data", this.dumpData);
+        this.watchUdpListener(this.client);
     }
 
     startClient = () => {
         this.client.start();
 
-        fs.writeFile('udp_data.txt', 'Dump created on ' + new Date().toISOString() + "\r\n", function (err) {
+        console.log(`Writing UDP dump to ${dumpFile}`);
+        fs.writeFile(dumpFile, 'Dump created on ' + new Date().toISOString() + "\r\n", function (err) {
           if (err) return console.log(err);
         });
     }
@@ -55,9 +60,10 @@ class DumpUdp extends AbstractClient {
     dumpData = (buffer) => {
         let _this = this;
         buffer = buffer.toString('hex').split("").map((c,i) => i % 2 == 0 ? c : c + " ").join("");
-        fs.appendFile('udp_data.txt', buffer, function (err) {
+        fs.appendFile(dumpFile, buffer, function (err) {
             if (err) {
-              throw err;
+              console.error(`Could not write ${dumpFile}:`, err.message);
+              return;
             }
             _this.tmBtLed.updateDisplay("" + _this.writtenLines++, true);
             console.log(buffer);

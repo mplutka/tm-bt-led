@@ -9,13 +9,7 @@
 
 const scs = require("../SCSSharedMemory/build/Release/scs.node");
 const AbstractClient = require('../lib/abstractClient.js');
-const path = require('path');
-
-const loadableConfigName = "ets2.config.js";
-const defaultConfig = {
-    leftModes: ["SPEED", "RPM", "FUEL", "WATERTEMP", "OILTEMP", "OILPRESS", "AIRPRESS", "BRAKETEMP"],
-    rightModes: ["DISTANCE", "TIME", "SPEED LIMIT", "CRUISE CONT", "AVG CONSUM", "RANGE"]
-};
+const { getClientConfig } = require('../lib/configLoader.js');
 
 class EuroTruckSimulator2 extends AbstractClient {
     data = {};
@@ -50,16 +44,7 @@ class EuroTruckSimulator2 extends AbstractClient {
         "RANGE": this.showRange
       };
 
-      try {
-          this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
-          if (this.config?.leftModes && this.config?.rightModes) {
-              console.log("Found custom config");
-          } else {
-              throw "No custom config";
-          }
-      } catch (e) {
-          this.config = defaultConfig;
-      }
+      this.config = getClientConfig('ets2', 'ets2.config.js');
 
       this.setCallbacks({
           onLeftPreviousMode: this.leftPreviousMode,
@@ -81,11 +66,11 @@ class EuroTruckSimulator2 extends AbstractClient {
     }
 
     startClient = () =>  {
-        this.refreshInterval = setInterval(() => {
+        this.refreshInterval = setInterval(this.guard(() => {
           if (this.initDone) {
             this.updateValues();
           }
-        }, 1000 / 30); // 30 Hz
+        }), 1000 / 30); // 30 Hz
     }
 
     stopClient = () => {

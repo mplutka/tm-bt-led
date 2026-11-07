@@ -64,9 +64,11 @@ class ProjectCars2 extends AbstractClient {
         this.client = new UdpListener({ 
             port: this.parser.port(), 
             forwardPorts: this.config.forwardPorts || [],
+            reuseAddr: this.config.reuseAddr,
             bigintEnabled: true 
         });
         this.client.on("data", this.parser.pushBuffer.bind(this.parser));
+        this.watchUdpListener(this.client);
     }
 
     startClient = () =>  {

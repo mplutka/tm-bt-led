@@ -1,2 +1,2 @@
 @echo off
-npm ci && npm run build && npm run pack
+call pnpm install --frozen-lockfile && call pnpm run build && call pnpm run pack

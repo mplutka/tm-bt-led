@@ -9,13 +9,7 @@
 
 const rF2SharedMemory = require("../rF2SharedMemory/build/Release/rF2SharedMemory.node");
 const AbstractClient = require('../lib/abstractClient.js');
-const path = require('path');
-
-const loadableConfigName = "rf2.config.js";
-const defaultConfig = {
-  leftModes: ["SPEED", "RPM", "FUEL", "TYRETEMP", "TYREPRESS", "BRAKETEMP", "OILTEMP"],
-  rightModes: ["LAPTIME", "LAST LAP", "BEST LAP", "POSITION", "LAP", "LAPS LEFT"]
-};
+const { getClientConfig } = require('../lib/configLoader.js');
 
 class rF2 extends AbstractClient {
     scoring = {};
@@ -49,16 +43,7 @@ class rF2 extends AbstractClient {
         "LAPS LEFT": this.showLapsLeft
       };
 
-      try {
-          this.config = require(path.dirname(process.execPath) + "/" + loadableConfigName);
-          if (this.config?.leftModes && this.config?.rightModes) {
-              console.log("Found custom config");
-          } else {
-              throw "No custom config";
-          }
-      } catch (e) {
-          this.config = defaultConfig;
-      }
+      this.config = getClientConfig('rF2', 'rf2.config.js');
 
       this.setCallbacks({
           onLeftPreviousMode: this.leftPreviousMode,
@@ -72,9 +57,7 @@ class rF2 extends AbstractClient {
     }
 
     startClient = () =>  {
-        this.refreshInterval = setInterval(() => {
-            this.updateValues();
-        }, 1000 / 60); // 60 Hz
+        this.refreshInterval = setInterval(this.guard(this.updateValues), 1000 / 60); // 60 Hz
     }
 
     stopClient = () => {

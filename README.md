@@ -19,19 +19,21 @@ I hope that I'm not hurting any copyrights or trademarks here. If so please tell
 ### Latest version
 [Download](https://cju3ax1.short.gy/tm-bt-led)
 
+**Linux (experimental, UDP games only):** see [LINUX.md](LINUX.md). The rest of this README describes Windows.
+
 ## Currently supported games 
 
-* F1 2019-25 (f1.bat)
-* Assetto Corsa, Assetto Corsa Competizione, Assetto Corsa EVO, Assetto Corsa Rally (assetto.bat)
-* iRacing (iracing.bat)
+* F1 2019-25 and F1 26 / F1 25 2026 Season Pack (f1.bat)
+* Assetto Corsa, Assetto Corsa Competizione, Assetto Corsa EVO, Assetto Corsa Rally (assetto.bat, Windows only)
+* iRacing (iracing.bat, Windows only)
 * Richard Burns Rally by Rallysimfans (rbr.bat)
 * Dirt 3, Dirt 4, Dirt Rally, Dirt Rally 2 (dirt.bat)
 * EA Sports WRC (wrc.bat)
 * Project Cars 2, Project Cars 3, Automobilista 2 (pcars2.bat)
 * Forza Motorsport 7, Forza Horizon 4, Forza Horizon 5 (forza.bat)
-* rFactor2 (rF2.bat)
-* Raceroom (raceroom.bat)
-* Euro Truck Simulator 2, American Truck Simulator (ets2.bat)
+* rFactor2 (rF2.bat, Windows only)
+* Raceroom (raceroom.bat, Windows only)
+* Euro Truck Simulator 2, American Truck Simulator (ets2.bat, Windows only)
 * Live for Speed (lfs.bat)
 
 If you would like to add a game that uses udp port 20777 to the list, you can use `dump_udp.bat` to create a dumpfile with recorded telemetry data.
@@ -56,26 +58,33 @@ For the smoothest experience, a **known-good** CSR is still preferable.
 1. You should be familiar with installing and using NodeJS application on Windows command line (cmd.exe).
 2. Thrustmaster BT LED ;-) (I won't guarantee that it works on your PC, so keep this in mind when buying one extra for this!)
 3. Compatible game with enabled telemetry data
-4. Windows 10 19042 or higher (might work on other but not tested)
-5.  [Zadig](https://zadig.akeo.ie/)
-6. USB stick or chipset that provides Bluetooth LE with supported chipset! [List of supported devices](https://github.com/abandonware/node-bluetooth-hci-socket#windows)
+4. Windows 10 19042 or higher (might work on other but not tested), or Linux (experimental, see [LINUX.md](LINUX.md))
+5. A dedicated USB stick or chipset that provides Bluetooth LE with supported chipset! [List of supported devices](https://github.com/abandonware/node-bluetooth-hci-socket#windows)
 
 ## Usage
 
-### Step 1. Install alternate Bluetooth USB driver
-As stated in Prerequisites#5, the Windows Bluetooth driver can't be used because it blocks access to the 0x1812 input service on the device. Therefore an alternate USB driver for your bluetooth device is needed which can be installed with Zadig. WinUSB should be the one to use but you could also try the other ones if you have no success. If scanning or device discovery doesn't start, kill the script with Ctrl+C and start it again.
+### Step 1. Download
+Download current version [here](https://cju3ax1.short.gy/tm-bt-led) and extract the files into an empty folder.
 
-**Please note that you loose general bluetooth connectivity in Windows by changing the driver!**
+### Step 2. Switch the Bluetooth stick to the WinUSB driver (once per stick)
+The Windows Bluetooth stack can't be used: the TM BT LED pairs with a well-known debug key, which Windows rejects since 2019 (Event 22 `BTHPORT_DEBUG_LINK_KEY_NOT_ALLOWED`), and Windows also denies apps access to the 0x1812 HID service it needs. So the stick has to be driven directly via the WinUSB driver.
 
-If you need the Windows bluetooth stack for your headset, keyboard, you need an extra stick for this.
-If you wish to go back to the stock drivers, simply do an automatic driver update in the device manager.
+1. Plug in the stick.
+2. Run `install-driver.bat` (or `tm-bt-led.exe --installDriver`).
+3. It lists the supported adapters it found. Pick yours if there are several, confirm with `y` and accept the Windows administrator prompt.
+4. Wait for "WinUSB installed". If the stick isn't found later, unplug and replug it.
 
-### Step 2. Download and setup connector
-1. Download current version [here](https://cju3ax1.short.gy/tm-bt-led) and extract the files into an empty folder.
-2. Run `setup.bat` to detect your device and write its data to a file for faster reconnects (necessary).
-3. (Optional) You can start `test.bat` to run demo mode.
+This installs Microsoft's own signed WinUSB driver that ships with Windows (the same as Device Manager → "Let me pick" → "Universal Serial Bus devices" → "WinUsb Device"). No extra tool, driver package or certificate needed.
 
-### Step 3. Launch 
+**Please note that this adapter can no longer be used for other Bluetooth devices in Windows!** Use a dedicated stick and keep your built-in Bluetooth for headsets, keyboards etc. Never switch the built-in adapter of a laptop or mainboard you still need.
+
+To go back to the Windows Bluetooth driver run `restore-driver.bat` (or `tm-bt-led.exe --restoreDriver`). If Windows ever puts its Bluetooth driver back on its own, the app can't find the stick anymore. Just run `install-driver.bat` again.
+
+### Step 3. Device setup
+1. Run `setup.bat` to detect your device and write its data to a file for faster reconnects (necessary).
+2. (Optional) You can start `test.bat` to run demo mode.
+
+### Step 4. Launch 
 1. Launch `run.bat` (recommended, see below) or use the provided game files.
 2. Press both upper buttons on the TM BT and let it connect when prompted to do so. It shouldn't be paired to your PC or any other device before doing this!
 3. If it is not picking up any devices ("Discovering devices" or "Starting scan..." never shows up), try restarting the script. If still no success, also try to unplug and replug the USB stick and start over.
@@ -86,6 +95,9 @@ If you wish to go back to the stock drivers, simply do an automatic driver updat
 `run.bat` automatically listens for the launch of any supported game, switches to performance mode (higher refresh rates) and steps down to power save mode after you exit the game. Keep it running in the background to automatically switch between supported games without the need to stop/start the shortcut batch files.
 
 If you encounter false detections or any other problems, please let me know.
+
+## Linux (experimental)
+tm-bt-led also runs on Linux, including the Raspberry Pi, from source and with the UDP based games only. Installation, adapter handling and troubleshooting are described in [LINUX.md](LINUX.md).
 
 ## Command-Line Options
 
@@ -123,6 +135,13 @@ Run `tm-bt-led.exe --help` for the full list. Common options:
 | `--game=NAME` | Force specific game client (assetto, f1, iracing, etc.) |
 | `--test` | Run in test/demo mode |
 | `--setup` | Run device setup/pairing mode |
+
+### Bluetooth Stick Driver
+
+| Option | Description |
+|--------|-------------|
+| `--installDriver` | Switch the Bluetooth stick to the WinUSB driver and exit |
+| `--restoreDriver` | Give the Bluetooth stick back to the Windows Bluetooth driver and exit |
 
 ### Valid FPS Values
 
@@ -168,7 +187,23 @@ tm-bt-led.exe --listFps
 You can change the order and type of data displayed on the left and right display (and sometimes the used UDP port) by editing the corresponding 
 `xxx.config.js` file in the same folder as `tm-bt-led.exe`.
 
-Game defaults can also be merged from **`config.json`** in that same folder (see `dist/config.json` in the repo for a full template, and **`dist/config.demo.json`** for a smaller example with rev lights, forwarding, and WRC notes). Values under each game key (e.g. `"assetto"`, `"f1"`, `"wrc"`) override the built-in defaults; `xxx.config.js` still applies where used.
+Game defaults can also be merged from **`config.json`** in that same folder (see `dist/config.json` in the repo for a full template, and **`dist/config.demo.json`** for a smaller example with rev lights, forwarding, and WRC notes). Values under each game key override the built-in defaults. This works for **every** game (`f1`, `assetto`, `iracing`, `rF2`, `raceroom`, `ets2`, `dirt`, `wrc`, `forza`, `rbr`, `pcars2`, `lfs`). A legacy `xxx.config.js` is only used when `config.json` has no section for that game.
+
+`config.json`, legacy config files, device dumps (`setup.bat`) and `udp_data.txt` are read from and written to the folder of `tm-bt-led.exe`. When running from source (`node lib/launcher.js`) the current working directory is used instead. Set the environment variable **`TM_BT_LED_HOME`** to use a different folder.
+
+### Output report handle
+
+The display frame is written to HID report handle **58**, the output report of all known devices. If your device's dump lists a different layout, tm-bt-led automatically picks the last writable HID report instead. You can force a handle in `config.json`:
+
+```json
+"global": {
+    "outputHandle": 58
+}
+```
+
+### UDP games and port conflicts
+
+If another program (e.g. SimHub or a second tm-bt-led) already listens on a game's UDP port, the display shows **`PORT BUSY`** for a few seconds and the console explains the problem; tm-bt-led keeps running. Either close the other program, or let one program receive the port and forward to the other via `forwardPorts`. UDP clients other than F1 also accept `"reuseAddr": true` in their game section to share a port, but Windows then delivers each packet to only one of the listeners, so forwarding is preferred.
 
 ### Additional Bluetooth USB VID/PID pairs
 
@@ -290,7 +325,11 @@ Here is a little video showing the device in action: [Youtube](https://www.youtu
 ## Important notes
 ### Localization
 
-The script tries to read your OS's locale to automatically switch to MPH/F/LB if "en-us" is selected. To can force measurement units by running `run_imperial.bat` or `run_metric.bat` or by adding `--imperial` or `--metric` after the game batch file (e.g. assetto.bat --metric).
+The script reads your OS's locale to pick measurement units: `en-US`, `en-LR` and `my-MM` use mph/°F/lb, `en-GB` uses mph with °C/kg, all other locales are metric. The chosen units are printed at startup. You can force measurement units by running `run_imperial.bat` or `run_metric.bat` or by adding `--imperial` or `--metric` after the game batch file (e.g. assetto.bat --metric), or with `"metric": true` / `"imperial": true` in the `global` section of `config.json`.
+
+### Reconnects and shutdown
+
+If the device turns off or the Bluetooth link drops, tm-bt-led keeps running, scans again and reconnects automatically; the game client and display modes stay as they were. Ctrl+C or closing the console window disconnects the device cleanly, so it can be reconnected right away. If a game client fails to start, the display shows `ERR` with the game name instead of the whole program crashing.
 
 ### Instability
 Stability has been improved with the high-resolution timer and write queue system. The default is 60 FPS (16.25ms interval). If your device freezes or USB errors occur:
@@ -307,10 +346,12 @@ The system now includes automatic backoff when USB errors occur, which helps pre
 
 ## Game specific settings
 
-### F1 2019-2025
+### F1 2019-2026
 Enable UDP telemetry in the game settings. The telemetry is sent to port 20777 by default.
 
-**Important for F1 25:** You must set the **UDP Format** to **2024** or earlier in the game's telemetry settings. The 2025 format is not yet supported by the telemetry parser.
+All UDP formats from 2018 to 2026 are supported, so F1 25 can use its native **2025** UDP format, and F1 26 (F1 25 with the 2026 Season Pack) its **2026** format. Support for the 2026 format is experimental.
+
+Cars built to the 2026 regulations have no DRS. For them the green rev lights show active aero and Overtake Mode instead: lit halfway when one is available, fully lit when straight-line mode or Overtake Mode is active.
 
 ### Assetto Corsa, Competizione, EVO, Rally
 Telemetry uses the game’s **shared memory** (default client; no UDP setup required).
