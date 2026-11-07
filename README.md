@@ -136,6 +136,8 @@ Settings live in `config.json` next to `tm-bt-led.exe` (see [dist/config.json](d
 ### F1 2019-2026
 Enable UDP telemetry in the game (port 20777). All UDP formats from 2018 to 2026 are supported, so use the game's native format (F1 26 / 2026 Season Pack: format **2026**, experimental). Cars built to the 2026 regulations have no DRS; the green rev lights show active aero and Overtake Mode instead (half lit when available, fully lit when active).
 
+The game sends no delta time, so the `DELTA` mode compares the current lap with the best valid lap of the session, recorded by tm-bt-led. It is shown after the first complete valid lap and works with any UDP send rate.
+
 ### Assetto Corsa, Competizione, EVO, Rally
 Uses the game's shared memory, no setup needed. The right-display mode `DISTANCE` (experimental) shows the approximate distance remaining on the lap or stage from the track spline; some tracks or mods report 0 or wrong values. Add it to `rightModesAcc` / `rightModesAssetto` in `config.json`.
 

@@ -12,6 +12,7 @@ const AbstractClient = require('../lib/abstractClient.js');
 const { getClientConfig } = require('../lib/configLoader.js');
 const { resolveRevLightFlash } = require('../lib/revLightFlash.js');
 const { describeSocketError } = require('../lib/udpListener.js');
+const { LapDeltaTracker } = require('../lib/lapDelta.js');
 const { PACKETS } = constants;
 const dgram = require('dgram');
 
@@ -101,21 +102,18 @@ class F1 extends AbstractClient {
     }
 
     startClient = () =>  {     
-        let bestDeltaData = new Map();
-        let currentDeltaData = new Map();
-        let bestLapTime = 0; // Best Lap of current session, not of all time
+        const deltaTracker = new LapDeltaTracker(); // Best lap of current session, not of all time
         let totalLaps = 60;
-        let trackLength = 0;
         let modernCar = false;
         let lapData;
         let carStatus;
         let carTelemetry;
-        let delta;       
+        let delta = null;
 
         // UDP formats 2021+ report lap times in milliseconds and no longer include a best lap time.
         const currentLapSeconds = () => lapData.m_currentLapTimeInMS !== undefined ? lapData.m_currentLapTimeInMS / 1000 : lapData.m_currentLapTime;
         const lastLapSeconds = () => lapData.m_lastLapTimeInMS !== undefined ? lapData.m_lastLapTimeInMS / 1000 : lapData.m_lastLapTime;
-        const bestLapSeconds = () => lapData.m_bestLapTime !== undefined ? lapData.m_bestLapTime : bestLapTime;
+        const bestLapSeconds = () => lapData.m_bestLapTime !== undefined ? lapData.m_bestLapTime : deltaTracker.bestLapTime;
 
         const showSpeed = (onRight) => {
             this.tmBtLed.setSpeed(carTelemetry.m_speed, onRight);
@@ -210,7 +208,6 @@ class F1 extends AbstractClient {
 
         this.client.on(PACKETS.session, d => {
           totalLaps = d.m_totalLaps;
-          trackLength = d.m_trackLength || 0;
           modernCar = d.m_formula === 0;
         });
 
@@ -219,37 +216,14 @@ class F1 extends AbstractClient {
             const myIndex = d.m_header.m_playerCarIndex;
             lapData = d.m_lapData[myIndex];
 
-            // Reset on session change
-            if (lapData.m_lapDistance < 0 && (bestLapTime > 0 || bestDeltaData.size > 0)) {
-                bestDeltaData.clear();
-                currentDeltaData.clear();
-                bestLapTime = 0;
-            }
-
-            const fractionOfLap = trackLength === 0 || lapData.m_lapDistance < 0 ? 0 : (lapData.m_lapDistance / trackLength).toFixed(6);
-            if (fractionOfLap >= 0.997 && currentDeltaData.size > 1000) {
-                if (lapData.m_currentLapInvalid !== 1 && (currentLapSeconds() <= bestLapTime || !bestLapTime)) {
-                    bestDeltaData.clear();
-                    bestDeltaData = new Map(currentDeltaData);
-                    bestLapTime = currentLapSeconds();
-                }
-                currentDeltaData.clear();
-            }
-
-            delta = null;
-            if (bestDeltaData.size) {
-                let bestTimeForFraction = null;
-                bestDeltaData.forEach((bestTime, bestFraction) => {
-                    if (!bestTimeForFraction || bestFraction <= fractionOfLap) {
-                        bestTimeForFraction = bestTime;
-                    }
-                });
-
-                if (bestTimeForFraction) {
-                    delta = currentLapSeconds() - bestTimeForFraction;
-                }
-            }
-            currentDeltaData.set(fractionOfLap, currentLapSeconds());
+            delta = deltaTracker.update({
+                lapNum: lapData.m_currentLapNum,
+                lapDistance: lapData.m_lapDistance,
+                currentLapTime: currentLapSeconds(),
+                lastLapTime: lastLapSeconds(),
+                invalid: lapData.m_currentLapInvalid === 1,
+                sessionUid: d.m_header.m_sessionUID
+            });
 
             if (lapData.m_currentLapInvalid === 1) {
                 this.tmBtLed.setFlashingRightRed(true);

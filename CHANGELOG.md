@@ -1,3 +1,12 @@
+## Version 5.0.1
+
+### Fixes
+
+* F1: the `DELTA` mode is interpolated between telemetry samples and no longer reads up to 50-100 ms too slow
+* F1: `DELTA` now also works at low UDP send rates (10/15 Hz) and on short tracks; laps are counted by lap number instead of a minimum sample count
+* F1 2021+: `BEST LAP` shows the official lap time instead of a value about 0.2-0.3 s too fast
+* F1: a flashback removes the rewound part of the lap from the delta, and the delta resets when the session changes
+
 ## Version 5.0.0
 
 ### New
