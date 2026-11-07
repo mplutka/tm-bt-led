@@ -94,6 +94,22 @@ To go back to the Windows Bluetooth driver run `restore-driver.bat` (or `tm-bt-l
 
 If you encounter false detections or any other problems, please let me know.
 
+## Linux (experimental)
+tm-bt-led also runs on Linux (including the Raspberry Pi), from source. It drives the Bluetooth adapter directly over the HCI user channel and bypasses BlueZ. This is needed because the Linux kernel, like Windows, rejects the display's well-known debug pairing key ("LTK blocked") and grabs the display as a gamepad.
+
+Only the UDP based games work on Linux, natively or through Proton: F1, DiRT / GRID, Forza, Richard Burns Rally, Project CARS 2 / AMS2, EA WRC and Live for Speed. The shared memory games (Assetto Corsa, iRacing, rFactor 2, RaceRoom, ETS2/ATS) are Windows only.
+
+1. Install Node.js 26, pnpm and a build toolchain (Debian/Ubuntu: `sudo apt install build-essential python3`).
+2. Clone the repository and run `pnpm install`. `pnpm run build` and `pnpm run pack` are Windows only and not needed.
+3. Hand the adapter over to tm-bt-led: `sudo btmgmt -i hci0 power off` (or `sudo systemctl stop bluetooth`). It can't be used for other Bluetooth devices while tm-bt-led runs. Give it back afterwards with `sudo btmgmt -i hci0 power on`.
+4. Allow raw HCI access without root: `sudo setcap cap_net_raw,cap_net_admin+eip $(readlink -f $(which node))`. Alternatively run the commands below with `sudo`.
+5. If the display was ever paired through BlueZ, remove that pairing: `bluetoothctl remove 00:08:D3:XX:XX:XX`.
+6. Run everything from the `dist` folder (`cd dist`); it holds `config.json` and the device template. To use another adapter than `hci0`, set `"hciDeviceId"` in the `global` section of `config.json` (1 = `hci1`, ...).
+7. Device setup: `node ../lib/launcher.js --setup`, then press both pair buttons on the display.
+8. Run `node ../lib/launcher.js` (auto detect mode), `node ../lib/launcher.js --game f1` or `node ../lib/launcher.js --test` (demo).
+
+`--installDriver` and `--restoreDriver` are not needed on Linux; they print the steps above.
+
 ## Command-Line Options
 
 Run `tm-bt-led.exe --help` for the full list. Common options:

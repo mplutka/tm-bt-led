@@ -11,7 +11,9 @@
         "imperial": false,
         "message": "",
         "_usbNote": "Additional Bluetooth USB adapters by VID/PID. vid/pid can be decimal or hex (e.g. 0x0bda).",
-        "additionalUsbVidPids": []
+        "additionalUsbVidPids": [],
+        "_hciNote": "Linux only: number of the Bluetooth adapter to use (0 = hci0).",
+        "hciDeviceId": 0
     },
 
     "f1": {

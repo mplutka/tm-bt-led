@@ -43,6 +43,9 @@ jobs:
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
 
+    - name: Check optional iRacing SDK binding
+      run: node -e "require('node-irsdk')"
+
     - name: Lint
       run: pnpm run lint
 
@@ -60,6 +63,35 @@ jobs:
       with:
         name: tm-bt-led-${{ matrix.arch }}-${{ github.sha }}
         path: dist/*
+
+  linux:
+    name: linux (lint + tests)
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        submodules: true
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v6
+
+    - name: Use Node.js 26.x
+      uses: actions/setup-node@v7
+      with:
+        node-version: 26.x
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Check Bluetooth HCI binding
+      run: node -e "require('@abandonware/bluetooth-hci-socket')"
+
+    - name: Lint
+      run: pnpm run lint
+
+    - name: Unit tests
+      run: pnpm test
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
